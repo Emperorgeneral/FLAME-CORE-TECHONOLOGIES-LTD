@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Products | Flame Core Technologies Ltd</title>
+    <meta
+      name="description"
+      content="See products by Flame Core Technologies Ltd, including FlameBot and custom deployable modules for automation and scalable system operations."
+    />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=Space+Grotesk:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="assets/css/styles.css?v=20260402j" />
+    <link rel="icon" type="image/x-icon" href="favicon.ico" />
+    <link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="favicon-16x16.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png" />
+    <link rel="manifest" href="site.webmanifest" />
+    <style>
+      .templates-grid-live {
+        margin-top: 2.5rem;
+      }
+    </style>
+  </head>
+  <body class="page-products">
+    <header class="site-header">
+      <div class="container nav-wrap">
+        <a class="logo" href="index.html" aria-label="Flame Core Technologies Ltd home">
+          <img class="logo-mark" src="android-chrome-192x192.png" alt="FC" />
+          <span>
+            Flame Core
+            <span class="logo-sub">Technologies Ltd</span>
+          </span>
+        </a>
+        <button class="menu-btn" data-menu-btn aria-expanded="false" aria-label="Toggle menu">☰</button>
+        <nav class="nav-links" data-nav>
+          <a href="index.html">Home</a>
+          <a href="services.html">Services</a>
+          <a href="products.html">Products</a>
+          <a href="about.html">About</a>
+          <a href="contact.html">Contact</a>
+          <a href="login.html">Sign In</a>
+          <a href="signup.html">Sign Up</a>
+        </nav>
+        <div class="header-auth" data-auth-ui>
+          <a class="btn btn-secondary" data-auth="guest" href="login.html">Sign In</a>
+          <a class="btn btn-primary" data-auth="guest" href="signup.html">Sign Up</a>
+          <button class="btn btn-primary" data-auth="user" data-auth-logout type="button">Logout</button>
+        </div>
+      </div>
+    </header>
+
+    <main>
+      <section class="page-hero">
+        <div class="container reveal">
+          <span class="section-kicker">Products</span>
+          <h1 class="section-title section-title-xl">
+            Products That Support Smarter Operations
+          </h1>
+          <p>
+            Our products are built to extend your capabilities quickly. They can be deployed as
+            standalone tools or integrated into broader custom systems we deliver for clients.
+          </p>
+        </div>
+      </section>
+
+      <section class="section section-tight-top">
+        <div class="container two-col">
+          <article class="product-panel reveal">
+            <span class="tag">Featured Product</span>
+            <h2 class="section-title section-title-flamebot">FlameBot</h2>
+            <p>
+              FlameBot is a Telegram automation layer for teams that need dependable command-driven
+              workflows, alerts, and integration with backend services.
+            </p>
+            <ul class="product-list">
+              <li>Command architecture for user interaction flows</li>
+              <li>Referral and lead capture logic integration</li>
+              <li>Webhook-driven backend communication</li>
+              <li>Scalable deployment as independent service</li>
+            </ul>
+            <div class="spaced-top">
+              <a class="btn btn-secondary" href="contact.html">Request Product Demo</a>
+            </div>
+          </article>
+
+          <figure class="media-card reveal">
+            <img
+              src="https://images.pexels.com/photos/574087/pexels-photo-574087.jpeg?auto=compress&cs=tinysrgb&w=1400"
+              alt="Futuristic coding setup representing software products"
+              width="1400"
+              height="934"
+              loading="lazy"
+            />
+          </figure>
+        </div>
+      </section>
+
+      <section class="section section-no-top">
+        <div class="container grid-3">
+          <article class="card reveal">
+            <span class="tag">Module</span>
+            <h3>Integration APIs</h3>
+            <p>Reusable API connectors for payment, CRM, messaging, and analytics platforms.</p>
+          </article>
+          <article class="card reveal">
+            <span class="tag">Module</span>
+            <h3>Automation Templates</h3>
+            <p>Pre-structured workflow templates that accelerate rollout for common operations.</p>
+          </article>
+          <article class="card reveal">
+            <span class="tag">Module</span>
+            <h3>Monitoring Layer</h3>
+            <p>Telemetry and event monitoring modules to maintain system visibility and reliability.</p>
+          </article>
+        </div>
+
+        <div class="container">
+          <div class="cta reveal">
+            <div>
+              <h3 class="cta-heading">Need a Product + Custom Build Combination?</h3>
+              <p>We can blend existing modules with bespoke engineering for faster value delivery.</p>
+            </div>
+            <a class="btn btn-primary" href="start-project.html">Start a Project</a>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <!-- ── Website Templates (live from API) ───────────────────────────── -->
+    <section class="section scene-block" id="templates-section">
+      <div class="container">
+        <div class="motion-item motion-up">
+          <span class="section-kicker">Website Templates</span>
+          <h2 class="section-title">Ready-Made Websites, Built for You</h2>
+          <p>Purchase a professionally designed template and our team will customise it for your brand.
+             Your project is tracked inside your dashboard from day one.</p>
+        </div>
+        <div id="templates-grid" class="grid-3 templates-grid-live"></div>
+      </div>
+    </section>
+
+    <footer class="footer">
+      <div class="container footer-wrap">
+        <p>© <span data-year></span> Flame Core Technologies Ltd. All rights reserved.</p>
+        <a class="btn btn-secondary" href="start-project.html">Start a Project</a>
+      </div>
+    </footer>
+
+    <script src="assets/js/main.js?v=20260402j"></script>
+    <script>
+    (function () {
+      const API = 'http://localhost:5000';
+
+      function esc(s) {
+        const d = document.createElement('div');
+        d.textContent = s || '';
+        return d.innerHTML;
+      }
+
+      async function loadTemplates() {
+        const grid = document.getElementById('templates-grid');
+        if (!grid) return;
+        try {
+          const res = await fetch(`${API}/api/products`);
+          const data = await res.json();
+          if (data.status === 'OK' && data.products.length) {
+            grid.innerHTML = data.products.map(p => `
+              <article class="card scene-block" style="display:flex;flex-direction:column;">
+                ${p.previewUrl ? `<img src="${esc(p.previewUrl)}" alt="${esc(p.name)}"
+                  style="width:100%;height:180px;object-fit:cover;border-radius:8px;margin-bottom:1rem;">` : ''}
+                <span class="tag">${esc(p.category)}</span>
+                <h3 style="margin:.5rem 0 .4rem">${esc(p.name)}</h3>
+                <p style="flex:1;font-size:.9rem;color:#94a3b8">${esc(p.description)}</p>
+                <div style="display:flex;align-items:center;justify-content:space-between;margin-top:1.5rem;">
+                  <strong style="font-size:1.3rem;color:#3b82f6;">$${(p.priceCents / 100).toFixed(2)}</strong>
+                  <button class="btn btn-primary buy-btn"
+                    data-id="${p.id}" data-name="${esc(p.name)}">Buy Now</button>
+                </div>
+              </article>`).join('');
+            grid.querySelectorAll('.buy-btn').forEach(btn => {
+              btn.addEventListener('click', () => handleBuy(btn.dataset.id, btn.dataset.name, btn));
+            });
+          } else {
+            grid.innerHTML = '<p style="color:#94a3b8;grid-column:1/-1">No templates available right now.</p>';
+          }
+        } catch {
+          grid.innerHTML = '<p style="color:#94a3b8;grid-column:1/-1">Could not load templates — make sure the backend is running on port 5000.</p>';
+        }
+      }
+
+      async function handleBuy(templateId, templateName, btn) {
+        const token = localStorage.getItem('flamecore_token');
+        if (!token) {
+          window.location.href = `login.html?redirect=products.html&templateId=${encodeURIComponent(templateId)}`;
+          return;
+        }
+        btn.disabled = true;
+        btn.textContent = 'Processing…';
+        try {
+          // 1. Create order
+          const orderRes = await fetch(`${API}/api/orders`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+            body: JSON.stringify({ templateId, quantity: 1 })
+          });
+          const orderData = await orderRes.json();
+          if (!orderData.order) throw new Error(orderData.message || 'Order creation failed');
+
+          // 2. Start Stripe checkout session
+          const checkRes = await fetch(`${API}/api/payments/checkout-session`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+            body: JSON.stringify({ orderId: orderData.order.id })
+          });
+          const checkData = await checkRes.json();
+
+          if (checkData.status === 'MOCK') {
+            alert(`Order placed! (Stripe not yet configured)\nOrder ID: ${orderData.order.id}\n\nView your order in the dashboard.`);
+            window.location.href = 'dashboard.html';
+            return;
+          }
+          if (checkData.checkoutUrl) {
+            window.location.href = checkData.checkoutUrl;
+          } else {
+            throw new Error(checkData.message || 'Could not start checkout');
+          }
+        } catch (err) {
+          alert('Error: ' + err.message);
+          btn.disabled = false;
+          btn.textContent = 'Buy Now';
+        }
+      }
+
+      loadTemplates();
+    })();
+    </script>
+  </body>
+</html>

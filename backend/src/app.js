@@ -1,0 +1,64 @@
+import express from "express";
+import cors from "cors";
+import helmet from "helmet";
+import cookieParser from "cookie-parser";
+import morgan from "morgan";
+import path from "path";
+import { fileURLToPath } from "url";
+import { env } from "./config/env.js";
+import { errorHandler, notFoundHandler } from "./middleware/error.js";
+import { adminLimiter, apiLimiter, authLimiter } from "./middleware/rateLimit.js";
+import { authRoutes } from "./modules/auth/routes.js";
+import { userRoutes } from "./modules/users/routes.js";
+import { productRoutes } from "./modules/products/routes.js";
+import { orderRoutes } from "./modules/orders/routes.js";
+import { dashboardRoutes } from "./modules/dashboard/routes.js";
+import { paymentRoutes } from "./modules/payments/routes.js";
+import { adminRoutes } from "./modules/admin/routes.js";
+import { chatRoutes } from "./modules/chat/routes.js";
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+
+export const app = express();
+
+if (env.trustProxy) {
+  app.set("trust proxy", 1);
+}
+
+app.use(
+  cors({
+    origin: (origin, callback) => {
+      if (!origin) {
+        return callback(null, true);
+      }
+      if (env.frontendUrls.includes(origin)) {
+        return callback(null, true);
+      }
+      return callback(new Error("CORS origin blocked"));
+    },
+    credentials: true
+  })
+);
+app.use(helmet({ crossOriginResourcePolicy: { policy: "cross-origin" } }));
+app.use(cookieParser());
+app.use(morgan("dev"));
+app.use("/api/payments/webhook", express.raw({ type: "application/json" }));
+app.use(express.json({ limit: "1mb" }));
+app.use("/uploads", express.static(path.join(__dirname, "../../uploads")));
+app.use("/api", apiLimiter);
+
+app.get("/api/health", (_req, res) => {
+  res.json({ status: "OK", service: "flamecore-backend" });
+});
+
+app.use("/api/auth", authLimiter, authRoutes);
+app.use("/api/users", userRoutes);
+app.use("/api/products", productRoutes);
+app.use("/api/orders", orderRoutes);
+app.use("/api/dashboard", dashboardRoutes);
+app.use("/api/payments", paymentRoutes);
+app.use("/api/admin", adminLimiter, adminRoutes);
+app.use("/api/chat", chatRoutes);
+
+app.use(notFoundHandler);
+app.use(errorHandler);

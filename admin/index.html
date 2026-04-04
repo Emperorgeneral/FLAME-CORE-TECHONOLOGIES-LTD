@@ -1,0 +1,811 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin — Flame Core Technologies</title>
+  <link rel="icon" type="image/x-icon" href="../favicon.ico" />
+  <link rel="icon" type="image/png" sizes="32x32" href="../favicon-32x32.png" />
+  <link rel="icon" type="image/png" sizes="16x16" href="../favicon-16x16.png" />
+  <link rel="apple-touch-icon" sizes="180x180" href="../apple-touch-icon.png" />
+  <link rel="manifest" href="../site.webmanifest" />
+  <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #050811;
+      --surface: #0a0f1e;
+      --card: #0d1526;
+      --border: rgba(255,255,255,0.08);
+    --accent: #FF6B35;
+      --accent-glow: rgba(59,130,246,0.2);
+      --success: #22c55e;
+      --warning: #f59e0b;
+      --danger: #ef4444;
+      --text: #e2e8f0;
+      --muted: #94a3b8;
+      --sidebar-w: 230px;
+    }
+    html, body { height: 100%; background: var(--bg); color: var(--text); font-family: 'Segoe UI', system-ui, sans-serif; font-size: 14px; }
+
+    /* ── Login overlay ──────────────────────────────────────────────────── */
+    #login-overlay {
+      position: fixed; inset: 0; background: var(--bg);
+      display: flex; align-items: center; justify-content: center; z-index: 9999;
+    }
+    #login-overlay.hidden { display: none; }
+    .login-card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 16px; padding: 2.5rem; width: 360px; text-align: center;
+    }
+    .login-card .brand { font-size: 2rem; font-weight: 800; color: var(--accent); margin-bottom: .5rem; }
+    .login-card p { color: var(--muted); margin-bottom: 1.5rem; }
+    .login-card input {
+      width: 100%; padding: .75rem 1rem; border-radius: 8px; border: 1px solid var(--border);
+      background: var(--card); color: var(--text); font-size: 1rem; margin-bottom: 1rem; outline: none;
+    }
+    .login-card input:focus { border-color: var(--accent); }
+    .login-card .btn-primary { width: 100%; }
+    .login-error { color: var(--danger); font-size: .85rem; margin-top: .75rem; min-height: 1.2em; }
+
+    /* ── App layout ─────────────────────────────────────────────────────── */
+    #app { display: flex; height: 100vh; overflow: hidden; }
+    #app.hidden { display: none; }
+
+    .sidebar {
+      width: var(--sidebar-w); background: var(--surface); border-right: 1px solid var(--border);
+      display: flex; flex-direction: column; flex-shrink: 0; overflow-y: auto;
+    }
+    .sidebar-logo {
+      padding: 1.5rem 1.25rem 1rem;
+      font-size: 1.1rem; font-weight: 800; color: var(--accent); letter-spacing: -.5px;
+      border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: .6rem;
+    }
+    .sidebar-logo .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--success); flex-shrink: 0; }
+    .sidebar-nav { flex: 1; padding: 1rem 0; }
+    .nav-item {
+      display: flex; align-items: center; gap: .7rem;
+      width: 100%; padding: .65rem 1.25rem; border: none; background: none;
+      color: var(--muted); cursor: pointer; font-size: .9rem; border-radius: 0;
+      transition: color .15s, background .15s; text-align: left;
+    }
+    .nav-item:hover { color: var(--text); background: var(--accent-glow); }
+    .nav-item.active { color: var(--accent); background: var(--accent-glow); font-weight: 600; }
+    .nav-badge {
+      margin-left: auto; background: var(--danger); color: #fff;
+      font-size: .7rem; font-weight: 700; padding: 1px 6px; border-radius: 99px;
+      display: none;
+    }
+    .nav-badge.show { display: inline-block; }
+    .sidebar-footer { padding: 1rem 1.25rem; border-top: 1px solid var(--border); }
+    .btn-logout {
+      width: 100%; padding: .6rem 1rem; background: none; border: 1px solid var(--border);
+      color: var(--muted); border-radius: 8px; cursor: pointer; font-size: .85rem; transition: .15s;
+    }
+    .btn-logout:hover { border-color: var(--danger); color: var(--danger); }
+
+    /* ── Main content ───────────────────────────────────────────────────── */
+    .main { flex: 1; overflow-y: auto; background: var(--bg); }
+    .tab { display: none; padding: 2rem; }
+    .tab.active { display: block; }
+    .tab-title { font-size: 1.4rem; font-weight: 700; margin-bottom: 1.5rem; }
+    .tab-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.5rem; }
+    .tab-header .tab-title { margin-bottom: 0; }
+
+    /* ── Buttons ────────────────────────────────────────────────────────── */
+    .btn-primary {
+      background: var(--accent); color: #fff; border: none;
+      padding: .6rem 1.2rem; border-radius: 8px; cursor: pointer; font-size: .9rem;
+      font-weight: 600; transition: opacity .15s;
+    }
+    .btn-primary:hover { opacity: .85; }
+    .btn-sm {
+      padding: .3rem .75rem; font-size: .78rem; border-radius: 6px; border: none;
+      cursor: pointer; font-weight: 600; transition: opacity .15s;
+    }
+    .btn-sm:hover { opacity: .8; }
+    .btn-edit { background: rgba(59,130,246,.15); color: var(--accent); }
+    .btn-danger { background: rgba(239,68,68,.15); color: var(--danger); }
+    .btn-success { background: rgba(34,197,94,.15); color: var(--success); }
+
+    /* ── Stats grid ─────────────────────────────────────────────────────── */
+    .stats-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 1rem; margin-bottom: 2rem; }
+    .stat-card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 1.25rem; }
+    .stat-card .stat-label { color: var(--muted); font-size: .8rem; margin-bottom: .5rem; }
+    .stat-card .stat-value { font-size: 2rem; font-weight: 800; color: var(--text); }
+
+    /* ── Tables ─────────────────────────────────────────────────────────── */
+    .table-wrap { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; }
+    th { text-align: left; padding: .75rem 1rem; font-size: .75rem; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; border-bottom: 1px solid var(--border); white-space: nowrap; }
+    td { padding: .75rem 1rem; border-bottom: 1px solid var(--border); vertical-align: middle; }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: rgba(255,255,255,.02); }
+    .badge { display: inline-block; padding: 2px 9px; border-radius: 99px; font-size: .72rem; font-weight: 700; }
+    .badge-pending  { background: rgba(245,158,11,.15); color: var(--warning); }
+    .badge-paid     { background: rgba(34,197,94,.15);  color: var(--success); }
+    .badge-failed   { background: rgba(239,68,68,.15);  color: var(--danger); }
+    .badge-open     { background: rgba(59,130,246,.15); color: var(--accent); }
+    .badge-active   { background: rgba(34,197,94,.15);  color: var(--success); }
+    .badge-inactive { background: rgba(148,163,184,.1); color: var(--muted); }
+
+    /* ── Forms ──────────────────────────────────────────────────────────── */
+    .form-panel { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 1.5rem; margin-bottom: 1.5rem; }
+    .form-panel h3 { margin-bottom: 1.25rem; font-size: 1rem; }
+    .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+    .form-group { display: flex; flex-direction: column; gap: .4rem; }
+    .form-group.full { grid-column: 1 / -1; }
+    .form-group label { font-size: .8rem; color: var(--muted); }
+    .form-group input, .form-group textarea, .form-group select {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 8px; padding: .65rem .9rem; color: var(--text); font-size: .9rem; outline: none;
+    }
+    .form-group input:focus, .form-group textarea:focus, .form-group select:focus { border-color: var(--accent); }
+    .form-group textarea { resize: vertical; min-height: 80px; }
+    .form-actions { display: flex; gap: .75rem; margin-top: 1.25rem; }
+    .form-panel.hidden { display: none; }
+
+    /* ── Chat ───────────────────────────────────────────────────────────── */
+    #tab-chat { padding: 0; display: none; }
+    #tab-chat.active { display: flex; height: 100vh; }
+    .chat-conversations { width: 280px; border-right: 1px solid var(--border); overflow-y: auto; display: flex; flex-direction: column; }
+    .chat-conv-header { padding: 1rem 1.25rem; border-bottom: 1px solid var(--border); font-weight: 700; font-size: .9rem; }
+    .conv-item { padding: .85rem 1.25rem; border-bottom: 1px solid var(--border); cursor: pointer; transition: background .12s; }
+    .conv-item:hover { background: var(--accent-glow); }
+    .conv-item.active { background: var(--accent-glow); border-left: 3px solid var(--accent); }
+    .conv-email { font-weight: 600; font-size: .88rem; margin-bottom: .2rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .conv-preview { color: var(--muted); font-size: .78rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .conv-time { color: var(--muted); font-size: .72rem; margin-top: .2rem; }
+    .conv-unread { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); float: right; margin-top: 4px; }
+    .chat-empty { padding: 2rem 1.25rem; color: var(--muted); font-size: .85rem; text-align: center; }
+
+    .chat-window { flex: 1; display: flex; flex-direction: column; }
+    .chat-win-header { padding: 1rem 1.5rem; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: .75rem; }
+    .chat-win-header .chat-user-email { font-weight: 600; }
+    .chat-win-header .status-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--muted); }
+    .chat-win-header .status-dot.online { background: var(--success); }
+    .chat-messages { flex: 1; overflow-y: auto; padding: 1.25rem 1.5rem; display: flex; flex-direction: column; gap: .75rem; }
+    .msg-bubble { max-width: 68%; padding: .65rem 1rem; border-radius: 12px; font-size: .9rem; line-height: 1.5; word-break: break-word; }
+    .msg-bubble.from-user { background: var(--card); align-self: flex-start; border-bottom-left-radius: 4px; }
+    .msg-bubble.from-admin { background: var(--accent); color: #fff; align-self: flex-end; border-bottom-right-radius: 4px; }
+    .msg-meta { font-size: .7rem; color: var(--muted); margin-top: .2rem; }
+    .msg-wrap { display: flex; flex-direction: column; }
+    .msg-wrap.from-admin { align-items: flex-end; }
+    .chat-no-selection { display: flex; align-items: center; justify-content: center; height: 100%; color: var(--muted); font-size: .9rem; }
+    .chat-input-area { padding: 1rem 1.5rem; border-top: 1px solid var(--border); display: flex; gap: .75rem; }
+    .chat-input-area input { flex: 1; background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: .65rem 1rem; color: var(--text); font-size: .9rem; outline: none; }
+    .chat-input-area input:focus { border-color: var(--accent); }
+    .chat-input-area .btn-primary { padding: .65rem 1.2rem; }
+
+    /* ── Utility ────────────────────────────────────────────────────────── */
+    .hidden { display: none !important; }
+    .text-muted { color: var(--muted); }
+    .section-card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; }
+    select.status-select { background: var(--card); border: 1px solid var(--border); color: var(--text); padding: .3rem .6rem; border-radius: 6px; font-size: .8rem; cursor: pointer; }
+    .loading-row td { color: var(--muted); text-align: center; padding: 2rem; }
+    .recent-orders-heading { margin-bottom: .75rem; font-size: .95rem; color: var(--muted); }
+    .table-actions { display: flex; gap: .4rem; flex-wrap: wrap; }
+    .order-id-cell { font-size: .75rem; }
+    .tpl-active-row { justify-content: flex-end; flex-direction: row; align-items: center; gap: .5rem; }
+    .tpl-active-label { margin: 0; }
+    .tpl-active-input { width: auto; }
+    .assign-modal {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, .7);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 999;
+    }
+    .assign-modal-card { width: 420px; margin: 0; }
+    .assign-modal-inner { margin-top: 1rem; }
+    .assign-template-select { width: 100%; padding: .65rem .9rem; font-size: .9rem; }
+    .chat-active-window { display: flex; flex-direction: column; height: 100%; }
+  </style>
+</head>
+<body>
+
+<!-- ── Login overlay ──────────────────────────────────────────────────────── -->
+<div id="login-overlay">
+  <div class="login-card">
+    <div class="brand">FC</div>
+    <p>Anonymous admin access — enter your key to continue</p>
+    <input type="password" id="admin-key-input" placeholder="Admin key…" autocomplete="off" />
+    <button class="btn-primary" id="login-btn">Login</button>
+    <div class="login-error" id="login-error"></div>
+  </div>
+</div>
+
+<!-- ── App ────────────────────────────────────────────────────────────────── -->
+<div id="app" class="hidden">
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <img src="../android-chrome-192x192.png" alt="FC" style="width:28px;height:28px;border-radius:7px;object-fit:cover;flex-shrink:0;" />
+      <span>FC Admin</span>
+      <span class="dot"></span>
+    </div>
+    <nav class="sidebar-nav">
+      <button class="nav-item active" data-tab="overview">📊&nbsp; Overview</button>
+      <button class="nav-item" data-tab="templates">🖼️&nbsp; Templates</button>
+      <button class="nav-item" data-tab="orders">📦&nbsp; Orders</button>
+      <button class="nav-item" data-tab="users">👥&nbsp; Users</button>
+      <button class="nav-item" data-tab="chat">
+        💬&nbsp; Chat
+        <span class="nav-badge" id="chat-nav-badge">0</span>
+      </button>
+    </nav>
+    <div class="sidebar-footer">
+      <button class="btn-logout" id="logout-btn">Logout</button>
+    </div>
+  </aside>
+
+  <main class="main">
+
+    <!-- ── Overview ───────────────────────────────────────────────────── -->
+    <section id="tab-overview" class="tab active">
+      <p class="tab-title">Overview</p>
+      <div class="stats-grid" id="stats-grid">
+        <div class="stat-card"><div class="stat-label">Users</div><div class="stat-value" id="st-users">—</div></div>
+        <div class="stat-card"><div class="stat-label">Orders</div><div class="stat-value" id="st-orders">—</div></div>
+        <div class="stat-card"><div class="stat-label">Templates</div><div class="stat-value" id="st-templates">—</div></div>
+        <div class="stat-card"><div class="stat-label">Revenue</div><div class="stat-value" id="st-revenue">—</div></div>
+      </div>
+      <h3 class="recent-orders-heading">Recent Orders</h3>
+      <div class="section-card">
+        <div class="table-wrap">
+          <table id="recent-orders-table">
+            <thead><tr><th>User</th><th>Template</th><th>Status</th><th>Date</th></tr></thead>
+            <tbody id="recent-orders-body"><tr class="loading-row"><td colspan="4">Loading…</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── Templates ──────────────────────────────────────────────────── -->
+    <section id="tab-templates" class="tab">
+      <div class="tab-header">
+        <p class="tab-title">Templates</p>
+        <button class="btn-primary" id="new-template-btn">+ Add Template</button>
+      </div>
+
+      <!-- Add / Edit form -->
+      <div class="form-panel hidden" id="template-form">
+        <h3 id="template-form-title">Add New Template</h3>
+        <input type="hidden" id="tpl-edit-id" />
+        <div class="form-grid">
+          <div class="form-group"><label>Name *</label><input id="tpl-name" placeholder="e.g. SaaS Pro" /></div>
+          <div class="form-group"><label>Slug *</label><input id="tpl-slug" placeholder="e.g. saas-pro" /></div>
+          <div class="form-group"><label>Category *</label><input id="tpl-category" placeholder="e.g. SaaS, Portfolio" /></div>
+          <div class="form-group"><label>Price (USD) *</label><input id="tpl-price" type="number" step="0.01" placeholder="149.00" /></div>
+          <div class="form-group full"><label>Description *</label><textarea id="tpl-desc" placeholder="Short description…"></textarea></div>
+          <div class="form-group"><label>Preview URL (or upload below)</label><input id="tpl-preview-url" placeholder="https://…" /></div>
+          <div class="form-group"><label>Image Upload</label><input id="tpl-image" type="file" accept="image/*" /></div>
+          <div class="form-group tpl-active-row">
+            <label for="tpl-active" class="tpl-active-label">Active</label>
+            <input id="tpl-active" type="checkbox" checked class="tpl-active-input" />
+          </div>
+        </div>
+        <div class="form-actions">
+          <button class="btn-primary" id="tpl-save-btn">Save Template</button>
+          <button class="btn-sm btn-danger" id="tpl-cancel-btn">Cancel</button>
+        </div>
+      </div>
+
+      <div class="section-card">
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Name</th><th>Category</th><th>Price</th><th>Sales</th><th>Status</th><th>Actions</th></tr></thead>
+            <tbody id="templates-body"><tr class="loading-row"><td colspan="6">Loading…</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── Orders ─────────────────────────────────────────────────────── -->
+    <section id="tab-orders" class="tab">
+      <div class="tab-header">
+        <p class="tab-title">Orders</p>
+        <select id="order-status-filter" class="status-select">
+          <option value="">All Statuses</option>
+          <option value="PENDING">Pending</option>
+          <option value="PAID">Paid</option>
+          <option value="FAILED">Failed</option>
+          <option value="CANCELLED">Cancelled</option>
+        </select>
+      </div>
+      <div class="section-card">
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>ID</th><th>User</th><th>Template</th><th>Amount</th><th>Status</th><th>Date</th><th>Actions</th></tr></thead>
+            <tbody id="orders-body"><tr class="loading-row"><td colspan="7">Loading…</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+      <!-- Assign modal -->
+      <div id="assign-modal" class="hidden assign-modal">
+        <div class="form-panel assign-modal-card">
+          <h3>Assign Template to User</h3>
+          <input type="hidden" id="assign-order-id" />
+          <div class="assign-modal-inner">
+            <div class="form-group">
+              <label>Select Template</label>
+              <select id="assign-template-select" class="status-select assign-template-select"></select>
+            </div>
+          </div>
+          <div class="form-actions">
+            <button class="btn-primary" id="assign-confirm-btn">Assign</button>
+            <button class="btn-sm btn-danger" id="assign-cancel-btn">Cancel</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── Users ──────────────────────────────────────────────────────── -->
+    <section id="tab-users" class="tab">
+      <p class="tab-title">Users</p>
+      <div class="section-card">
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Email</th><th>Full Name</th><th>Company</th><th>Orders</th><th>Projects</th><th>Joined</th></tr></thead>
+            <tbody id="users-body"><tr class="loading-row"><td colspan="6">Loading…</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── Chat ───────────────────────────────────────────────────────── -->
+    <section id="tab-chat" class="tab">
+      <div class="chat-conversations" id="chat-list">
+        <div class="chat-conv-header">💬 Conversations</div>
+        <div class="chat-empty" id="chat-list-empty">No conversations yet</div>
+      </div>
+      <div class="chat-window">
+        <div class="chat-no-selection" id="chat-no-selection">Select a conversation to start chatting</div>
+        <div id="chat-active-window" class="hidden chat-active-window">
+          <div class="chat-win-header">
+            <span class="status-dot" id="chat-user-dot"></span>
+            <span class="chat-user-email" id="chat-user-email">—</span>
+          </div>
+          <div class="chat-messages" id="chat-messages"></div>
+          <div class="chat-input-area">
+            <input id="chat-input" type="text" placeholder="Message as Support Team…" />
+            <button class="btn-primary" id="chat-send-btn">Send</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<script>
+const API = 'http://localhost:5000';
+let token = null;
+let socket = null;
+let activeUserId = null;
+let onlineUsers = new Set();
+let unreadCounts = {};
+let allTemplates = [];
+
+// ── Boot ────────────────────────────────────────────────────────────────────
+window.addEventListener('DOMContentLoaded', () => {
+  const saved = localStorage.getItem('fc_admin_token');
+  if (saved) {
+    token = saved;
+    bootApp();
+  }
+
+  document.getElementById('admin-key-input').addEventListener('keydown', e => {
+    if (e.key === 'Enter') document.getElementById('login-btn').click();
+  });
+
+  document.getElementById('login-btn').addEventListener('click', async () => {
+    const key = document.getElementById('admin-key-input').value.trim();
+    if (!key) return;
+    try {
+      const r = await fetch(`${API}/api/admin/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ key })
+      });
+      const d = await r.json();
+      if (d.status !== 'OK') throw new Error(d.message || 'Invalid key');
+      token = d.token;
+      localStorage.setItem('fc_admin_token', token);
+      document.getElementById('login-error').textContent = '';
+      bootApp();
+    } catch (err) {
+      document.getElementById('login-error').textContent = err.message;
+    }
+  });
+
+  document.getElementById('logout-btn').addEventListener('click', () => {
+    localStorage.removeItem('fc_admin_token');
+    token = null;
+    if (socket) { socket.disconnect(); socket = null; }
+    document.getElementById('app').classList.add('hidden');
+    document.getElementById('login-overlay').classList.remove('hidden');
+  });
+});
+
+function bootApp() {
+  document.getElementById('login-overlay').classList.add('hidden');
+  document.getElementById('app').classList.remove('hidden');
+  setupTabs();
+  loadStats();
+  connectSocket();
+}
+
+// ── Tabs ────────────────────────────────────────────────────────────────────
+function setupTabs() {
+  document.querySelectorAll('.nav-item').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+      btn.classList.add('active');
+      const tabId = 'tab-' + btn.dataset.tab;
+      document.getElementById(tabId).classList.add('active');
+      // Load data for the tab
+      switch (btn.dataset.tab) {
+        case 'overview':   loadStats(); break;
+        case 'templates':  loadTemplates(); break;
+        case 'orders':     loadOrders(); break;
+        case 'users':      loadUsers(); break;
+        case 'chat':       loadConversations(); break;
+      }
+    });
+  });
+}
+
+// ── API helpers ─────────────────────────────────────────────────────────────
+async function api(path, opts = {}) {
+  const res = await fetch(`${API}${path}`, {
+    ...opts,
+    headers: { 'Authorization': `Bearer ${token}`, ...(opts.headers || {}) }
+  });
+  return res.json();
+}
+
+function fmtDate(d) {
+  return new Date(d).toLocaleDateString('en-GB', { day:'2-digit', month:'short', year:'numeric' });
+}
+function fmtTime(d) {
+  return new Date(d).toLocaleTimeString('en-GB', { hour:'2-digit', minute:'2-digit' });
+}
+function fmtMoney(cents) { return '$' + (cents / 100).toFixed(2); }
+function statusBadge(s) {
+  const map = { PENDING:'badge-pending', PAID:'badge-paid', FAILED:'badge-failed', CANCELLED:'badge-failed', open:'badge-open', active:'badge-active', inactive:'badge-inactive', NEW:'badge-pending', IN_PROGRESS:'badge-open', COMPLETED:'badge-paid' };
+  return `<span class="badge ${map[s] || 'badge-pending'}">${s}</span>`;
+}
+function esc(s) { const d = document.createElement('div'); d.textContent = s || ''; return d.innerHTML; }
+
+// ── Overview ─────────────────────────────────────────────────────────────────
+async function loadStats() {
+  const d = await api('/api/admin/stats');
+  if (d.status !== 'OK') return;
+  document.getElementById('st-users').textContent = d.stats.users;
+  document.getElementById('st-orders').textContent = d.stats.orders;
+  document.getElementById('st-templates').textContent = d.stats.templates;
+  document.getElementById('st-revenue').textContent = fmtMoney(d.stats.revenueCents);
+
+  const tbody = document.getElementById('recent-orders-body');
+  if (!d.recentOrders.length) { tbody.innerHTML = '<tr class="loading-row"><td colspan="4">No orders yet</td></tr>'; return; }
+  tbody.innerHTML = d.recentOrders.map(o => `
+    <tr>
+      <td>${esc(o.user?.email || '—')}</td>
+      <td>${esc(o.items?.[0]?.template?.name || '—')}</td>
+      <td>${statusBadge(o.status)}</td>
+      <td>${fmtDate(o.createdAt)}</td>
+    </tr>`).join('');
+}
+
+// ── Templates ────────────────────────────────────────────────────────────────
+async function loadTemplates() {
+  const d = await api('/api/admin/templates');
+  allTemplates = d.templates || [];
+  const tbody = document.getElementById('templates-body');
+  if (!allTemplates.length) { tbody.innerHTML = '<tr class="loading-row"><td colspan="6">No templates yet</td></tr>'; return; }
+  tbody.innerHTML = allTemplates.map(t => `
+    <tr>
+      <td><strong>${esc(t.name)}</strong></td>
+      <td>${esc(t.category)}</td>
+      <td>${fmtMoney(t.priceCents)}</td>
+      <td>${t._count?.orderItems || 0}</td>
+      <td>${statusBadge(t.isActive ? 'active' : 'inactive')}</td>
+      <td class="table-actions">
+        <button class="btn-sm btn-edit" onclick="openEditTemplate('${t.id}')">Edit</button>
+        <button class="btn-sm btn-danger" onclick="deactivateTemplate('${t.id}', this)">${t.isActive ? 'Deactivate' : 'Activate'}</button>
+      </td>
+    </tr>`).join('');
+}
+
+document.getElementById('new-template-btn').addEventListener('click', () => {
+  clearTemplateForm();
+  document.getElementById('template-form-title').textContent = 'Add New Template';
+  document.getElementById('template-form').classList.remove('hidden');
+  document.getElementById('template-form').scrollIntoView({ behavior: 'smooth' });
+});
+document.getElementById('tpl-cancel-btn').addEventListener('click', () => {
+  document.getElementById('template-form').classList.add('hidden');
+});
+
+function clearTemplateForm() {
+  ['tpl-edit-id','tpl-name','tpl-slug','tpl-category','tpl-desc','tpl-preview-url'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('tpl-price').value = '';
+  document.getElementById('tpl-active').checked = true;
+  document.getElementById('tpl-image').value = '';
+}
+
+function openEditTemplate(id) {
+  const t = allTemplates.find(x => x.id === id);
+  if (!t) return;
+  document.getElementById('tpl-edit-id').value = t.id;
+  document.getElementById('tpl-name').value = t.name;
+  document.getElementById('tpl-slug').value = t.slug;
+  document.getElementById('tpl-category').value = t.category;
+  document.getElementById('tpl-desc').value = t.description;
+  document.getElementById('tpl-price').value = (t.priceCents / 100).toFixed(2);
+  document.getElementById('tpl-preview-url').value = t.previewUrl || '';
+  document.getElementById('tpl-active').checked = t.isActive;
+  document.getElementById('template-form-title').textContent = 'Edit Template';
+  document.getElementById('template-form').classList.remove('hidden');
+  document.getElementById('template-form').scrollIntoView({ behavior: 'smooth' });
+}
+
+document.getElementById('tpl-save-btn').addEventListener('click', async () => {
+  const id = document.getElementById('tpl-edit-id').value;
+  const name = document.getElementById('tpl-name').value.trim();
+  const slug = document.getElementById('tpl-slug').value.trim();
+  const category = document.getElementById('tpl-category').value.trim();
+  const description = document.getElementById('tpl-desc').value.trim();
+  const price = parseFloat(document.getElementById('tpl-price').value);
+  const previewUrl = document.getElementById('tpl-preview-url').value.trim();
+  const isActive = document.getElementById('tpl-active').checked;
+  const imageFile = document.getElementById('tpl-image').files[0];
+
+  if (!name || !slug || !category || !description || isNaN(price)) {
+    alert('Please fill all required fields.'); return;
+  }
+
+  const fd = new FormData();
+  fd.append('name', name); fd.append('slug', slug); fd.append('category', category);
+  fd.append('description', description); fd.append('priceCents', Math.round(price * 100));
+  fd.append('previewUrl', previewUrl); fd.append('isActive', isActive.toString());
+  if (imageFile) fd.append('image', imageFile);
+
+  const method = id ? 'PUT' : 'POST';
+  const path = id ? `/api/admin/templates/${id}` : '/api/admin/templates';
+  const d = await api(path, { method, body: fd });
+  if (d.status === 'OK') {
+    document.getElementById('template-form').classList.add('hidden');
+    loadTemplates();
+  } else { alert(d.message || 'Save failed'); }
+});
+
+async function deactivateTemplate(id, btn) {
+  const t = allTemplates.find(x => x.id === id);
+  if (!t) return;
+  const d = await api(`/api/admin/templates/${id}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ isActive: !t.isActive })
+  });
+  if (d.status === 'OK') loadTemplates();
+}
+
+// ── Orders ───────────────────────────────────────────────────────────────────
+async function loadOrders() {
+  const filter = document.getElementById('order-status-filter').value;
+  const path = filter ? `/api/admin/orders?status=${filter}` : '/api/admin/orders';
+  const d = await api(path);
+  const tbody = document.getElementById('orders-body');
+  if (!d.orders?.length) { tbody.innerHTML = '<tr class="loading-row"><td colspan="7">No orders found</td></tr>'; return; }
+  tbody.innerHTML = d.orders.map(o => `
+    <tr>
+      <td class="text-muted order-id-cell">#${o.id.slice(-6).toUpperCase()}</td>
+      <td>${esc(o.user?.email || '—')}</td>
+      <td>${esc(o.items?.[0]?.template?.name || '—')}</td>
+      <td>${fmtMoney(o.totalCents)}</td>
+      <td>
+        <select class="status-select" onchange="updateOrderStatus('${o.id}', this.value)"
+          data-current="${o.status}">
+          ${['PENDING','PAID','FAILED','CANCELLED'].map(s => `<option value="${s}" ${o.status===s?'selected':''}>${s}</option>`).join('')}
+        </select>
+      </td>
+      <td>${fmtDate(o.createdAt)}</td>
+      <td><button class="btn-sm btn-success" onclick="openAssign('${o.id}')">Assign</button></td>
+    </tr>`).join('');
+}
+
+document.getElementById('order-status-filter').addEventListener('change', loadOrders);
+
+async function updateOrderStatus(orderId, status) {
+  await api(`/api/admin/orders/${orderId}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ status })
+  });
+}
+
+async function openAssign(orderId) {
+  if (!allTemplates.length) await loadTemplates();
+  document.getElementById('assign-order-id').value = orderId;
+  const sel = document.getElementById('assign-template-select');
+  sel.innerHTML = allTemplates.map(t => `<option value="${t.id}">${esc(t.name)} — ${fmtMoney(t.priceCents)}</option>`).join('');
+  document.getElementById('assign-modal').classList.remove('hidden');
+  document.getElementById('assign-modal').style.display = 'flex';
+}
+document.getElementById('assign-cancel-btn').addEventListener('click', () => {
+  document.getElementById('assign-modal').classList.add('hidden');
+});
+document.getElementById('assign-confirm-btn').addEventListener('click', async () => {
+  const orderId = document.getElementById('assign-order-id').value;
+  const templateId = document.getElementById('assign-template-select').value;
+  const d = await api(`/api/admin/orders/${orderId}/assign`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ templateId })
+  });
+  if (d.status === 'OK') {
+    document.getElementById('assign-modal').classList.add('hidden');
+    alert('Template assigned successfully!');
+  } else { alert(d.message || 'Assignment failed'); }
+});
+
+// ── Users ────────────────────────────────────────────────────────────────────
+async function loadUsers() {
+  const d = await api('/api/admin/users');
+  const tbody = document.getElementById('users-body');
+  if (!d.users?.length) { tbody.innerHTML = '<tr class="loading-row"><td colspan="6">No users yet</td></tr>'; return; }
+  tbody.innerHTML = d.users.map(u => `
+    <tr>
+      <td>${esc(u.email)}</td>
+      <td>${esc(u.profile?.fullName || '—')}</td>
+      <td>${esc(u.profile?.companyName || '—')}</td>
+      <td>${u._count?.orders || 0}</td>
+      <td>${u._count?.projects || 0}</td>
+      <td>${fmtDate(u.createdAt)}</td>
+    </tr>`).join('');
+}
+
+// ── Chat (REST + Socket.io) ───────────────────────────────────────────────────
+async function loadConversations() {
+  const d = await api('/api/admin/chats');
+  const list = document.getElementById('chat-list');
+  const empty = document.getElementById('chat-list-empty');
+  // Remove previous conv items (keep header + empty msg)
+  list.querySelectorAll('.conv-item').forEach(el => el.remove());
+
+  if (!d.conversations?.length) {
+    empty.style.display = 'block'; return;
+  }
+  empty.style.display = 'none';
+  d.conversations.forEach(conv => {
+    const item = document.createElement('div');
+    item.className = 'conv-item' + (conv.userId === activeUserId ? ' active' : '');
+    item.dataset.userId = conv.userId;
+    const lastMsg = conv.messages?.[0];
+    const unread = unreadCounts[conv.userId] || 0;
+    item.innerHTML = `
+      ${unread ? '<span class="conv-unread"></span>' : ''}
+      <div class="conv-email">${esc(conv.user?.email || conv.userId)}</div>
+      <div class="conv-preview">${esc(lastMsg?.content || 'No messages yet')}</div>
+      <div class="conv-time">${lastMsg ? fmtDate(lastMsg.createdAt) : ''}</div>`;
+    item.addEventListener('click', () => openConversation(conv.userId, conv.user?.email));
+    list.appendChild(item);
+  });
+}
+
+async function openConversation(userId, email) {
+  activeUserId = userId;
+  unreadCounts[userId] = 0;
+  updateChatBadge();
+
+  // Update UI state
+  document.getElementById('chat-no-selection').classList.add('hidden');
+  const win = document.getElementById('chat-active-window');
+  win.classList.remove('hidden');
+  win.style.display = 'flex';
+  document.getElementById('chat-user-email').textContent = email || userId;
+  const dot = document.getElementById('chat-user-dot');
+  dot.className = 'status-dot' + (onlineUsers.has(userId) ? ' online' : '');
+
+  // Mark active in list
+  document.querySelectorAll('.conv-item').forEach(el => {
+    el.classList.toggle('active', el.dataset.userId === userId);
+  });
+
+  // Load history
+  const d = await api(`/api/admin/chats/${userId}`);
+  const msgs = d.conversation?.messages || [];
+  renderMessages(msgs);
+
+  // Join the room via socket
+  if (socket) socket.emit('admin:join-conversation', userId);
+  if (socket) socket.emit('admin:mark-read', { userId });
+}
+
+function renderMessages(msgs) {
+  const area = document.getElementById('chat-messages');
+  area.innerHTML = '';
+  msgs.forEach(m => appendMessage(m.content, m.fromAdmin, m.createdAt));
+  area.scrollTop = area.scrollHeight;
+}
+
+function appendMessage(content, fromAdmin, createdAt) {
+  const area = document.getElementById('chat-messages');
+  const wrap = document.createElement('div');
+  wrap.className = 'msg-wrap' + (fromAdmin ? ' from-admin' : '');
+  wrap.innerHTML = `
+    <div class="msg-bubble ${fromAdmin ? 'from-admin' : 'from-user'}">${esc(content)}</div>
+    <div class="msg-meta">${fromAdmin ? 'Support Team · ' : ''}${fmtTime(createdAt || new Date())}</div>`;
+  area.appendChild(wrap);
+  area.scrollTop = area.scrollHeight;
+}
+
+document.getElementById('chat-send-btn').addEventListener('click', sendAdminMessage);
+document.getElementById('chat-input').addEventListener('keydown', e => { if (e.key === 'Enter') sendAdminMessage(); });
+
+function sendAdminMessage() {
+  const input = document.getElementById('chat-input');
+  const content = input.value.trim();
+  if (!content || !activeUserId || !socket) return;
+  socket.emit('admin:send-message', { userId: activeUserId, content });
+  appendMessage(content, true, new Date());
+  input.value = '';
+}
+
+// ── Socket.io ────────────────────────────────────────────────────────────────
+function connectSocket() {
+  socket = io(`${API}/chat`, {
+    auth: { adminKey: token },
+    transports: ['websocket', 'polling']
+  });
+
+  socket.on('connect', () => console.log('Admin socket connected'));
+  socket.on('connect_error', err => console.warn('Socket error:', err.message));
+
+  socket.on('user:connected', ({ userId }) => {
+    onlineUsers.add(userId);
+    if (activeUserId === userId) {
+      document.getElementById('chat-user-dot').className = 'status-dot online';
+    }
+  });
+
+  socket.on('user:disconnected', ({ userId }) => {
+    onlineUsers.delete(userId);
+    if (activeUserId === userId) {
+      document.getElementById('chat-user-dot').className = 'status-dot';
+    }
+  });
+
+  socket.on('message:from-user', ({ userId, content, createdAt }) => {
+    // Show in chat if this conversation is open
+    if (activeUserId === userId) {
+      appendMessage(content, false, createdAt);
+    } else {
+      // Increment unread badge
+      unreadCounts[userId] = (unreadCounts[userId] || 0) + 1;
+      updateChatBadge();
+      // Refresh conversation list to show the latest preview
+      if (document.getElementById('tab-chat').classList.contains('active')) {
+        loadConversations();
+      }
+    }
+  });
+
+  socket.on('message:sent', () => {
+    // Confirm sent — message already appended optimistically
+  });
+}
+
+function updateChatBadge() {
+  const total = Object.values(unreadCounts).reduce((a, b) => a + b, 0);
+  const badge = document.getElementById('chat-nav-badge');
+  if (total > 0) { badge.textContent = total; badge.classList.add('show'); }
+  else { badge.classList.remove('show'); }
+}
+</script>
+</body>
+</html>

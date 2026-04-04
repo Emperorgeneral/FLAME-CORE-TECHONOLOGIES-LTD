@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Dashboard | Flame Core Technologies Ltd</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="assets/css/styles.css?v=20260402j" />
+    <link rel="icon" type="image/x-icon" href="favicon.ico" />
+    <link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="favicon-16x16.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png" />
+    <link rel="manifest" href="site.webmanifest" />
+    <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+    <style>
+      .dash-wrap { padding: 7.5rem 1.5rem 3rem; min-height: 100vh; }
+      .dash-grid { max-width: 1160px; margin: 0 auto; display: grid; grid-template-columns: 1.4fr .9fr; gap: 1.2rem; }
+      .panel { background: #0a0f1e; border: 1px solid rgba(255,255,255,.08); border-radius: 14px; padding: 1.25rem; }
+      .panel h2 { font-size: 1.05rem; margin-bottom: 1rem; }
+      .stats { display:grid; grid-template-columns: repeat(3, 1fr); gap:.9rem; margin-bottom: 1.1rem; }
+      .stat { background:#050811; border:1px solid rgba(255,255,255,.08); border-radius:10px; padding: .9rem; }
+      .stat .k { color:#94a3b8; font-size:.75rem; }
+      .stat .v { font-size:1.35rem; font-weight:700; margin-top:.35rem; }
+      .orders table { width:100%; border-collapse: collapse; }
+      .orders th, .orders td { text-align:left; padding:.6rem .5rem; border-bottom:1px solid rgba(255,255,255,.08); font-size:.86rem; }
+      .orders th { color:#94a3b8; font-size:.75rem; text-transform: uppercase; letter-spacing: .05em; }
+      .badge { display:inline-block; padding:2px 8px; border-radius:99px; font-size:.72rem; font-weight:700; }
+      .pending { background:rgba(245,158,11,.15); color:#f59e0b; }
+      .paid { background:rgba(34,197,94,.15); color:#22c55e; }
+      .failed { background:rgba(239,68,68,.15); color:#ef4444; }
+      .projects .proj { background:#050811; border:1px solid rgba(255,255,255,.08); border-radius:10px; padding:.85rem .9rem; margin-bottom:.7rem; }
+      .projects .proj:last-child { margin-bottom:0; }
+      .muted { color:#94a3b8; font-size:.84rem; }
+
+      /* Chat */
+      .chat { display:flex; flex-direction:column; height:560px; }
+      .chat-head { display:flex; align-items:center; justify-content:space-between; margin-bottom:.8rem; }
+      .dot { width:8px; height:8px; border-radius:50%; background:#94a3b8; }
+      .dot.online { background:#22c55e; }
+      .msgs { flex:1; overflow-y:auto; background:#050811; border:1px solid rgba(255,255,255,.08); border-radius:10px; padding:.8rem; display:flex; flex-direction:column; gap:.6rem; }
+      .msg { max-width:74%; border-radius:10px; padding:.55rem .75rem; font-size:.88rem; line-height:1.45; }
+      .msg.user { align-self:flex-end; background:#3b82f6; color:#fff; border-bottom-right-radius:4px; }
+      .msg.admin { align-self:flex-start; background:#111c32; color:#e2e8f0; border-bottom-left-radius:4px; }
+      .msg-meta { margin-top:.2rem; color:#94a3b8; font-size:.7rem; }
+      .composer { display:flex; gap:.6rem; margin-top:.8rem; }
+      .composer input { flex:1; background:#050811; border:1px solid rgba(255,255,255,.1); border-radius:8px; padding:.7rem .9rem; color:#e2e8f0; outline:none; }
+      .composer input:focus { border-color:#3b82f6; }
+      .composer button { border:0; border-radius:8px; padding:.65rem 1rem; background:#3b82f6; color:#fff; cursor:pointer; }
+      .top-actions { max-width:1160px; margin:0 auto 1rem; display:flex; align-items:center; justify-content:space-between; }
+      .top-actions .welcome { font-size:1.05rem; font-weight:600; }
+      .logout { background:none; border:1px solid rgba(255,255,255,.2); color:#94a3b8; padding:.5rem .9rem; border-radius:8px; cursor:pointer; }
+      .orders-subtitle { font-size: .96rem; margin: 0 0 .7rem; }
+      .projects-section { margin-top: 1rem; }
+      .projects-subtitle { font-size: .96rem; margin: 0 0 .7rem; }
+      .chat-title { margin: 0; }
+      @media (max-width: 980px) {
+        .dash-grid { grid-template-columns: 1fr; }
+        .chat { height:460px; }
+      }
+    </style>
+  </head>
+  <body class="page-dashboard">
+    <header class="site-header">
+      <div class="container nav-wrap">
+        <a class="logo" href="index.html" aria-label="Flame Core Technologies Ltd home">
+          <img class="logo-mark" src="android-chrome-192x192.png" alt="FC" />
+          <span>Flame Core <span class="logo-sub">Technologies Ltd</span></span>
+        </a>
+        <button class="menu-btn" data-menu-btn aria-expanded="false" aria-label="Toggle menu">☰</button>
+        <nav class="nav-links" data-nav>
+          <a href="index.html">Home</a>
+          <a href="services.html">Services</a>
+          <a href="products.html">Products</a>
+          <a href="about.html">About</a>
+          <a href="contact.html">Contact</a>
+        </nav>
+        <a class="btn btn-primary desktop-cta" href="products.html">Buy Template</a>
+      </div>
+    </header>
+
+    <main class="dash-wrap">
+      <div class="top-actions">
+        <div class="welcome" id="welcome">Welcome</div>
+        <button class="logout" id="logout">Logout</button>
+      </div>
+
+      <div class="dash-grid">
+        <section class="panel">
+          <h2>Account Overview</h2>
+          <div class="stats">
+            <div class="stat"><div class="k">Total Orders</div><div class="v" id="st-orders">0</div></div>
+            <div class="stat"><div class="k">Spent</div><div class="v" id="st-spent">$0.00</div></div>
+            <div class="stat"><div class="k">Projects</div><div class="v" id="st-projects">0</div></div>
+          </div>
+
+          <div class="orders">
+            <h2 class="orders-subtitle">My Orders</h2>
+            <table>
+              <thead><tr><th>Order</th><th>Template</th><th>Amount</th><th>Status</th><th>Date</th></tr></thead>
+              <tbody id="orders-body"><tr><td colspan="5" class="muted">Loading…</td></tr></tbody>
+            </table>
+          </div>
+
+          <div class="projects projects-section">
+            <h2 class="projects-subtitle">My Projects</h2>
+            <div id="projects-list" class="muted">Loading projects…</div>
+          </div>
+        </section>
+
+        <section class="panel chat">
+          <div class="chat-head">
+            <h2 class="chat-title">Support Chat</h2>
+            <span id="support-dot" class="dot"></span>
+          </div>
+          <div class="msgs" id="msgs"></div>
+          <div class="composer">
+            <input id="msg-input" type="text" placeholder="Type your message to support…" />
+            <button id="send-btn">Send</button>
+          </div>
+        </section>
+      </div>
+    </main>
+
+    <script src="assets/js/main.js?v=20260402j"></script>
+    <script>
+    (function () {
+      const API = 'http://localhost:5000';
+      const token = localStorage.getItem('flamecore_token');
+      const user = JSON.parse(localStorage.getItem('flamecore_user') || '{}');
+      const qs = new URLSearchParams(window.location.search);
+      let socket = null;
+
+      if (!token) {
+        window.location.href = 'login.html?redirect=dashboard.html';
+        return;
+      }
+
+      document.getElementById('welcome').textContent = `Welcome, ${user.profile?.fullName || user.email || 'Client'}`;
+      document.getElementById('logout').addEventListener('click', () => {
+        localStorage.removeItem('flamecore_token');
+        localStorage.removeItem('flamecore_user');
+        window.location.href = 'index.html';
+      });
+
+      if (qs.get('payment') === 'success') {
+        alert('Payment completed successfully! Your order is now being processed.');
+      }
+
+      function esc(s) {
+        const d = document.createElement('div');
+        d.textContent = s || '';
+        return d.innerHTML;
+      }
+      function fmtDate(v) { return new Date(v).toLocaleDateString('en-GB', { day:'2-digit', month:'short', year:'numeric' }); }
+      function fmtMoney(c) { return '$' + (c / 100).toFixed(2); }
+      function badge(s) {
+        const c = s === 'PAID' ? 'paid' : (s === 'FAILED' || s === 'CANCELLED') ? 'failed' : 'pending';
+        return `<span class="badge ${c}">${s}</span>`;
+      }
+
+      async function api(path, opts = {}) {
+        const res = await fetch(`${API}${path}`, {
+          ...opts,
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            ...(opts.headers || {})
+          }
+        });
+        return res.json();
+      }
+
+      async function loadSummary() {
+        const [ordersResp, dashResp] = await Promise.all([
+          api('/api/orders/mine'),
+          api('/api/dashboard/summary')
+        ]);
+
+        const orders = ordersResp.orders || [];
+        const tbody = document.getElementById('orders-body');
+        if (!orders.length) {
+          tbody.innerHTML = '<tr><td colspan="5" class="muted">No orders yet. Buy your first template from the products page.</td></tr>';
+        } else {
+          tbody.innerHTML = orders.map(o => `
+            <tr>
+              <td>#${o.id.slice(-6).toUpperCase()}</td>
+              <td>${esc(o.items?.[0]?.template?.name || '—')}</td>
+              <td>${fmtMoney(o.totalCents)}</td>
+              <td>${badge(o.status)}</td>
+              <td>${fmtDate(o.createdAt)}</td>
+            </tr>
+          `).join('');
+        }
+
+        const spent = orders.filter(o => o.status === 'PAID').reduce((sum, o) => sum + o.totalCents, 0);
+        document.getElementById('st-orders').textContent = orders.length;
+        document.getElementById('st-spent').textContent = fmtMoney(spent);
+        document.getElementById('st-projects').textContent = dashResp.summary?.projectCount || 0;
+
+        await loadProjects();
+      }
+
+      async function loadProjects() {
+        const d = await api('/api/dashboard/projects');
+        const wrap = document.getElementById('projects-list');
+        const projects = d.projects || [];
+        if (!projects.length) {
+          wrap.innerHTML = '<p class="muted">No projects assigned yet.</p>';
+          return;
+        }
+        wrap.innerHTML = projects.map(p => `
+          <div class="proj">
+            <strong>${esc(p.title)}</strong>
+            <div class="muted" style="margin-top:.2rem">Template: ${esc(p.template?.name || '—')} • Status: ${esc(p.status)}</div>
+          </div>`).join('');
+      }
+
+      // Chat
+      const msgs = document.getElementById('msgs');
+      const input = document.getElementById('msg-input');
+      const sendBtn = document.getElementById('send-btn');
+
+      function addMsg(content, fromAdmin, createdAt) {
+        const wrap = document.createElement('div');
+        wrap.innerHTML = `
+          <div class="msg ${fromAdmin ? 'admin' : 'user'}">${esc(content)}</div>
+          <div class="msg-meta">${fromAdmin ? 'Support Team' : 'You'} • ${new Date(createdAt || Date.now()).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</div>
+        `;
+        msgs.appendChild(wrap);
+        msgs.scrollTop = msgs.scrollHeight;
+      }
+
+      async function loadChatHistory() {
+        const d = await api('/api/chat/history');
+        msgs.innerHTML = '';
+        const list = d.conversation?.messages || [];
+        if (!list.length) {
+          msgs.innerHTML = '<p class="muted">No messages yet. Start a conversation with support.</p>';
+          return;
+        }
+        list.forEach(m => addMsg(m.content, m.fromAdmin, m.createdAt));
+      }
+
+      function connectChat() {
+        socket = io(`${API}/chat`, {
+          auth: { token },
+          transports: ['websocket', 'polling']
+        });
+
+        socket.on('connect', () => {
+          document.getElementById('support-dot').classList.add('online');
+        });
+        socket.on('disconnect', () => {
+          document.getElementById('support-dot').classList.remove('online');
+        });
+
+        socket.on('message:new', (msg) => {
+          addMsg(msg.content, true, msg.createdAt);
+        });
+      }
+
+      function sendMessage() {
+        const content = input.value.trim();
+        if (!content || !socket) return;
+        socket.emit('user:send-message', { content });
+        addMsg(content, false, new Date());
+        input.value = '';
+      }
+
+      sendBtn.addEventListener('click', sendMessage);
+      input.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') sendMessage();
+      });
+
+      loadSummary();
+      loadChatHistory();
+      connectChat();
+    })();
+    </script>
+  </body>
+</html>

@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Contact | Flame Core Technologies Ltd</title>
+    <meta
+      name="description"
+      content="Contact Flame Core Technologies Ltd to discuss your web development, automation, AI, or custom software project."
+    />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=Space+Grotesk:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="assets/css/styles.css?v=20260402j" />
+    <link rel="icon" type="image/x-icon" href="favicon.ico" />
+    <link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="favicon-16x16.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png" />
+    <link rel="manifest" href="site.webmanifest" />
+  </head>
+  <body class="page-contact">
+    <header class="site-header">
+      <div class="container nav-wrap">
+        <a class="logo" href="index.html" aria-label="Flame Core Technologies Ltd home">
+          <img class="logo-mark" src="android-chrome-192x192.png" alt="FC" />
+          <span>
+            Flame Core
+            <span class="logo-sub">Technologies Ltd</span>
+          </span>
+        </a>
+        <button class="menu-btn" data-menu-btn aria-expanded="false" aria-label="Toggle menu">☰</button>
+        <nav class="nav-links" data-nav>
+          <a href="index.html">Home</a>
+          <a href="services.html">Services</a>
+          <a href="products.html">Products</a>
+          <a href="about.html">About</a>
+          <a href="contact.html">Contact</a>
+          <a href="login.html">Sign In</a>
+          <a href="signup.html">Sign Up</a>
+        </nav>
+        <div class="header-auth" data-auth-ui>
+          <a class="btn btn-secondary" data-auth="guest" href="login.html">Sign In</a>
+          <a class="btn btn-primary" data-auth="guest" href="signup.html">Sign Up</a>
+          <button class="btn btn-primary" data-auth="user" data-auth-logout type="button">Logout</button>
+        </div>
+      </div>
+    </header>
+
+    <main>
+      <section class="page-hero">
+        <div class="container reveal">
+          <span class="section-kicker">Contact</span>
+          <h1 class="section-title section-title-xl">
+            Let Us Build Your Next System
+          </h1>
+          <p>
+            Share your goals, current constraints, and timeline. We will propose a clear technical
+            path that aligns with your business objectives.
+          </p>
+        </div>
+      </section>
+
+      <section class="section section-tight-top">
+        <div class="container contact-grid">
+          <article class="card reveal">
+            <h2 class="section-title section-title-contact">Get in Touch</h2>
+            <div class="info-tile">
+              <strong>Email</strong>
+              <p><a href="mailto:hello@flamecoretechnologies.com">hello@flamecoretechnologies.com</a></p>
+            </div>
+            <div class="info-tile">
+              <strong>Phone / WhatsApp</strong>
+              <p><a href="tel:+2340000000000">+234 000 000 0000</a></p>
+            </div>
+            <div class="info-tile">
+              <strong>Response Window</strong>
+              <p>We respond to project requests within 24 hours on business days.</p>
+            </div>
+            <div class="info-tile">
+              <strong>Best For</strong>
+              <p>Web platforms, automation systems, AI tools, and custom software projects.</p>
+            </div>
+          </article>
+
+          <article class="card reveal">
+            <h2 class="section-title section-title-contact">Project Brief</h2>
+            <form action="mailto:hello@flamecoretechnologies.com" method="post" enctype="text/plain">
+              <label>
+                Full Name
+                <input type="text" name="name" placeholder="Your full name" required />
+              </label>
+              <label>
+                Company Name
+                <input type="text" name="company" placeholder="Your company" />
+              </label>
+              <label>
+                Email Address
+                <input type="email" name="email" placeholder="you@company.com" required />
+              </label>
+              <label>
+                Project Type
+                <select name="project_type" required>
+                  <option value="">Select an option</option>
+                  <option>Web Development</option>
+                  <option>Automation / Telegram Bot</option>
+                  <option>AI Tooling</option>
+                  <option>Custom Tech Solution</option>
+                </select>
+              </label>
+              <label>
+                Project Details
+                <textarea name="details" placeholder="Tell us what you want to build" required></textarea>
+              </label>
+              <button class="btn btn-primary" type="submit">Start a Project</button>
+            </form>
+          </article>
+        </div>
+      </section>
+    </main>
+
+    <footer class="footer">
+      <div class="container footer-wrap">
+        <p>© <span data-year></span> Flame Core Technologies Ltd. All rights reserved.</p>
+        <a class="btn btn-secondary" href="services.html">View Services</a>
+      </div>
+    </footer>
+
+    <script src="assets/js/main.js?v=20260402j"></script>
+  </body>
+</html>

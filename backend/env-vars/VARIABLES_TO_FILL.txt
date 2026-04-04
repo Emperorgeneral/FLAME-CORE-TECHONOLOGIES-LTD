@@ -1,0 +1,57 @@
+FLAME CORE BACKEND - PRODUCTION VARIABLE CHECKLIST
+
+Copy values into backend/.env before deployment.
+
+REQUIRED (must be set)
+- DATABASE_URL
+  Example:
+  postgresql://flame_user:your_password@your-db-host:5432/flamecore_prod?schema=public&sslmode=require
+
+- JWT_SECRET
+  Use a long random secret (at least 32+ chars).
+
+- ADMIN_SECRET_KEY
+  Anonymous admin key for /api/admin login.
+  You can rotate keys with comma-separated values:
+  key_one,key_two,key_three
+
+RECOMMENDED FOR PRODUCTION
+- NODE_ENV
+  production
+
+- FRONTEND_URLS
+  Comma-separated frontend allowlist for CORS.
+  Example:
+  https://flamecoretechltd.com,https://www.flamecoretechltd.com
+
+- PORT
+  Usually 5000 (or set by host platform)
+
+- JWT_EXPIRES_IN
+  Example: 7d
+
+- JWT_ISSUER
+  Example: flamecore-backend
+
+- JWT_AUDIENCE
+  Example: flamecore-clients
+
+- TRUST_PROXY
+  1 when behind reverse proxy/load balancer
+
+PAYMENTS (set for live Stripe checkout)
+- STRIPE_SECRET_KEY
+  Use your live key in production, usually starts with sk_live_
+
+- STRIPE_WEBHOOK_SECRET
+  Webhook signing secret from Stripe dashboard, usually starts with whsec_
+
+GOOGLE LOGIN (set for Google sign-in)
+- GOOGLE_CLIENT_ID
+  OAuth Web Client ID from Google Cloud Console
+  Example: xxxxxxxx-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx.apps.googleusercontent.com
+
+NOTES
+- This backend is configured for remote PostgreSQL in production.
+- Do not use file:./dev.db in production.
+- Keep .env out of git.

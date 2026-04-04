@@ -1,0 +1,134 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String      @id @default(cuid())
+  customerNumber Int       @unique @default(autoincrement())
+  email        String      @unique
+  passwordHash String
+  role         String      @default("customer")
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+
+  profile      UserProfile?
+  orders       Order[]
+  projects     UserProject[]
+  conversation ChatConversation?
+}
+
+model UserProfile {
+  id          String   @id @default(cuid())
+  userId      String   @unique
+  fullName    String?
+  companyName String?
+  phone       String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model WebsiteTemplate {
+  id          String      @id @default(cuid())
+  slug        String      @unique
+  name        String
+  description String
+  priceCents  Int
+  category    String
+  previewUrl  String?
+  isActive    Boolean     @default(true)
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  orderItems  OrderItem[]
+  projects    UserProject[]
+}
+
+model Order {
+  id          String      @id @default(cuid())
+  orderNumber Int         @unique @default(autoincrement())
+  userId       String
+  status      String      @default("PENDING")
+  totalCents  Int
+  currency    String      @default("USD")
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  items       OrderItem[]
+  payment     Payment?
+}
+
+model OrderItem {
+  id          String   @id @default(cuid())
+  orderId     String
+  templateId  String
+  quantity    Int      @default(1)
+  unitCents   Int
+
+  order       Order            @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  template    WebsiteTemplate  @relation(fields: [templateId], references: [id])
+}
+
+model Payment {
+  id              String        @id @default(cuid())
+  orderId          String        @unique
+  stripeSessionId String?       @unique
+  status           String        @default("PENDING")
+  amountCents      Int
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+}
+
+model UserProject {
+  id          String       @id @default(cuid())
+  userId      String
+  templateId  String
+  orderId     String?
+  status      String        @default("NEW")
+  title       String
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  user        User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  template    WebsiteTemplate @relation(fields: [templateId], references: [id])
+  customizations ProjectCustomization[]
+}
+
+model ProjectCustomization {
+  id          String   @id @default(cuid())
+  projectId   String
+  key         String
+  value       String
+  createdAt   DateTime @default(now())
+
+  project UserProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
+}
+
+model ChatConversation {
+  id        String        @id @default(cuid())
+  userId    String        @unique
+  status    String        @default("open")
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+
+  user      User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  messages  ChatMessage[]
+}
+
+model ChatMessage {
+  id             String           @id @default(cuid())
+  conversationId String
+  fromAdmin      Boolean          @default(false)
+  content        String
+  readAt         DateTime?
+  createdAt      DateTime         @default(now())
+
+  conversation   ChatConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+}

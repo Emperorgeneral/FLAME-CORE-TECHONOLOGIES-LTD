@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Sign In | Flame Core Technologies Ltd</title>
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="assets/css/styles.css?v=20260402j" />
+    <link rel="icon" type="image/x-icon" href="favicon.ico" />
+    <link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="favicon-16x16.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png" />
+    <link rel="manifest" href="site.webmanifest" />
+    <style>
+      .auth-wrap { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 2rem; }
+      .auth-card { background: #0a0f1e; border: 1px solid rgba(255,255,255,.08); border-radius: 16px; padding: 2.5rem; width: 100%; max-width: 420px; display: flex; flex-direction: column; align-items: center; }
+      .auth-card .auth-logo { text-align: center; margin-bottom: 1.75rem; display: flex; align-items: center; justify-content: center; }
+      .auth-card .auth-logo .logo-mark { width: 64px; height: 64px; border-radius: 14px; margin: 0 auto; }
+      .auth-card h1 { font-size: 1.5rem; font-weight: 700; margin-bottom: .35rem; text-align: center; width: 100%; }
+      .auth-card .auth-sub { color: #94a3b8; text-align: center; margin-bottom: 1.75rem; font-size: .9rem; width: 100%; }
+      .auth-form-wrapper { width: 100%; }
+      .form-field { display: flex; flex-direction: column; gap: .4rem; margin-bottom: 1rem; }
+      .form-field label { font-size: .8rem; color: #94a3b8; }
+      .form-field input {
+        background: #050811; border: 1px solid rgba(255,255,255,.1);
+        border-radius: 8px; padding: .75rem 1rem; color: #e2e8f0; font-size: .95rem;
+        outline: none; transition: border-color .15s;
+      }
+      .form-field input:focus { border-color: #FF6B35; }
+      .auth-btn { width: 100%; margin-top: .5rem; padding: .85rem; font-size: 1rem; }
+      .auth-link { text-align: center; margin-top: 1.25rem; font-size: .88rem; color: #94a3b8; }
+      .auth-link a { color: #FF6B35; text-decoration: none; }
+      .auth-link a:hover { text-decoration: underline; }
+      .auth-error { background: rgba(239,68,68,.1); border: 1px solid rgba(239,68,68,.25); color: #fca5a5; border-radius: 8px; padding: .75rem 1rem; font-size: .88rem; margin-bottom: 1rem; display: none; }
+      .auth-error.show { display: block; }
+      .auth-divider { display: flex; align-items: center; gap: .7rem; margin: 1rem 0 .9rem; color: #94a3b8; font-size: .8rem; }
+      .auth-divider::before, .auth-divider::after { content: ""; height: 1px; background: rgba(255,255,255,.12); flex: 1; }
+      #google-signin-wrap { display: flex; justify-content: center; min-height: 44px; }
+      #google-signin-wrap.hidden { display: none; }
+      .google-oauth-fallback {
+        margin-top: .1rem;
+        width: 100%;
+      }
+      .google-oauth-btn {
+        width: 100%;
+        height: 44px;
+        border: 1px solid #d1d5db;
+        border-radius: 999px;
+        background: #fff;
+        color: #1f2937;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: .6rem;
+        font-size: .92rem;
+        font-weight: 600;
+        cursor: pointer;
+      }
+      .google-oauth-btn:hover { background: #f8fafc; }
+      .google-oauth-btn svg { width: 18px; height: 18px; }
+    </style>
+  </head>
+  <body class="page-login">
+    <header class="site-header">
+      <div class="container nav-wrap">
+        <a class="logo" href="index.html" aria-label="Flame Core Technologies Ltd home">
+          <img class="logo-mark" src="android-chrome-192x192.png" alt="FC" />
+          <span>Flame Core <span class="logo-sub">Technologies Ltd</span></span>
+        </a>
+        <button class="menu-btn" data-menu-btn aria-expanded="false" aria-label="Toggle menu">☰</button>
+        <nav class="nav-links" data-nav>
+          <a href="index.html">Home</a>
+          <a href="services.html">Services</a>
+          <a href="products.html">Products</a>
+          <a href="about.html">About</a>
+          <a href="contact.html">Contact</a>
+        </nav>
+        <div class="header-auth" data-auth-ui>
+          <a class="btn btn-secondary" data-auth="guest" href="login.html">Sign In</a>
+          <a class="btn btn-primary" data-auth="guest" href="signup.html">Sign Up</a>
+          <button class="btn btn-primary" data-auth="user" data-auth-logout type="button">Logout</button>
+        </div>
+      </div>
+    </header>
+
+    <main class="auth-wrap">
+      <div class="auth-card">
+        <div class="auth-logo"><img class="logo-mark auth-logo-img" src="android-chrome-192x192.png" alt="Flame Core" /></div>
+        <h1>Welcome back</h1>
+        <p class="auth-sub">Sign in to manage your projects and purchases</p>
+
+        <div class="auth-error" id="login-error"></div>
+
+        <form id="login-form" novalidate class="auth-form-wrapper">
+          <div class="form-field">
+            <label for="email">Email address</label>
+            <input id="email" type="email" placeholder="you@example.com" autocomplete="email" required />
+          </div>
+          <div class="form-field">
+            <label for="password">Password</label>
+            <input id="password" type="password" placeholder="••••••••" autocomplete="current-password" required />
+          </div>
+          <button type="submit" class="btn btn-primary auth-btn" id="login-btn">Sign In</button>
+        </form>
+
+        <div class="auth-divider">or continue with</div>
+        <div id="google-signin-wrap" class="hidden">
+          <div id="google-signin-button"></div>
+        </div>
+        <div class="google-oauth-fallback" id="google-fallback-wrap">
+          <button class="google-oauth-btn" id="google-fallback-btn" type="button" aria-label="Continue with Google">
+            <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+              <path fill="#4285F4" d="M23.49 12.27c0-.79-.07-1.55-.2-2.27H12v4.3h6.44a5.5 5.5 0 0 1-2.39 3.61v2.99h3.86c2.26-2.08 3.58-5.15 3.58-8.63z"/>
+              <path fill="#34A853" d="M12 24c3.24 0 5.96-1.07 7.95-2.9l-3.86-2.99c-1.07.72-2.45 1.15-4.09 1.15-3.15 0-5.82-2.12-6.78-4.97H1.23v3.12A12 12 0 0 0 12 24z"/>
+              <path fill="#FBBC05" d="M5.22 14.29A7.2 7.2 0 0 1 4.84 12c0-.79.14-1.56.38-2.29V6.59H1.23A12 12 0 0 0 0 12c0 1.94.46 3.77 1.23 5.41l3.99-3.12z"/>
+              <path fill="#EA4335" d="M12 4.77c1.77 0 3.35.61 4.6 1.8l3.45-3.45C17.95 1.17 15.24 0 12 0A12 12 0 0 0 1.23 6.59l3.99 3.12c.96-2.85 3.63-4.94 6.78-4.94z"/>
+            </svg>
+            Continue with Google
+          </button>
+        </div>
+
+        <p class="auth-link">Don't have an account? <a href="signup.html">Sign up free</a></p>
+      </div>
+    </main>
+
+    <script src="assets/js/main.js?v=20260402j"></script>
+    <script>
+    (function () {
+      const API = 'http://localhost:5000';
+      const params = new URLSearchParams(window.location.search);
+
+      // If already logged in, redirect
+      if (localStorage.getItem('flamecore_token')) {
+        window.location.href = params.get('redirect') || 'dashboard.html';
+      }
+
+      const form   = document.getElementById('login-form');
+      const errEl  = document.getElementById('login-error');
+      const btn    = document.getElementById('login-btn');
+      const googleWrap = document.getElementById('google-signin-wrap');
+      const googleFallbackWrap = document.getElementById('google-fallback-wrap');
+      const googleFallbackBtn = document.getElementById('google-fallback-btn');
+
+      const handleGoogleCredential = async (credential) => {
+        try {
+          const res = await fetch(`${API}/api/auth/google`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ credential })
+          });
+          const data = await res.json();
+          if (data.status !== 'OK') {
+            throw new Error(data.message || 'Google sign-in failed');
+          }
+          localStorage.setItem('flamecore_token', data.token);
+          localStorage.setItem('flamecore_user', JSON.stringify(data.user));
+          const redirect = params.get('redirect') || 'dashboard.html';
+          window.location.href = redirect;
+        } catch (err) {
+          errEl.textContent = err.message || 'Google sign-in failed. Please try again.';
+          errEl.classList.add('show');
+        }
+      };
+
+      const initGoogleSignIn = async () => {
+        try {
+          const res = await fetch(`${API}/api/auth/google/config`);
+          const cfg = await res.json();
+          if (!cfg.enabled || !cfg.clientId || !window.google?.accounts?.id) {
+            googleWrap.classList.add('hidden');
+            googleFallbackWrap.style.display = 'block';
+            return;
+          }
+
+          googleWrap.classList.remove('hidden');
+          googleFallbackWrap.style.display = 'none';
+          window.google.accounts.id.initialize({
+            client_id: cfg.clientId,
+            callback: (response) => handleGoogleCredential(response.credential)
+          });
+          window.google.accounts.id.renderButton(
+            document.getElementById('google-signin-button'),
+            { theme: 'outline', size: 'large', shape: 'pill', text: 'signin_with', width: 280 }
+          );
+        } catch {
+          googleWrap.classList.add('hidden');
+          googleFallbackWrap.style.display = 'block';
+        }
+      };
+
+      googleFallbackBtn.addEventListener('click', () => {
+        errEl.textContent = 'Google OAuth will work immediately after GOOGLE_CLIENT_ID is set in backend .env.';
+        errEl.classList.add('show');
+      });
+
+      form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        errEl.classList.remove('show');
+        const email    = document.getElementById('email').value.trim();
+        const password = document.getElementById('password').value;
+        if (!email || !password) { errEl.textContent = 'Email and password are required.'; errEl.classList.add('show'); return; }
+
+        btn.disabled = true;
+        btn.textContent = 'Signing in…';
+
+        try {
+          const res = await fetch(`${API}/api/auth/login`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email, password })
+          });
+          const data = await res.json();
+
+          if (data.status === 'OK') {
+            localStorage.setItem('flamecore_token', data.token);
+            localStorage.setItem('flamecore_user', JSON.stringify(data.user));
+            // Check for post-login redirect (e.g. from buy button)
+            const redirect = params.get('redirect') || 'dashboard.html';
+            window.location.href = redirect;
+          } else {
+            errEl.textContent = data.message || 'Invalid credentials. Please try again.';
+            errEl.classList.add('show');
+          }
+        } catch {
+          errEl.textContent = 'Could not connect to the server. Please try again later.';
+          errEl.classList.add('show');
+        } finally {
+          btn.disabled = false;
+          btn.textContent = 'Sign In';
+        }
+      });
+
+      initGoogleSignIn();
+    })();
+    </script>
+  </body>
+</html>
