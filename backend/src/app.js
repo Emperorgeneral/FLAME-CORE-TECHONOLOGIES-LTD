@@ -97,7 +97,7 @@ app.use("/api/chat", chatRoutes);
 
 // SPA catch-all: serve index.html for any non-API route to support client-side routing
 app.get(/^(?!\/api).*$/, (_req, res) => {
-  res.sendFile(path.join(__dirname, "../../frontend/index.html"));
+  res.sendFile(path.join(frontendRoot, "index.html"));
 });
 
 app.use(notFoundHandler);
