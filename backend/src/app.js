@@ -18,6 +18,7 @@ import { adminRoutes } from "./modules/admin/routes.js";
 import { chatRoutes } from "./modules/chat/routes.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const frontendRoot = path.join(__dirname, "../..");
 
 export const app = express();
 
@@ -44,12 +45,42 @@ app.use(cookieParser());
 app.use(morgan("dev"));
 app.use("/api/payments/webhook", express.raw({ type: "application/json" }));
 app.use(express.json({ limit: "1mb" }));
+app.use("/assets", express.static(path.join(frontendRoot, "assets")));
+app.use("/admin", express.static(path.join(frontendRoot, "admin")));
 app.use("/uploads", express.static(path.join(__dirname, "../../uploads")));
 
 // Serve frontend static files (HTML, CSS, JS) from the repo root
 app.use(express.static(path.join(__dirname, "../../")));
 
 app.use("/api", apiLimiter);
+
+app.get("/", (_req, res) => {
+  res.sendFile(path.join(frontendRoot, "index.html"));
+});
+
+app.get("/:page", (req, res, next) => {
+  if (req.params.page.startsWith("api")) {
+    return next();
+  }
+
+  const allowedPages = new Set([
+    "about",
+    "contact",
+    "dashboard",
+    "index",
+    "login",
+    "products",
+    "services",
+    "signup",
+    "start-project"
+  ]);
+
+  if (!allowedPages.has(req.params.page)) {
+    return next();
+  }
+
+  return res.sendFile(path.join(frontendRoot, `${req.params.page}.html`));
+});
 
 app.get("/api/health", (_req, res) => {
   res.json({ status: "OK", service: "flamecore-backend" });
