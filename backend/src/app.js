@@ -45,6 +45,10 @@ app.use(morgan("dev"));
 app.use("/api/payments/webhook", express.raw({ type: "application/json" }));
 app.use(express.json({ limit: "1mb" }));
 app.use("/uploads", express.static(path.join(__dirname, "../../uploads")));
+
+// Serve frontend static files (HTML, CSS, JS) from the repo root
+app.use(express.static(path.join(__dirname, "../../")));
+
 app.use("/api", apiLimiter);
 
 app.get("/api/health", (_req, res) => {
@@ -59,6 +63,11 @@ app.use("/api/dashboard", dashboardRoutes);
 app.use("/api/payments", paymentRoutes);
 app.use("/api/admin", adminLimiter, adminRoutes);
 app.use("/api/chat", chatRoutes);
+
+// SPA catch-all: serve index.html for any non-API route to support client-side routing
+app.get(/^(?!\/api).*$/, (_req, res) => {
+  res.sendFile(path.join(__dirname, "../../index.html"));
+});
 
 app.use(notFoundHandler);
 app.use(errorHandler);
