@@ -3,7 +3,6 @@ import cors from "cors";
 import helmet from "helmet";
 import cookieParser from "cookie-parser";
 import morgan from "morgan";
-import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
 import { env } from "./config/env.js";
@@ -20,18 +19,12 @@ import { chatRoutes } from "./modules/chat/routes.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
-const frontendRootCandidates = [
-  path.join(__dirname, "../.."),
-  path.join(__dirname, "../../.."),
-  process.cwd(),
-  path.join(process.cwd(), "..")
-];
-
-const frontendRoot =
-  frontendRootCandidates.find((candidate) => fs.existsSync(path.join(candidate, "index.html"))) ??
-  path.join(__dirname, "../..");
-
+const frontendRoot = path.join(__dirname, "../../");
 const frontendIndexPath = path.join(frontendRoot, "index.html");
+
+console.log("[startup] __dirname:", __dirname);
+console.log("[startup] frontendRoot:", frontendRoot);
+console.log("[startup] frontendIndexPath:", frontendIndexPath);
 
 export const app = express();
 
