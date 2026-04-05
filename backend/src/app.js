@@ -3,6 +3,7 @@ import cors from "cors";
 import helmet from "helmet";
 import cookieParser from "cookie-parser";
 import morgan from "morgan";
+import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
 import { env } from "./config/env.js";
@@ -18,7 +19,19 @@ import { adminRoutes } from "./modules/admin/routes.js";
 import { chatRoutes } from "./modules/chat/routes.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const frontendRoot = path.join(__dirname, "../..");
+
+const frontendRootCandidates = [
+  path.join(__dirname, "../.."),
+  path.join(__dirname, "../../.."),
+  process.cwd(),
+  path.join(process.cwd(), "..")
+];
+
+const frontendRoot =
+  frontendRootCandidates.find((candidate) => fs.existsSync(path.join(candidate, "index.html"))) ??
+  path.join(__dirname, "../..");
+
+const frontendIndexPath = path.join(frontendRoot, "index.html");
 
 export const app = express();
 
@@ -50,12 +63,12 @@ app.use("/admin", express.static(path.join(frontendRoot, "admin")));
 app.use("/uploads", express.static(path.join(__dirname, "../../uploads")));
 
 // Serve frontend static files (HTML, CSS, JS) from the repo root
-app.use(express.static(path.join(__dirname, "../../")));
+app.use(express.static(frontendRoot));
 
 app.use("/api", apiLimiter);
 
 app.get("/", (_req, res) => {
-  res.sendFile(path.join(frontendRoot, "index.html"));
+  res.sendFile(frontendIndexPath);
 });
 
 app.get("/:page", (req, res, next) => {
@@ -97,7 +110,7 @@ app.use("/api/chat", chatRoutes);
 
 // SPA catch-all: serve index.html for any non-API route to support client-side routing
 app.get(/^(?!\/api).*$/, (_req, res) => {
-  res.sendFile(path.join(frontendRoot, "index.html"));
+  res.sendFile(frontendIndexPath);
 });
 
 app.use(notFoundHandler);
