@@ -1,0 +1,85 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" fill="none">
+  <defs>
+    <linearGradient id="flame" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#FFD700"/>
+      <stop offset="35%" stop-color="#FF6B00"/>
+      <stop offset="70%" stop-color="#FF3D00"/>
+      <stop offset="100%" stop-color="#CC1800"/>
+    </linearGradient>
+    <linearGradient id="innerFlame" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#FFE566"/>
+      <stop offset="40%" stop-color="#FF8C33"/>
+      <stop offset="100%" stop-color="#FF5522"/>
+    </linearGradient>
+    <linearGradient id="circuit" x1="0" y1="1" x2="0" y2="0">
+      <stop offset="0%" stop-color="#00D4FF"/>
+      <stop offset="100%" stop-color="#0088FF"/>
+    </linearGradient>
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="3" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+    <filter id="bigGlow">
+      <feGaussianBlur stdDeviation="8" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+    <radialGradient id="baseGlow" cx="50%" cy="100%" r="50%">
+      <stop offset="0%" stop-color="#00AAFF" stop-opacity="0.9"/>
+      <stop offset="40%" stop-color="#0066FF" stop-opacity="0.4"/>
+      <stop offset="100%" stop-color="#0033FF" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  
+  <!-- Base blue glow -->
+  <ellipse cx="256" cy="470" rx="140" ry="30" fill="url(#baseGlow)" filter="url(#bigGlow)"/>
+  
+  <!-- Main flame outer shape -->
+  <path d="M256 60 Q230 100 210 140 Q180 200 170 260 Q165 300 175 340 Q185 380 210 410 Q230 435 256 450 Q282 435 302 410 Q327 380 337 340 Q347 300 342 260 Q332 200 302 140 Q282 100 256 60 Z" fill="url(#flame)"/>
+  
+  <!-- Inner flame left -->
+  <path d="M256 100 Q240 130 225 160 Q200 200 190 250 Q185 290 195 330 Q205 365 225 385 Q240 400 256 410 Z" fill="url(#innerFlame)"/>
+  
+  <!-- Inner flame right -->
+  <path d="M256 100 Q272 130 287 160 Q312 200 322 250 Q327 290 317 330 Q307 365 287 385 Q272 400 256 410 Z" fill="url(#innerFlame)"/>
+  
+  <!-- Circuit traces -->
+  <g filter="url(#glow)">
+    <!-- Center circuit -->
+    <path d="M256 440 L256 320 L230 280 L230 240" stroke="url(#circuit)" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+    <circle cx="230" cy="240" r="8" fill="#00DDFF"/>
+    
+    <!-- Left circuit -->
+    <path d="M256 440 L256 300 L210 260 L210 210" stroke="url(#circuit)" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+    <circle cx="210" cy="210" r="7" fill="#00DDFF"/>
+    
+    <!-- Right circuit -->
+    <path d="M256 440 L256 310 L290 270 L290 220" stroke="url(#circuit)" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+    <circle cx="290" cy="220" r="7" fill="#00DDFF"/>
+    
+    <!-- Far left circuit -->
+    <path d="M256 440 L256 280 L190 240 L190 180" stroke="url(#circuit)" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" opacity="0.8"/>
+    <circle cx="190" cy="180" r="6" fill="#00DDFF"/>
+    
+    <!-- Far right circuit -->
+    <path d="M256 440 L256 290 L310 250 L310 190" stroke="url(#circuit)" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" opacity="0.8"/>
+    <circle cx="310" cy="190" r="6" fill="#00DDFF"/>
+  </g>
+  
+  <!-- Small sparkle particles -->
+  <circle cx="180" cy="120" r="2" fill="#FFD700" opacity="0.8"/>
+  <circle cx="340" cy="140" r="2.5" fill="#FFD700" opacity="0.7"/>
+  <circle cx="320" cy="90" r="1.5" fill="#FFFFFF" opacity="0.9"/>
+  <circle cx="190" cy="170" r="1.5" fill="#FFD700" opacity="0.8"/>
+  <circle cx="350" cy="200" r="2" fill="#00D4FF" opacity="0.6"/>
+  <circle cx="160" cy="240" r="1.5" fill="#00D4FF" opacity="0.5"/>
+  
+  <!-- Bright center glow at base -->
+  <circle cx="256" cy="450" r="12" fill="#00D4FF" filter="url(#glow)"/>
+  <circle cx="256" cy="450" r="6" fill="#FFFFFF"/>
+</svg>

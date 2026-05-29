@@ -1,0 +1,46 @@
+{
+  "name": "flame-core-backend",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Flame Core Hosting Platform Backend",
+  "main": "dist/index.js",
+  "scripts": {
+    "dev": "node --watch src/index.ts",
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "db:init": "node dist/db/init.js",
+    "db:reset": "node dist/db/reset.js"
+  },
+  "keywords": ["hosting", "deployment", "paas"],
+  "author": "Flame Core LTD",
+  "license": "MIT",
+  "dependencies": {
+    "fastify": "^5.2.0",
+    "@fastify/cors": "^10.0.0",
+    "@fastify/jwt": "^8.1.0",
+    "@fastify/bcrypt": "^1.0.0",
+    "@fastify/cookie": "^11.0.0",
+    "@fastify/rate-limit": "^10.0.0",
+    "@fastify/helmet": "^13.0.0",
+    "pino": "^9.6.0",
+    "pino-http": "^10.4.0",
+    "pg": "^8.13.0",
+    "redis": "^4.7.0",
+    "bullmq": "^5.19.0",
+    "nodemailer": "^6.9.0",
+    "axios": "^1.7.0",
+    "stripe": "^16.12.0",
+    "dotenv": "^16.4.5",
+    "simple-git": "^3.25.0",
+    "zod": "^3.23.0",
+    "uuid": "^10.0.0",
+    "@aws-sdk/client-s3": "^3.600.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.19.17",
+    "@types/pg": "^8.11.6",
+    "@types/uuid": "^10.0.2",
+    "typescript": "^5.9.3",
+    "tsx": "^4.19.0"
+  }
+}

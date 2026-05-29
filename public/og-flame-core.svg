@@ -1,0 +1,42 @@
+<svg width="1200" height="630" viewBox="0 0 1200 630" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1200" y2="630" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#050407"/>
+      <stop offset="1" stop-color="#120A08"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(820 140) rotate(146.418) scale(500 391.717)">
+      <stop stop-color="#FF4D1F" stop-opacity="0.35"/>
+      <stop offset="1" stop-color="#FF4D1F" stop-opacity="0"/>
+    </radialGradient>
+    <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+      <path d="M40 0H0V40" stroke="#FF4D1F" stroke-opacity="0.12"/>
+    </pattern>
+    <filter id="blur" x="0" y="0" width="1200" height="630" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+      <feGaussianBlur stdDeviation="40"/>
+    </filter>
+  </defs>
+
+  <rect width="1200" height="630" fill="url(#bg)"/>
+  <rect width="1200" height="630" fill="url(#grid)"/>
+  <rect width="1200" height="630" fill="url(#glow)"/>
+
+  <g filter="url(#blur)" opacity="0.35">
+    <circle cx="930" cy="120" r="90" fill="#FF4D1F"/>
+    <circle cx="260" cy="560" r="120" fill="#FF8A4D"/>
+  </g>
+
+  <rect x="72" y="72" width="1056" height="486" rx="28" fill="#0A0709" fill-opacity="0.82" stroke="#FF4D1F" stroke-opacity="0.24"/>
+
+  <rect x="112" y="112" width="56" height="56" rx="16" fill="#FF4D1F"/>
+  <path d="M140 124C140 124 126 138 126 152C126 159 130 163 135 163C135 157 138 154 140 154C142 154 145 157 145 163C150 163 154 159 154 152C154 138 140 124 140 124Z" fill="#050407"/>
+
+  <text x="190" y="148" fill="#F2EDE8" font-family="Space Grotesk, Arial, sans-serif" font-size="38" font-weight="700">flame<tspan fill="#FF4D1F">core</tspan></text>
+  <text x="112" y="248" fill="#F2EDE8" font-family="Space Grotesk, Arial, sans-serif" font-size="84" font-weight="700">Developer Cloud</text>
+  <text x="112" y="330" fill="#FF8A4D" font-family="Space Grotesk, Arial, sans-serif" font-size="84" font-weight="700">Built in Africa.</text>
+  <text x="112" y="392" fill="#A79E96" font-family="Space Grotesk, Arial, sans-serif" font-size="32" font-weight="500">GitHub to deploy • Docker hosting • Logs • Domains • Auto SSL</text>
+
+  <rect x="112" y="450" width="298" height="54" rx="27" fill="#FF4D1F"/>
+  <text x="148" y="485" fill="#050407" font-family="JetBrains Mono, monospace" font-size="22" font-weight="700">https://flamecore.app</text>
+
+  <text x="920" y="500" fill="#6C625B" font-family="JetBrains Mono, monospace" font-size="18" font-weight="600">ship code → not infrastructure</text>
+</svg>

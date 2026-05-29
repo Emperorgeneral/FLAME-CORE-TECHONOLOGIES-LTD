@@ -1,0 +1,58 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: flamecore-postgres
+    environment:
+      POSTGRES_DB: flamecore
+      POSTGRES_USER: flame
+      POSTGRES_PASSWORD: password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U flame"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: flamecore-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  api:
+    build: .
+    container_name: flamecore-api
+    environment:
+      DATABASE_URL: postgresql://flame:password@postgres:5432/flamecore
+      REDIS_URL: redis://redis:6379
+      API_PORT: 3001
+      API_HOST: 0.0.0.0
+      NODE_ENV: development
+      JWT_SECRET: dev-secret-key-change-in-production
+    ports:
+      - "3001:3001"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - .:/app
+      - /var/deployments/flame:/var/deployments/flame
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+  redis_data:
