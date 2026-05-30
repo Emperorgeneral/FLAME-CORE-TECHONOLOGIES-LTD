@@ -223,7 +223,7 @@ export async function initializeDatabase() {
       -- State
       status                 VARCHAR(16) NOT NULL DEFAULT 'inactive'
                              CHECK (status IN ('inactive','provisioning','deploying','running','sleeping','stopped','failed','crashed','deleted')),
-      -- Ref prefix for internal variable linking: ${{ref_prefix.VAR}}
+      -- Ref prefix for internal variable linking: \${{ref_prefix.VAR}}
       ref_prefix             VARCHAR(64),
       -- Metadata
       created_at             TIMESTAMPTZ NOT NULL DEFAULT now(),
