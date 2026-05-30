@@ -49,7 +49,8 @@ services:
       redis:
         condition: service_healthy
     volumes:
-      - .:/app
+      # Removed development volume mount - use image-built dist/ for production
+      # - .:/app
       - /var/deployments/flame:/var/deployments/flame
     restart: unless-stopped
 
