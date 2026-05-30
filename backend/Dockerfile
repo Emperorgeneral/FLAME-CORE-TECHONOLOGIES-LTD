@@ -15,10 +15,13 @@ RUN npm install
 COPY . .
 
 # Compile TypeScript
-RUN npm run build
+RUN npm run build && ls -la dist/ && echo "Build complete"
 
 # Expose API port
 EXPOSE 3001
 
+# Verify build succeeded
+RUN test -f dist/index.js || (echo "ERROR: dist/index.js not found!" && ls -la dist/ && exit 1)
+
 # Start the server
-CMD ["npm", "start"]
+CMD ["node", "dist/index.js"]
