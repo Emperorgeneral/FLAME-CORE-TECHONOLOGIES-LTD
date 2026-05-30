@@ -43,8 +43,10 @@ export async function registerDeploymentRoutes(fastify: FastifyInstance) {
           deployment_id: deployment.id,
           project_id: projectId,
           team_id: teamId,
+          source: 'github',
           repo_url: project.repo_url,
           branch: deployment.branch,
+          commit_hash: deployment.commit_hash,
           region: deployment.region,
         });
 
@@ -105,8 +107,10 @@ export async function registerDeploymentRoutes(fastify: FastifyInstance) {
           deployment_id: deployment.id,
           project_id: svc.project_id,
           team_id: teamId,
+          source: 'github',
           repo_url: svc.repo_url ?? '',
           branch: deployment.branch,
+          commit_hash: deployment.commit_hash,
           region: svc.region ?? 'los1',
         });
 

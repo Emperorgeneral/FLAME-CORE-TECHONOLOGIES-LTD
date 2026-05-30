@@ -104,8 +104,10 @@ export async function registerWebhookRoutes(fastify: FastifyInstance) {
           deployment_id: deployment.id,
           project_id: project.id,
           team_id: project.team_id,
+          source: 'github',
           repo_url: repoUrl ?? `https://github.com/${repoFullName}.git`,
           branch,
+          commit_hash: commit,
           region: 'los1',
         });
 
@@ -177,8 +179,10 @@ export async function registerWebhookRoutes(fastify: FastifyInstance) {
             deployment_id: deployment.id,
             project_id: project.id,
             team_id: project.team_id,
+            source: 'github',
             repo_url: repoUrl ?? `https://github.com/${repoFullName}.git`,
             branch: prBranch,
+            commit_hash: commit,
             region: 'los1',
           });
 
