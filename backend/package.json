@@ -37,10 +37,10 @@
     "bcrypt": "^5.1.1"
   },
   "devDependencies": {
-    "@types/node": "^22.19.17",
+    "@types/node": "^20.10.0",
     "@types/pg": "^8.11.6",
-    "@types/uuid": "^10.0.2",
-    "typescript": "^5.9.3",
-    "tsx": "^4.19.0"
+    "@types/uuid": "^9.0.7",
+    "typescript": "^5.3.3",
+    "tsx": "^4.7.0"
   }
 }
