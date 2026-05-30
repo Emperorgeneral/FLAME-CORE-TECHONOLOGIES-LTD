@@ -15,7 +15,7 @@ export async function registerAdminRoutes(fastify: FastifyInstance) {
       const userId = (request.user as any).sub;
       const r = await query(`SELECT role FROM users WHERE id = $1`, [userId]);
       if (!r.rows[0] || r.rows[0].role !== 'admin') {
-        throw fastify.httpErrors?.forbidden?.('admin only') ?? new Error('forbidden');
+        return reply.status(403).send({ error: 'admin only' });
       }
     }
   });

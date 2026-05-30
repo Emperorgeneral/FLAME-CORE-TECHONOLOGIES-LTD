@@ -123,12 +123,12 @@ async function bootstrap() {
       keyGenerator: (req) => req.ip,
       errorResponseBuilder: (_req, context) => ({
         error: 'Too many requests',
-        retryAfter: Math.round(context.after / 1000),
+        retryAfter: Math.round((context.after as number) / 1000),
       }),
     });
 
     // Stricter auth rate limits (applied per-route in auth.ts where needed)
-    app.setRateLimit = app.setRateLimit || {}; // placeholder for future per-route
+    // TODO: implement per-route rate limits
 
     await app.register(fastifyJwt, { secret: config.jwt.secret, sign: { expiresIn: config.jwt.expiresIn } });
     await app.register(fastifyCookie);

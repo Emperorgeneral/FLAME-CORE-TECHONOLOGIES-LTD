@@ -142,7 +142,8 @@ export async function registerServiceRoutes(fastify: FastifyInstance) {
       if (!await isMember(teamId, (request.user as any).sub)) return reply.status(403).send({ error: 'forbidden' });
       const svc = await serviceManager.get(serviceId);
       if (!svc || svc.team_id !== teamId) return reply.status(404).send({ error: 'not found' });
-      return reply.send(serviceDefinitionRegistry.forService(svc));
+      const def = serviceDefinitionRegistry.get(svc.category);
+      return reply.send(def);
     }
   );
 
@@ -177,9 +178,10 @@ export async function registerServiceRoutes(fastify: FastifyInstance) {
       if (!await isMember(teamId, (request.user as any).sub)) return reply.status(403).send({ error: 'forbidden' });
       const svc = await serviceManager.get(serviceId);
       if (!svc || svc.team_id !== teamId) return reply.status(404).send({ error: 'not found' });
-      const definition = serviceDefinitionRegistry.forService(svc);
+      const definition = serviceDefinitionRegistry.get(svc.category);
+      if (!definition) return reply.status(400).send({ error: 'unknown service type' });
       const baseKeys = new Set(['name','icon','memory_mb','cpu_millicores','status']);
-      const allowedKeys = new Set([...definition.settings.map((s) => s.key), ...baseKeys]);
+      const allowedKeys = new Set([...definition.settings.map((s: any) => s.key), ...baseKeys]);
       const invalid = Object.keys(request.body as any).filter((key) => !allowedKeys.has(key));
       if (invalid.length) return reply.status(400).send({ error: 'settings_not_allowed_for_service_type', invalid_settings: invalid });
       const updated = await serviceManager.update(serviceId, request.body as any);
