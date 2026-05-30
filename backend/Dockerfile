@@ -14,14 +14,17 @@ RUN npm install
 # Copy source code
 COPY . .
 
-# Compile TypeScript
-RUN npm run build && ls -la dist/ && echo "Build complete"
+# Verify source copied
+RUN echo "Source files:" && ls -la src/ && echo "Package.json:" && head -5 package.json
+
+# Compile TypeScript  
+RUN npm run build && echo "Build complete" && ls -la
+
+# Verify build output
+RUN test -f dist/index.js || (echo "ERROR: dist/index.js not found!" && ls -la dist/ 2>&1 && exit 1) && echo "dist/index.js exists!"
 
 # Expose API port
 EXPOSE 3001
-
-# Verify build succeeded
-RUN test -f dist/index.js || (echo "ERROR: dist/index.js not found!" && ls -la dist/ && exit 1)
 
 # Start the server
 CMD ["node", "dist/index.js"]
