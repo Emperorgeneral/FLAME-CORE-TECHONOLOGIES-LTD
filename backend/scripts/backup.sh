@@ -41,12 +41,22 @@ WEEKLY_FILE="${BACKUP_DIR}/weekly/${POSTGRES_DB}-${WEEK}.sql.gz"
 
 # ─── PostgreSQL dump ───────────────────────────────────────────────────
 log "Dumping PostgreSQL database: ${POSTGRES_DB}"
-if pg_dump -U "${POSTGRES_USER}" -d "${POSTGRES_DB}" -F c -Z 9 -f "${DAILY_FILE}.tmp"; then
-  mv "${DAILY_FILE}.tmp" "${DAILY_FILE}"
-  SIZE=$(du -h "${DAILY_FILE}" | cut -f1)
-  log "✓ Database backup complete: ${DAILY_FILE} (${SIZE})"
+cd "$(dirname "$0")/.." || exit 1
+
+# Use docker-compose exec to backup from container
+if docker-compose exec -T flamecore-postgres pg_dump -U "${POSTGRES_USER}" -d "${POSTGRES_DB}" -F c -Z 9 | tee "${DAILY_FILE}.tmp" > /dev/null; then
+  if [ -s "${DAILY_FILE}.tmp" ]; then
+    mv "${DAILY_FILE}.tmp" "${DAILY_FILE}"
+    SIZE=$(du -h "${DAILY_FILE}" | cut -f1)
+    log "✓ Database backup complete: ${DAILY_FILE} (${SIZE})"
+  else
+    log "✗ Database backup resulted in empty file"
+    rm "${DAILY_FILE}.tmp"
+    exit 1
+  fi
 else
   log "✗ Database backup FAILED"
+  rm -f "${DAILY_FILE}.tmp"
   exit 1
 fi
 
