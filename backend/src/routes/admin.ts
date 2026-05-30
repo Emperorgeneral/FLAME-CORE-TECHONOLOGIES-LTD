@@ -9,18 +9,14 @@ import { logger } from '../utils/logger.js';
  * accounting currency) but optionally surface a localised total too.
  */
 export async function registerAdminRoutes(fastify: FastifyInstance) {
-  fastify.addHook('onRequest', async (request) => {
-    if (request.url.startsWith('/api/admin')) {
-      await request.jwtVerify();
-      const userId = (request.user as any).sub;
-      const r = await query(`SELECT role FROM users WHERE id = $1`, [userId]);
-      if (!r.rows[0] || r.rows[0].role !== 'admin') {
-        return reply.status(403).send({ error: 'admin only' });
-      }
+  // Admin-only routes: use per-route hooks
+  fastify.get('/api/admin/stats', async (request, reply) => {
+    await request.jwtVerify();
+    const userId = (request.user as any).sub;
+    const r = await query(`SELECT role FROM users WHERE id = $1`, [userId]);
+    if (!r.rows[0] || r.rows[0].role !== 'admin') {
+      return reply.status(403).send({ error: 'admin only' });
     }
-  });
-
-  fastify.get('/api/admin/stats', async (_req, reply) => {
     const [users, teams, projects, deps, mrr, regions] = await Promise.all([
       query(`SELECT COUNT(*)::int AS n FROM users WHERE status = 'active'`),
       query(`SELECT COUNT(*)::int AS n FROM teams`),

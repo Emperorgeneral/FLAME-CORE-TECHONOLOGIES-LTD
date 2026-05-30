@@ -123,7 +123,7 @@ async function bootstrap() {
       keyGenerator: (req) => req.ip,
       errorResponseBuilder: (_req, context) => ({
         error: 'Too many requests',
-        retryAfter: Math.round((context.after as number) / 1000),
+        retryAfter: Math.round(Number(context.after) / 1000),
       }),
     });
 
