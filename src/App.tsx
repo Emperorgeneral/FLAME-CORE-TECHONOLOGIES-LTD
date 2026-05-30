@@ -1272,17 +1272,15 @@ export default function App() {
     </main>
   )}
 
-      {/* ADMIN SUPER CONSOLE */}
-      {view === "admin" && authed && (
-        <main className="min-h-[calc(100vh-92px)]">
-          <AdminSuperConsole onToast={setToast} adminTab={adminTab} setAdminTab={setAdminTab} />
-        </main>
-      )}
+  {/* ADMIN SUPER CONSOLE */}
+  {view === "admin" && authed && (
+    <main className="min-h-[calc(100vh-92px)]">
+      <AdminSuperConsole onToast={setToast} adminTab={adminTab} setAdminTab={setAdminTab} />
     </main>
   )}
 
-  /* ─── Admin Super Console ───────────────────────────────────────────── */
-      {showDeployModal && (
+  {/* ─── Admin Super Console ───────────────────────────────────────────── */}
+  {showDeployModal && (
         <NewProjectPalette
           onClose={() => { setShowDeployModal(false); setNewProjectStep("root"); setNewProjectSearch("") }}
           onDeploy={handleDeploy}
