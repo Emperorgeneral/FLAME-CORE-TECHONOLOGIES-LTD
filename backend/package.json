@@ -33,7 +33,7 @@
     "simple-git": "3.20.0",
     "zod": "3.22.4",
     "uuid": "9.0.1",
-    "@aws-sdk/client-s3": "3.500.0",
+    "@aws-sdk/client-s3": "3.400.0",
     "bcrypt": "5.1.1"
   },
   "devDependencies": {
