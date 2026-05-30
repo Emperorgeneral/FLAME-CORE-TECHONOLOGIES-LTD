@@ -1267,7 +1267,6 @@ export default function App() {
               onLogout={() => { setAuthed(false); setView("public") }}
             />
           )}
-        </div>
       )}
     </main>
   )}
