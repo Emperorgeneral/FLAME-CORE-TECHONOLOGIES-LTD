@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
-import { getHostingConsoleUrl } from '../../../src/utils/env-config';
+
+const getHostingConsoleUrl = () => 'https://flamecoretechltd.com/hosting';
 
 export default function App() {
   const services = [
