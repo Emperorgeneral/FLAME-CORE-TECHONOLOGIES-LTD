@@ -6,6 +6,7 @@ import { HouseDashboard } from "@/features/console/HouseDashboard"
 import { HouseView } from "@/features/console/HouseView"
 import { RoomPanel } from "@/features/console/RoomPanel"
 import { useConsole } from "@/features/console/useConsole"
+import type { NewProjectStep } from "@/features/console/useConsole"
 
 type Region = {
   code: string
@@ -99,6 +100,13 @@ export default function App() {
   const [heroVisible, setHeroVisible] = useState(false)
   const heroRef = useRef<HTMLDivElement>(null)
   const [adminTab, setAdminTab] = useState<"overview" | "deployments" | "users" | "domains" | "billing" | "security" | "storage" | "settings">("overview")
+  const [showDeployModal, setShowDeployModal] = useState(false)
+  const [deployRepo, setDeployRepo] = useState("")
+  const [deployRegion, setDeployRegion] = useState("los1")
+  const [newProjectStep, setNewProjectStep] = useState<NewProjectStep>("root")
+  const [newProjectSearch, setNewProjectSearch] = useState("")
+  const [selectedDeployment, setSelectedDeployment] = useState<string | null>(null)
+  const [logs, setLogs] = useState<LogLine[]>([])
 
   const currencies: Currency[] = [
     { code: "USD", symbol: "$", rate: 1, locale: "en-US" },
