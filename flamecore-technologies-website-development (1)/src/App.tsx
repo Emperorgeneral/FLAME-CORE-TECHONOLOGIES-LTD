@@ -83,15 +83,14 @@ export default function App() {
     { label: 'Services', href: '#services' },
     { label: 'About', href: '#about' },
     { label: 'Why Us', href: '#why-us' },
-    { label: 'Hosting', href: '#hosting' },
     { label: 'Contact', href: '#contact' },
+    { label: 'Hosting', href: getHostingConsoleUrl(), external: true },
   ];
 
   const mobilePages = [
     { id: 'home', label: 'Home' },
     { id: 'about', label: 'About' },
     { id: 'services', label: 'Services' },
-    { id: 'hosting', label: 'Hosting' },
     { id: 'why', label: 'Why Us' },
     { id: 'contact', label: 'Contact' },
   ] as const;
@@ -101,11 +100,11 @@ export default function App() {
     return window.innerWidth >= 1024;
   });
 
-  const [mobilePage, setMobilePage] = useState<'home' | 'about' | 'services' | 'hosting' | 'why' | 'contact'>(() => {
+  const [mobilePage, setMobilePage] = useState<'home' | 'about' | 'services' | 'why' | 'contact'>(() => {
     if (typeof window === 'undefined') return 'home';
     const hash = window.location.hash.replace('#m-', '');
-    return ['home', 'about', 'services', 'hosting', 'why', 'contact'].includes(hash)
-      ? (hash as 'home' | 'about' | 'services' | 'hosting' | 'why' | 'contact')
+    return ['home', 'about', 'services', 'why', 'contact'].includes(hash)
+      ? (hash as 'home' | 'about' | 'services' | 'why' | 'contact')
       : 'home';
   });
 
@@ -128,8 +127,8 @@ export default function App() {
   useEffect(() => {
     const onHashChange = () => {
       const hash = window.location.hash.replace('#m-', '');
-      if (['home', 'about', 'services', 'why', 'contact', 'hosting'].includes(hash)) {
-        setMobilePage(hash as 'home' | 'about' | 'services' | 'why' | 'contact' | 'hosting');
+      if (['home', 'about', 'services', 'why', 'contact'].includes(hash)) {
+        setMobilePage(hash as 'home' | 'about' | 'services' | 'why' | 'contact');
       }
     };
 
@@ -138,7 +137,7 @@ export default function App() {
     return () => window.removeEventListener('hashchange', onHashChange);
   }, []);
 
-  const goToMobilePage = (page: 'home' | 'about' | 'services' | 'hosting' | 'why' | 'contact') => {
+  const goToMobilePage = (page: 'home' | 'about' | 'services' | 'why' | 'contact') => {
     if (!isDesktop && typeof window !== 'undefined') {
       setMobilePage(page);
       setMenuOpen(false);
@@ -196,6 +195,8 @@ export default function App() {
                 <a
                   key={item.label}
                   href={item.href}
+                  target={item.external ? '_blank' : undefined}
+                  rel={item.external ? 'noreferrer' : undefined}
                   className="px-[18px] h-[40px] inline-flex items-center rounded-[12px] text-[14px] font-[600] text-white/70 hover:text-white hover:bg-white/[0.05] transition-all"
                 >
                   {item.label}
@@ -854,96 +855,6 @@ export default function App() {
                 </p>
               </div>
             </form>
-          </div>
-        </div>
-      </section>
-
-      {/* Hosting */}
-      <section id="hosting" className={`${isDesktop || mobilePage === 'hosting' ? 'block' : 'hidden'} py-[96px] md:py-[128px] border-t border-white/[0.06] relative overflow-hidden`}>
-        <div className="absolute inset-0 -z-10 bg-[radial-gradient(900px_500px_at_25%_50%,#FF5A1F18,transparent_60%),radial-gradient(800px_600px_at_95%_-10%,#7C3AED14,transparent_60%)]" />
-        <div className="mx-auto max-w-[1280px] px-6 sm:px-8">
-          <div className="grid lg:grid-cols-2 gap-16 items-center">
-            <div>
-              <div className="inline-flex items-center gap-2 rounded-full border border-white/[0.08] bg-white/[0.03] px-3 py-1.5">
-                <span className="h-[6px] w-[6px] rounded-full bg-[#FF5A1F]" />
-                <span className="text-[11px] font-[700] tracking-[0.16em] uppercase text-white/80">Web Hosting Solutions</span>
-              </div>
-              <h2 className="display mt-4 text-[40px] md:text-[52px] font-[700] leading-[1.02] tracking-[-0.03em]">
-                Fast, secure hosting for your
-                <span className="block text-white/65">digital presence</span>
-              </h2>
-              <p className="mt-5 text-[17px] leading-[1.75] text-white/72 max-w-[560px]">
-                Our hosting platform provides reliable infrastructure, automatic backups, SSL security, domain management, and 24/7 support to keep your websites and applications running smoothly.
-              </p>
-
-              <div className="mt-8 space-y-4">
-                {[
-                  { icon: '⚡', title: 'High Performance', desc: 'Optimized servers ensuring fast load times and reliability' },
-                  { icon: '🔒', title: 'Secure & Backed Up', desc: 'Daily automated backups, SSL certificates, and security monitoring' },
-                  { icon: '🌍', title: 'Multiple Regions', desc: 'Deploy your apps closer to your users worldwide' },
-                  { icon: '📞', title: '24/7 Support', desc: 'Dedicated team ready to help whenever you need assistance' },
-                ].map((item) => (
-                  <div key={item.title} className="flex gap-4">
-                    <div className="text-[24px]">{item.icon}</div>
-                    <div>
-                      <h3 className="text-[16px] font-[700] tracking-[-0.01em] text-white">{item.title}</h3>
-                      <p className="mt-1 text-[14px] leading-[1.6] text-white/68">{item.desc}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              <div className="mt-8 flex flex-col sm:flex-row gap-3">
-                <a
-                  href={getHostingConsoleUrl()}
-                  className="h-[52px] px-6 inline-flex items-center justify-center rounded-[16px] bg-[#FF5A1F] text-white font-[700] text-[15px] hover:bg-[#FF6E3A] transition-all shadow-[0_16px_50px_-8px_rgba(255,90,31,0.6)]"
-                >
-                  Access Hosting Platform →
-                </a>
-                <a
-                  href="mailto:flamecoretechnologies@gmail.com"
-                  className="h-[52px] px-6 inline-flex items-center justify-center rounded-[16px] bg-white/[0.06] border border-white/[0.12] font-[700] hover:bg-white/[0.08] transition-all"
-                >
-                  Ask About Hosting
-                </a>
-              </div>
-            </div>
-
-            <div>
-              <div className="relative rounded-[28px] border border-white/[0.08] bg-[#0B0E14]/80 p-[18px] shadow-[inset_0_1px_0_rgba(255,255,255,0.04),0_30px_120px_-20px_rgba(0,0,0,0.85)]">
-                <div className="relative aspect-[16/11] rounded-[20px] overflow-hidden border border-white/[0.08] bg-[#090C12]">
-                  <img
-                    src="/images/flamecore-about.jpg"
-                    alt="Web hosting dashboard with infrastructure management"
-                    className="absolute inset-0 h-full w-full object-cover"
-                    loading="lazy"
-                  />
-                  <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(5,6,10,0.18),rgba(5,6,10,0.36)_35%,rgba(5,6,10,0.82)_100%)]" />
-                  <div className="absolute inset-0 bg-[radial-gradient(500px_260px_at_18%_10%,#FF5A1F2A,transparent_60%)]" />
-
-                  <div className="absolute top-4 left-4 right-4 flex items-center justify-between gap-4 rounded-[16px] border border-white/[0.10] bg-black/28 backdrop-blur-xl px-4 h-12">
-                    <div className="flex items-center gap-2">
-                      <div className="h-2.5 w-2.5 rounded-full bg-[#FF5F56]" />
-                      <div className="h-2.5 w-2.5 rounded-full bg-[#FFBD2E]" />
-                      <div className="h-2.5 w-2.5 rounded-full bg-[#27C93F]" />
-                    </div>
-                    <span className="text-[11px] font-[700] tracking-[0.12em] uppercase text-white/70">Hosting Platform</span>
-                  </div>
-
-                  <div className="absolute left-5 right-5 bottom-5 rounded-[20px] border border-white/[0.10] bg-black/32 backdrop-blur-2xl p-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.05)]">
-                    <div className="text-[11px] font-[700] tracking-[0.16em] uppercase text-[#FFB295]">Enterprise Ready</div>
-                    <h3 className="display mt-2 text-[24px] font-[700] leading-[1.08] tracking-[-0.025em] text-white">
-                      Deploy with confidence
-                    </h3>
-                    <p className="mt-2 text-[13px] leading-[1.6] text-white/75">
-                      Automatic scaling, monitoring, backups, and support included.
-                    </p>
-                  </div>
-
-                  <div className="absolute right-[-30px] bottom-[-30px] h-[160px] w-[160px] rounded-full bg-[#FF5A1F]/25 blur-[70px]" />
-                </div>
-              </div>
-            </div>
           </div>
         </div>
       </section>
