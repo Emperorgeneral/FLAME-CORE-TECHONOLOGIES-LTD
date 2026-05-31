@@ -16,6 +16,14 @@
 #
 
 set -euo pipefail
+PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+
+# Ensure docker-compose is available for cron
+DOCKER_COMPOSE="${DOCKER_COMPOSE:-$(command -v docker-compose || true)}"
+if [ -z "${DOCKER_COMPOSE}" ]; then
+  echo "docker-compose not found in PATH"
+  exit 1
+fi
 
 # ─── Configuration ─────────────────────────────────────────────────────
 BACKUP_DIR="${BACKUP_DIR:-/var/backups/flame}"
@@ -45,7 +53,8 @@ cd "$(dirname "$0")/.." || exit 1
 
 # Use docker-compose exec to backup from container
 POSTGRES_SERVICE="postgres"
-if docker-compose exec -T "${POSTGRES_SERVICE}" pg_dump -U "${POSTGRES_USER}" -d "${POSTGRES_DB}" -F c -Z 9 > "${DAILY_FILE}.tmp" 2>&1; then
+DOCKER_COMPOSE_CMD="${DOCKER_COMPOSE} exec -T ${POSTGRES_SERVICE}"
+if ${DOCKER_COMPOSE_CMD} pg_dump -U "${POSTGRES_USER}" -d "${POSTGRES_DB}" -F c -Z 9 > "${DAILY_FILE}.tmp" 2>&1; then
   if [ -s "${DAILY_FILE}.tmp" ]; then
     mv "${DAILY_FILE}.tmp" "${DAILY_FILE}"
     SIZE=$(du -h "${DAILY_FILE}" | cut -f1)
@@ -75,15 +84,15 @@ METADATA_DIR="${BACKUP_DIR}/daily/metadata-${TIMESTAMP}"
 mkdir -p "${METADATA_DIR}"
 
 # Export critical tables as JSON
-psql -U "${POSTGRES_USER}" -d "${POSTGRES_DB}" -t -A -c "
+${DOCKER_COMPOSE_CMD} psql -U "${POSTGRES_USER}" -d "${POSTGRES_DB}" -t -A -c "
   COPY (SELECT row_to_json(t) FROM (SELECT * FROM teams) t) TO STDOUT;
 " > "${METADATA_DIR}/teams.jsonl" 2>/dev/null || true
 
-psql -U "${POSTGRES_USER}" -d "${POSTGRES_DB}" -t -A -c "
+${DOCKER_COMPOSE_CMD} psql -U "${POSTGRES_USER}" -d "${POSTGRES_DB}" -t -A -c "
   COPY (SELECT row_to_json(t) FROM (SELECT * FROM projects) t) TO STDOUT;
 " > "${METADATA_DIR}/projects.jsonl" 2>/dev/null || true
 
-psql -U "${POSTGRES_USER}" -d "${POSTGRES_DB}" -t -A -c "
+${DOCKER_COMPOSE_CMD} psql -U "${POSTGRES_USER}" -d "${POSTGRES_DB}" -t -A -c "
   COPY (SELECT row_to_json(t) FROM (SELECT id, project_id, team_id, status, region, deployment_url, created_at FROM deployments) t) TO STDOUT;
 " > "${METADATA_DIR}/deployments.jsonl" 2>/dev/null || true
 
