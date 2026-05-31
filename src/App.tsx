@@ -106,7 +106,6 @@ export default function App() {
   const [newProjectStep, setNewProjectStep] = useState<NewProjectStep>("root")
   const [newProjectSearch, setNewProjectSearch] = useState("")
   const [selectedDeployment, setSelectedDeployment] = useState<string | null>(null)
-  const [logs, setLogs] = useState<LogLine[]>([])
 
   const currencies: Currency[] = [
     { code: "USD", symbol: "$", rate: 1, locale: "en-US" },
