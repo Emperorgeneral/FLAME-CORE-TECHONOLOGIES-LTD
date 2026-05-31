@@ -166,9 +166,10 @@ async function bootstrap() {
       const isProd = config.api.env === 'production';
       logger.error({ err, trace_id: traceId }, 'request error');
 
-      const status = err.statusCode ?? 500;
+      const status = (err as any).statusCode ?? 500;
+      const message = (err as any).message ?? (err instanceof Error ? err.message : 'error');
       reply.status(status).send({
-        error: isProd && status >= 500 ? 'internal server error' : (err.message || 'error'),
+        error: isProd && status >= 500 ? 'internal server error' : message,
         ...(traceId ? { trace_id: traceId } : {}),
       });
     });
