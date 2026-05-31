@@ -8,6 +8,7 @@ import { config } from './config/env.js';
 import { initializeDatabase } from './db/init.js';
 import { seedDatabase } from './db/seed.js';
 import { registerAuthRoutes } from './routes/auth.js';
+import { closeRedis } from './utils/authRateLimit.js';
 import { registerCatalogRoutes } from './routes/catalog.js';
 import { registerProjectRoutes } from './routes/projects.js';
 import { registerDeploymentRoutes } from './routes/deployments.js';
@@ -177,6 +178,7 @@ async function bootstrap() {
       logger.info({ signal }, 'shutting down');
       try {
         await app.close();
+        await closeRedis();
       } catch (e) {
         logger.error({ err: e }, 'close error');
       }

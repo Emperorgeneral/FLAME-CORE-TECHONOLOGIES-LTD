@@ -1,10 +1,21 @@
 import { FastifyInstance } from 'fastify';
 import { userService } from '../services/userService.js';
 import { logger } from '../utils/logger.js';
+import { checkRegisterRateLimit, checkLoginRateLimit, recordFailedLogin, clearFailedLogins } from '../utils/authRateLimit.js';
 
 export async function registerAuthRoutes(fastify: FastifyInstance) {
   fastify.post('/api/auth/register', async (request, reply) => {
     try {
+      const ip = request.ip;
+      const rateLimit = await checkRegisterRateLimit(ip);
+
+      if (!rateLimit.allowed) {
+        return reply.status(429).header('retry-after', rateLimit.retryAfter.toString()).send({
+          error: 'too many registration attempts',
+          retryAfter: rateLimit.retryAfter,
+        });
+      }
+
       const body = request.body as any;
       const { email, username, password, full_name, country_code, locale, timezone } = body;
 
@@ -41,12 +52,28 @@ export async function registerAuthRoutes(fastify: FastifyInstance) {
 
   fastify.post('/api/auth/login', async (request, reply) => {
     try {
+      const ip = request.ip;
+      const rateLimit = await checkLoginRateLimit(ip);
+
+      if (!rateLimit.allowed) {
+        return reply.status(429).header('retry-after', rateLimit.retryAfter.toString()).send({
+          error: 'too many login attempts',
+          retryAfter: rateLimit.retryAfter,
+        });
+      }
+
       const { email, password } = request.body as any;
       if (!email || !password) return reply.status(400).send({ error: 'email and password required' });
 
       const user = await userService.verifyCredentials(email, password);
-      if (!user) return reply.status(401).send({ error: 'invalid credentials' });
+      if (!user) {
+        await recordFailedLogin(email);
+        return reply.status(401).send({ error: 'invalid credentials' });
+      }
       if (user.status === 'suspended') return reply.status(403).send({ error: 'account suspended' });
+
+      // Clear failed login counter on successful login
+      await clearFailedLogins(email);
 
       const teams = await userService.teamsForUser(user.id);
       const token = fastify.jwt.sign(
