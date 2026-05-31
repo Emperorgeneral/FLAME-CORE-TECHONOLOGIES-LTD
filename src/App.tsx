@@ -366,20 +366,20 @@ export default function App() {
   }, [toast])
 
   // Simulated live log streaming when a deployment is selected & building
-  useEffect(() => {
-    if (consoleTab !== "logs") return
-    const dep = deployments.find((d) => d.id === selectedDeployment)
-    if (!dep || dep.status !== "building") return
-    const interval = setInterval(() => {
-      const samples: LogLine[] = [
-        { t: new Date().toLocaleTimeString("en-GB"), level: "info", msg: "  health check: GET / → 200 OK (8ms)" },
-        { t: new Date().toLocaleTimeString("en-GB"), level: "info", msg: "  routing traffic to new revision (canary 25%)" },
-        { t: new Date().toLocaleTimeString("en-GB"), level: "ok", msg: "  ✓ container healthy in 1.4s" },
-      ]
-      setLogs((l) => [...l.slice(-30), samples[Math.floor(Math.random() * samples.length)]])
-    }, 2400)
-    return () => clearInterval(interval)
-  }, [consoleTab, selectedDeployment])
+  // useEffect(() => {
+  //   if (consoleTab !== "logs") return
+  //   const dep = deployments.find((d) => d.id === selectedDeployment)
+  //   if (!dep || dep.status !== "building") return
+  //   const interval = setInterval(() => {
+  //     const samples: LogLine[] = [
+  //       { t: new Date().toLocaleTimeString("en-GB"), level: "info", msg: "  health check: GET / → 200 OK (8ms)" },
+  //       { t: new Date().toLocaleTimeString("en-GB"), level: "info", msg: "  routing traffic to new revision (canary 25%)" },
+  //       { t: new Date().toLocaleTimeString("en-GB"), level: "ok", msg: "  ✓ container healthy in 1.4s" },
+  //     ]
+  //     setLogs((l) => [...l.slice(-30), samples[Math.floor(Math.random() * samples.length)]])
+  //   }, 2400)
+  //   return () => clearInterval(interval)
+  // }, [consoleTab, selectedDeployment])
 
   const activeCurrency = currencies.find((c) => c.code === currency)!
 
@@ -464,7 +464,7 @@ export default function App() {
     setShowDeployModal(false)
     setDeployRepo("")
     setSelectedDeployment(id)
-    setConsoleTab("logs")
+    // setConsoleTab("logs")
   }
 
   return (
