@@ -3,6 +3,8 @@ import fastifyCors from '@fastify/cors';
 import fastifyJwt from '@fastify/jwt';
 import fastifyCookie from '@fastify/cookie';
 import fastifyRateLimit from '@fastify/rate-limit';
+import { writeFileSync } from 'fs';
+import { join } from 'path';
 import { config } from './config/env.js';
 import { initializeDatabase } from './db/init.js';
 import { seedDatabase } from './db/seed.js';
@@ -193,11 +195,33 @@ async function bootstrap() {
 
     // ─── Start ───────────────────────────────────────────────────────
     try {
-      // In production, use port 0 to auto-select available port; otherwise use configured port
-      const port = config.api.env === 'production' ? 0 : config.api.port;
-      const address = await app.listen({ port, host: config.api.host });
-      // Extract actual port from address string (format: "http://host:port")
-      const actualPort = parseInt(address.split(':').pop() || '3001');
+      // Try ports 3001-3010 in order, write actual port to file for nginx/discovery
+      let actualPort = 0;
+      const portFile = join('/root/flame-core', 'backend-port.txt');
+      const basePort = config.api.port;
+      
+      for (let i = 0; i < 10; i++) {
+        const portToTry = basePort + i;
+        try {
+          const address = await app.listen({ port: portToTry, host: config.api.host });
+          actualPort = portToTry;
+          // Write port to file for nginx and other services to discover
+          try {
+            writeFileSync(portFile, String(actualPort));
+            logger.info(`📝 Backend port written to ${portFile}`);
+          } catch (e) {
+            logger.warn('Could not write port file (non-critical)');
+          }
+          break;
+        } catch (err: any) {
+          if (err.code === 'EADDRINUSE' && i < 9) {
+            logger.warn(`Port ${portToTry} in use, trying ${portToTry + 1}...`);
+            continue;
+          }
+          throw err;
+        }
+      }
+      
       logger.info(`🔥 Flame Core API listening on http://${config.api.host}:${actualPort}`);
       logger.info({ processRole, env: config.api.env, admin: process.env.ADMIN_EMAIL ?? 'admin@flamecore.app', port: actualPort }, 'startup complete');
     } catch (err) {
