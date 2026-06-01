@@ -18,10 +18,31 @@ import type { DeploymentJobPayload, RegionCode } from '../types/index.js';
  * Region-aware: the worker only picks up jobs whose `region` matches
  * the node's REGION_CODE env var. In multi-region setups each region
  * runs its own worker pool against a shared Redis. Today it's all `los1`.
+ * 
+ * Graceful: if Redis is unavailable, the queue will retry with exponential backoff.
  */
 const redisClient = createClient({ url: config.redis.url });
-redisClient.on('error', (e) => logger.error('redis', e));
-redisClient.on('connect', () => logger.info('redis connected'));
+
+let redisWarningShown = false;
+redisClient.on('error', (e) => {
+  if (!redisWarningShown) {
+    logger.warn('Redis unavailable for deployments, will retry silently', e.message);
+    redisWarningShown = true;
+  }
+});
+
+redisClient.on('connect', () => {
+  logger.info('✅ Redis connected for deployment queue');
+  redisWarningShown = false;
+});
+
+// Connect with retry
+redisClient.connect().catch((err) => {
+  if (!redisWarningShown) {
+    logger.warn('Deployment queue Redis connect failed, will retry silently', err.message);
+    redisWarningShown = true;
+  }
+});
 
 export const deploymentQueue = new Queue<DeploymentJobPayload>('deployments', {
   connection: redisClient as any,

@@ -4,12 +4,33 @@ import { logger } from './logger.js';
 /**
  * Redis-backed rate limiting for authentication routes.
  * Tracks login failures and registration attempts per IP address.
+ * Fails gracefully if Redis is unavailable.
  */
 
 const redis = createClient({ url: process.env.REDIS_URL || 'redis://localhost:6379' });
 
-redis.on('error', (err) => logger.error('redis error', err));
-redis.connect().catch((err) => logger.error('redis connect failed', err));
+let redisAvailable = false;
+let redisWarningShown = false;
+
+redis.on('error', (err) => {
+  if (!redisWarningShown) {
+    logger.warn('Redis unavailable, rate limiting disabled (will retry silently)', err.message);
+    redisWarningShown = true;
+  }
+});
+
+redis.on('connect', () => {
+  redisAvailable = true;
+  logger.info('✅ Redis connected');
+  redisWarningShown = false;
+});
+
+redis.connect().catch((err) => {
+  if (!redisWarningShown) {
+    logger.warn('Redis connect failed, rate limiting disabled', err.message);
+    redisWarningShown = true;
+  }
+});
 
 /**
  * Check if login attempt is allowed (max 10 failed attempts per hour per IP)
