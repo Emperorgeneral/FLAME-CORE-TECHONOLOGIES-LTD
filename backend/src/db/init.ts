@@ -731,7 +731,12 @@ export async function initializeDatabase() {
   for (const stmt of schemas) {
     try {
       await query(stmt);
-    } catch (err) {
+    } catch (err: any) {
+      // Ignore duplicate index/constraint errors (code 23505) - they can happen on retries
+      if (err.code === '23505' || err.code === '42P07' || err.message?.includes('already exists')) {
+        // Silently ignore duplicate key/object exists errors
+        continue;
+      }
       console.error('Schema error on:', stmt.substring(0, 80), err);
     }
   }
