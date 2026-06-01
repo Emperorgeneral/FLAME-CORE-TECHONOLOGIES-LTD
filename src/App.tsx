@@ -7,6 +7,8 @@ import { HouseView } from "@/features/console/HouseView"
 import { RoomPanel } from "@/features/console/RoomPanel"
 import { VerifyEmail } from "@/features/auth/VerifyEmail"
 import { AdminEmailManager } from "@/components/admin/AdminEmailManager"
+import { AdminUserManager } from "@/components/admin/AdminUserManager"
+import { AdminBillingManager } from "@/components/admin/AdminBillingManager"
 import { useConsole } from "@/features/console/useConsole"
 import { apiClient } from "@/api/client"
 import type { NewProjectStep } from "@/features/console/useConsole"
@@ -1530,6 +1532,18 @@ function AdminSuperConsole({ onToast, adminTab, setAdminTab }: { onToast: (m: st
       {adminTab === "emails" && (
         <div className="bg-gray-900 rounded-lg">
           <AdminEmailManager />
+        </div>
+      )}
+
+      {adminTab === "users" && (
+        <div className="bg-gray-900 rounded-lg p-6">
+          <AdminUserManager />
+        </div>
+      )}
+
+      {adminTab === "billing" && (
+        <div className="bg-gray-900 rounded-lg p-6">
+          <AdminBillingManager />
         </div>
       )}
 

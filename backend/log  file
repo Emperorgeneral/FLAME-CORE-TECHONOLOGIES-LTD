@@ -1,83 +1,33 @@
-osting.flamecoretechltd.com"
-HTTP/2 200
-server: nginx/1.24.0 (Ubuntu)
-date: Mon, 01 Jun 2026 20:46:28 GMT
-content-type: text/html
-content-length: 440751
-last-modified: Mon, 01 Jun 2026 20:43:51 GMT
-etag: "6a1def07-6b9af"
-cache-control: no-cache, no-store, must-revalidate
-pragma: no-cache
-expires: 0
-accept-ranges: bytes
+root@vmi3227630:~# # Check if PostgreSQL container is running
+docker ps
 
-root@vmi3227630:~/flame-core# # Show which domains point where
-sudo grep -A5 "server_name.*flamecoretechltd.com" /etc/nginx/sites-available/flamecore
+# Check environment variables
+cat /root/flame-core/.env.production | grep -i "database\|password"
 
-# Show the main website server block
-sudo sed -n '/server_name flamecoretechltd.com www.flamecoretechltd.com;/,/^}/p' /etc/nginx/sites-available/flamecore | head -30
-    server_name flamecoretechltd.com www.flamecoretechltd.com hosting.flamecoretechltd.com api.flamecoretechltd.com;
-
-    location /.well-known/acme-challenge {
-        root /var/www/certbot;
-    }
-
---
-    server_name flamecoretechltd.com www.flamecoretechltd.com;
-
-    # SSL certificates (provision with: certbot certonly --standalone -d flamecoretechltd.com -d www.flamecoretechltd.com)
-    ssl_certificate /etc/letsencrypt/live/flamecoretechltd.com/fullchain.pem;
-    ssl_certificate_key /etc/letsencrypt/live/flamecoretechltd.com/privkey.pem;
-
---
-    if ($server_name = "www.flamecoretechltd.com") {
-        return 301 https://flamecoretechltd.com$request_uri;
-    }
-
-    # Static files (from Vite build: dist/)
-    location ~* \.(js|css|png|jpg|jpeg|gif|svg|woff|woff2|ttf|eot)$ {
---
-    server_name hosting.flamecoretechltd.com;
-
-    ssl_certificate /etc/letsencrypt/live/hosting.flamecoretechltd.com/fullchain.pem;
-    ssl_certificate_key /etc/letsencrypt/live/hosting.flamecoretechltd.com/privkey.pem;
-
-    ssl_protocols TLSv1.2 TLSv1.3;
---
-    server_name api.flamecoretechltd.com;
-
-    ssl_certificate /etc/letsencrypt/live/api.flamecoretechltd.com/fullchain.pem;
-    ssl_certificate_key /etc/letsencrypt/live/api.flamecoretechltd.com/privkey.pem;
-
-    ssl_protocols TLSv1.2 TLSv1.3;
-    server_name flamecoretechltd.com www.flamecoretechltd.com;
-
-    # SSL certificates (provision with: certbot certonly --standalone -d flamecoretechltd.com -d www.flamecoretechltd.com)
-    ssl_certificate /etc/letsencrypt/live/flamecoretechltd.com/fullchain.pem;
-    ssl_certificate_key /etc/letsencrypt/live/flamecoretechltd.com/privkey.pem;
-
-    # SSL configuration (best practices)
-    ssl_protocols TLSv1.2 TLSv1.3;
-    ssl_ciphers HIGH:!aNULL:!MD5;
-    ssl_prefer_server_ciphers on;
-    ssl_session_cache shared:SSL:10m;
-    ssl_session_timeout 10m;
-
-    # Security headers
-    add_header Strict-Transport-Security "max-age=31536000; includeSubDomains" always;
-    add_header X-Content-Type-Options "nosniff" always;
-    add_header X-Frame-Options "SAMEORIGIN" always;
-    add_header X-XSS-Protection "1; mode=block" always;
-    add_header Referrer-Policy "strict-origin-when-cross-origin" always;
-    add_header Permissions-Policy "geolocation=(), camera=(), microphone=()" always;
-
-    # Logging
-    access_log /var/log/nginx/flamecore-website-access.log combined;
-    error_log /var/log/nginx/flamecore-website-error.log warn;
-
-    # Gzip compression
-    gzip on;
-    gzip_types text/plain text/css application/json application/javascript text/xml application/xml application/xml+rss text/javascript;
-    gzip_min_length 256;
-    gzip_comp_level 6;
-root@vmi3227630:~/flame-core#
+# Try connecting through Docker if container is running
+docker exec -it flame-core-postgres psql -U flame -d flamecore -c "SELECT id, email, role FROM users;"
+CONTAINER ID   IMAGE                                      COMMAND                  CREATED             STATUS                 PORTS                                             NAMES
+75281cde2fb9   redis:7-alpine                             "docker-entrypoint.s…"   About an hour ago   Up About an hour       127.0.0.1:6379->6379/tcp                          flamecore-redis
+b48605d2a30e   grafana/grafana:latest                     "/run.sh"                5 hours ago         Up 5 hours             127.0.0.1:4001->3000/tcp                          flame-grafana
+f3cb76fad20f   prom/prometheus:latest                     "/bin/prometheus --c…"   5 hours ago         Up 5 hours             127.0.0.1:9090->9090/tcp                          flame-prometheus
+adab9f5feabc   prom/node-exporter:latest                  "/bin/node_exporter …"   5 hours ago         Up 2 hours             127.0.0.1:9100->9100/tcp                          flame-node-exporter
+eed704ead831   gcr.io/cadvisor/cadvisor:latest            "/usr/bin/cadvisor -…"   5 hours ago         Up 5 hours (healthy)   127.0.0.1:8080->8080/tcp                          flame-cadvisor
+abd1d8f3b421   backend_api                                "docker-entrypoint.s…"   8 hours ago         Up 2 hours             0.0.0.0:3001->3001/tcp, [::]:3001->3001/tcp       flamecore-api
+d1bb9aa62310   postgres:16-alpine                         "docker-entrypoint.s…"   8 hours ago         Up 8 hours (healthy)   0.0.0.0:5433->5432/tcp, [::]:5433->5432/tcp       flamecore-postgres
+de371a8268fe   mongo:latest                               "docker-entrypoint.s…"   2 days ago          Up 2 days              0.0.0.0:27017->27017/tcp, [::]:27017->27017/tcp   mongodb
+86c26c5c884b   nginx:1.27-alpine                          "/docker-entrypoint.…"   2 weeks ago         Up 2 days (healthy)    0.0.0.0:3004->80/tcp, [::]:3004->80/tcp           nginx_lb
+302d4d5f66c7   python:3.11-slim                           "sleep 365d"             2 weeks ago         Up 2 days                                                                worker
+ba49061377ab   flame-backend-flame_official_support_bot   "python flame_bot_se…"   2 weeks ago         Up 2 days (healthy)    0.0.0.0:3005->5000/tcp, [::]:3005->5000/tcp       flame_official_support_bot
+35ab2a3b6a26   flame-backend-web                          "gunicorn -c gunicor…"   2 weeks ago         Up 2 days (healthy)    5000/tcp                                          flame-backend-web-2
+c465d70b082f   flame-backend-web                          "gunicorn -c gunicor…"   2 weeks ago         Up 2 days (healthy)    5000/tcp                                          flame-backend-web-1
+ba06e55e49f9   postgres:15                                "docker-entrypoint.s…"   2 weeks ago         Up 2 days (healthy)    5432/tcp                                          postgres
+ecf641a01030   redis:7-alpine                             "docker-entrypoint.s…"   2 weeks ago         Up 2 days (healthy)    6379/tcp                                          redis
+# ─── Database ───────────────────────────────────────────
+DATABASE_URL=postgresql://flame:flame2024@localhost:5432/flamecore
+DATABASE_HOST=localhost
+DATABASE_PORT=5432
+DATABASE_NAME=flamecore
+DATABASE_USER=flame
+DATABASE_PASSWORD=flame2024
+Error response from daemon: No such container: flame-core-postgres
+root@vmi3227630:~#

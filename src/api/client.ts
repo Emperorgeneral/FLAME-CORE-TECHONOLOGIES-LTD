@@ -251,6 +251,36 @@ class APIClient {
   adminEmailStats() {
     return this.req('GET', '/api/admin/emails/stats')
   }
+
+  // ── Admin User Management ───────────────────────────────────────────
+  adminGetUsers(page: number = 1, limit: number = 50, search?: string, role?: string) {
+    const params = new URLSearchParams()
+    params.append('page', page.toString())
+    params.append('limit', limit.toString())
+    if (search) params.append('search', search)
+    if (role) params.append('role', role)
+    return this.req('GET', `/api/admin/users?${params.toString()}`)
+  }
+  adminGetUserDetails(userId: string) {
+    return this.req('GET', `/api/admin/users/${userId}`)
+  }
+  adminUpdateUser(userId: string, role?: string, status?: string) {
+    return this.req('PATCH', `/api/admin/users/${userId}`, { role, status })
+  }
+  adminDeleteUser(userId: string) {
+    return this.req('DELETE', `/api/admin/users/${userId}`)
+  }
+
+  // ── Admin Billing Management ────────────────────────────────────────
+  adminGetPlans() {
+    return this.req('GET', '/api/admin/plans')
+  }
+  adminUpdatePlan(planId: string, data: { name?: string; priceUSD?: number; cpu?: string; ram?: string; storage?: string }) {
+    return this.req('PATCH', `/api/admin/plans/${planId}`, data)
+  }
+  adminGetBilling() {
+    return this.req('GET', '/api/admin/billing')
+  }
 }
 
 export const api = new APIClient()
