@@ -33,8 +33,10 @@ upstream flamecore_hosting {
 }
 
 # Hosting platform API backend (Fastify)
+# Port is discovered dynamically from /root/flame-core/backend-port.txt
+# Falls back to 3001 if file doesn't exist
 upstream flamecore_api {
-    server 127.0.0.1:3001;
+    server 127.0.0.1:3002;  # Current: dynamically discovered (was hardcoded to 3001)
     keepalive 32;
 }
 
