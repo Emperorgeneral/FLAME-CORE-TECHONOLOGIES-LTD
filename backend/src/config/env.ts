@@ -1,6 +1,17 @@
 import dotenv from 'dotenv';
+import { fileURLToPath } from 'url';
+import { dirname, join } from 'path';
 
-dotenv.config();
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+const projectRoot = join(__dirname, '../../..');
+
+// Load environment file based on NODE_ENV
+const envFile = process.env.NODE_ENV === 'production' 
+  ? join(projectRoot, '.env.production')
+  : join(projectRoot, '.env');
+
+dotenv.config({ path: envFile });
 
 export const config = {
   database: {
