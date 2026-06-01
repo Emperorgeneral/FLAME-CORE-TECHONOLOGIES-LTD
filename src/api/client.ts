@@ -17,6 +17,11 @@ const API_URL =
       })()
     : 'http://localhost:3001')
 
+// DEBUG: Log the API URL so we can see what's being used
+if (typeof window !== 'undefined') {
+  console.log('🔥 Flame Core API URL:', API_URL)
+}
+
 export type CurrencyCode = 'USD' | 'NGN' | 'GBP' | 'EUR' | 'ZAR' | 'KES' | 'GHS'
 export type RegionCode = 'los1' | 'lhr1' | 'fra1' | 'nyc1' | 'sin1' | 'jnb1' | 'nbo1'
 export type PaymentProvider = 'stripe' | 'paystack' | 'flutterwave' | 'paypal' | 'bank_transfer' | 'crypto'
