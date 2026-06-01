@@ -1,103 +1,136 @@
-root@vmi3227630:~/flame-core/backend# cd ~/flame-core/backend
-git pull origin main
-npm run build
-docker-compose down
-docker-compose up -d --build
-docker-compose ps
-curl http://localhost:3001/api/health
-remote: Enumerating objects: 14, done.
-remote: Counting objects: 100% (14/14), done.
-remote: Compressing objects: 100% (3/3), done.
-remote: Total 8 (delta 5), reused 8 (delta 5), pack-reused 0 (from 0)
-Unpacking objects: 100% (8/8), 38.40 KiB | 374.00 KiB/s, done.
+root@vmi3227630:~/flame-core/backend# git pull
+remote: Enumerating objects: 7, done.
+remote: Counting objects: 100% (7/7), done.
+remote: Compressing objects: 100% (1/1), done.
+remote: Total 4 (delta 3), reused 4 (delta 3), pack-reused 0 (from 0)
+Unpacking objects: 100% (4/4), 396 bytes | 132.00 KiB/s, done.
 From https://github.com/Emperorgeneral/FLAME-CORE-TECHONOLOGIES-LTD
- * branch            main       -> FETCH_HEAD
-   f2953a2..703a8f5  main       -> origin/main
-Updating f2953a2..703a8f5
-error: The following untracked working tree files would be overwritten by merge:
-        backend/package-lock.json
-Please move or remove them before you merge.
-Aborting
+   b11f4f5..9d16d72  main       -> origin/main
+Updating b11f4f5..9d16d72
+Fast-forward
+ backend/package.json | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+root@vmi3227630:~/flame-core/backend# cd ~/flame-core/backend
 
-> flame-core-backend@1.0.0 build
-> tsc
+git reset --hard origin/main
 
-src/index.ts:169:22 - error TS18046: 'err' is of type 'unknown'.
+grep -E '@fastify/(cookie|cors|helmet)' package.json
 
-169       const status = err.statusCode ?? 500;
-                         ~~~
+docker-compose down -v
+rm -rf node_modules package-lock.json
 
-src/index.ts:171:69 - error TS18046: 'err' is of type 'unknown'.
+docker-compose build --no-cache
+docker-compose up -d
 
-171         error: isProd && status >= 500 ? 'internal server error' : (err.message || 'error'),
-                                                                        ~~~
-
-
-Found 2 errors in the same file, starting at: src/index.ts:169
-
+sleep 20
+docker-compose logs api | tail -50
+HEAD is now at 9d16d72 fix: use correct npm package versions compatible with fastify 4.28.1
+    "@fastify/cors": "8.4.2",
+    "@fastify/cookie": "8.7.0",
+    "@fastify/helmet": "11.1.1",
+Stopping flamecore-api      ... done
+Stopping flamecore-postgres ... done
+Stopping flamecore-redis    ... done
+Removing flamecore-api      ... done
+Removing flamecore-postgres ... done
+Removing flamecore-redis    ... done
 Removing network backend_default
-Creating network "backend_default" with the default driver
+Removing volume backend_postgres_data
+Removing volume backend_redis_data
+postgres uses an image, skipping
+redis uses an image, skipping
 Building api
-[+] Building 7.2s (9/13)                                                                                                                                 docker:default
- => [internal] load build definition from Dockerfile                                                                                                               0.1s
- => => transferring dockerfile: 677B                                                                                                                               0.0s
- => [internal] load metadata for docker.io/library/node:20-alpine                                                                                                  0.5s
+[+] Building 24.9s (9/13)                                                                                                                                docker:default
+ => [internal] load build definition from Dockerfile                                                                                                               0.0s
+ => => transferring dockerfile: 696B                                                                                                                               0.0s
+ => [internal] load metadata for docker.io/library/node:20-alpine                                                                                                  0.4s
  => [internal] load .dockerignore                                                                                                                                  0.0s
  => => transferring context: 2B                                                                                                                                    0.0s
- => [1/9] FROM docker.io/library/node:20-alpine@sha256:fb4cd12c85ee03686f6af5362a0b0d56d50c58a04632e6c0fb8363f609372293                                            0.0s
- => => resolve docker.io/library/node:20-alpine@sha256:fb4cd12c85ee03686f6af5362a0b0d56d50c58a04632e6c0fb8363f609372293                                            0.0s
- => [internal] load build context                                                                                                                                  2.2s
- => => transferring context: 1.68MB                                                                                                                                2.1s
+ => [1/9] FROM docker.io/library/node:20-alpine@sha256:fb4cd12c85ee03686f6af5362a0b0d56d50c58a04632e6c0fb8363f609372293                                            0.1s
+ => => resolve docker.io/library/node:20-alpine@sha256:fb4cd12c85ee03686f6af5362a0b0d56d50c58a04632e6c0fb8363f609372293                                            0.1s
+ => [internal] load build context                                                                                                                                  0.1s
+ => => transferring context: 14.35kB                                                                                                                               0.0s
  => CACHED [2/9] WORKDIR /app                                                                                                                                      0.0s
- => CACHED [3/9] RUN apk add --no-cache git docker                                                                                                                 0.0s
- => CACHED [4/9] COPY package*.json ./                                                                                                                             0.0s
- => ERROR [5/9] RUN npm install                                                                                                                                    4.0s
+ => [3/9] RUN apk add --no-cache git docker                                                                                                                        5.8s
+ => [4/9] COPY package*.json ./                                                                                                                                    0.1s
+ => ERROR [5/9] RUN npm install --legacy-peer-deps                                                                                                                18.3s
 ------
- > [5/9] RUN npm install:
-3.759 npm error code ERESOLVE
-3.759 npm error ERESOLVE could not resolve
-3.759 npm error
-3.759 npm error While resolving: bullmq@5.77.6
-3.759 npm error Found: redis@4.6.0
-3.759 npm error node_modules/redis
-3.759 npm error   redis@"4.6.0" from the root project
-3.759 npm error
-3.759 npm error Could not resolve dependency:
-3.759 npm error peerOptional redis@">=5.0.0" from bullmq@5.77.6
-3.759 npm error node_modules/bullmq
-3.759 npm error   bullmq@"^5.77.6" from the root project
-3.759 npm error
-3.759 npm error Conflicting peer dependency: redis@6.0.0
-3.759 npm error node_modules/redis
-3.759 npm error   peerOptional redis@">=5.0.0" from bullmq@5.77.6
-3.759 npm error   node_modules/bullmq
-3.759 npm error     bullmq@"^5.77.6" from the root project
-3.759 npm error
-3.759 npm error Fix the upstream dependency conflict, or retry
-3.759 npm error this command with --force or --legacy-peer-deps
-3.759 npm error to accept an incorrect (and potentially broken) dependency resolution.
-3.759 npm error
-3.759 npm error
-3.759 npm error For a full report see:
-3.759 npm error /root/.npm/_logs/2026-05-31T23_33_24_382Z-eresolve-report.txt
-3.777 npm notice
-3.777 npm notice New major version of npm available! 10.8.2 -> 11.16.0
-3.777 npm notice Changelog: https://github.com/npm/cli/releases/tag/v11.16.0
-3.777 npm notice To update run: npm install -g npm@11.16.0
-3.777 npm notice
-3.780 npm error A complete log of this run can be found in: /root/.npm/_logs/2026-05-31T23_33_24_382Z-debug-0.log
+ > [5/9] RUN npm install --legacy-peer-deps:
+18.11 npm error code ETARGET
+18.11 npm error notarget No matching version found for @fastify/cookie@8.7.0.
+18.11 npm error notarget In most cases you or one of your dependencies are requesting
+18.11 npm error notarget a package version that doesn't exist.
+18.12 npm notice
+18.12 npm notice New major version of npm available! 10.8.2 -> 11.16.0
+18.12 npm notice Changelog: https://github.com/npm/cli/releases/tag/v11.16.0
+18.12 npm notice To update run: npm install -g npm@11.16.0
+18.12 npm notice
+18.12 npm error A complete log of this run can be found in: /root/.npm/_logs/2026-06-01T07_33_24_518Z-debug-0.log
 ------
 Dockerfile:12
 --------------------
   10 |
   11 |     # Install dependencies
-  12 | >>> RUN npm install
+  12 | >>> RUN npm install --legacy-peer-deps
   13 |
   14 |     # Copy source code
 --------------------
-ERROR: failed to build: failed to solve: process "/bin/sh -c npm install" did not complete successfully: exit code: 1
+ERROR: failed to build: failed to solve: process "/bin/sh -c npm install --legacy-peer-deps" did not complete successfully: exit code: 1
 ERROR: Service 'api' failed to build : Build failed
-Name   Command   State   Ports
-------------------------------
-curl: (7) Failed to connect to localhost port 3001 after 1 ms: Couldn't connect to server
-root@vmi3227630:~/flame-core/backend# 
+Creating network "backend_default" with the default driver
+Creating volume "backend_postgres_data" with default driver
+Creating volume "backend_redis_data" with default driver
+Creating flamecore-redis    ... done
+Creating flamecore-postgres ... done
+Creating flamecore-api      ... done
+flamecore-api | ✅ Admin user ready → admin@flamecore.app
+flamecore-api | ✅ Demo user (verified) → demo@example.com / CustomerPass123!
+flamecore-api | 🎉 Seed complete
+flamecore-api | {"level":30,"time":"2026-06-01T07:34:11.946Z","service":"flame-core-api","region":"los1","msg":"Worker starting (region=los1)"}
+flamecore-api |
+flamecore-api | /app/node_modules/fastify/lib/plugin-utils.js:127
+flamecore-api |     throw new FST_ERR_PLUGIN_VERSION_MISMATCH(meta.name, requiredVersion, this.version)
+flamecore-api |           ^
+flamecore-api | {"level":30,"time":"2026-06-01T07:34:11.951Z","service":"flame-core-api","region":"los1","msg":"deployment worker ready (region=los1)"}
+flamecore-api | {"level":30,"time":"2026-06-01T07:34:11.951Z","service":"flame-core-api","region":"los1","msg":"deployment worker initialized"}
+flamecore-api | FastifyError [Error]: fastify-plugin: @fastify/helmet - expected '4.x' fastify version, '5.8.5' is installed
+flamecore-api |     at Object.checkVersion (/app/node_modules/fastify/lib/plugin-utils.js:127:11)
+flamecore-api |     at Object.registerPlugin (/app/node_modules/fastify/lib/plugin-utils.js:150:16)
+flamecore-api |     at Boot.override (/app/node_modules/fastify/lib/plugin-override.js:29:57)
+flamecore-api |     at Boot._loadPlugin (/app/node_modules/avvio/boot.js:439:25)
+flamecore-api |     at process.processTicksAndRejections (node:internal/process/task_queues:82:21) {
+flamecore-api |   code: 'FST_ERR_PLUGIN_VERSION_MISMATCH',
+flamecore-api |   statusCode: 500
+flamecore-api | }
+flamecore-api |
+flamecore-api | Node.js v20.20.2
+flamecore-api | {"level":30,"time":"2026-06-01T07:34:15.139Z","service":"flame-core-api","region":"los1","msg":"Payments: 0 provider(s) registered: none"}
+flamecore-api | 🔧 Initializing Flame Core schema (global-first)…
+flamecore-api | {"level":30,"time":"2026-06-01T07:34:15.140Z","service":"flame-core-api","region":"los1","msg":"storage: using local filesystem"}
+flamecore-api | ✅ Schema initialized
+flamecore-api | 🌱 Seeding reference data…
+flamecore-api | ✅ Currencies (7) seeded
+flamecore-api | ✅ Regions (7) seeded
+flamecore-api | ✅ Plans (4) seeded
+flamecore-api | ✅ Admin user ready → admin@flamecore.app
+flamecore-api | ✅ Demo user (verified) → demo@example.com / CustomerPass123!
+flamecore-api | 🎉 Seed complete
+flamecore-api | {"level":30,"time":"2026-06-01T07:34:15.679Z","service":"flame-core-api","region":"los1","msg":"Worker starting (region=los1)"}
+flamecore-api | {"level":30,"time":"2026-06-01T07:34:15.683Z","service":"flame-core-api","region":"los1","msg":"deployment worker ready (region=los1)"}
+flamecore-api | {"level":30,"time":"2026-06-01T07:34:15.684Z","service":"flame-core-api","region":"los1","msg":"deployment worker initialized"}
+flamecore-api |
+flamecore-api | /app/node_modules/fastify/lib/plugin-utils.js:127
+flamecore-api |     throw new FST_ERR_PLUGIN_VERSION_MISMATCH(meta.name, requiredVersion, this.version)
+flamecore-api |           ^
+flamecore-api | FastifyError [Error]: fastify-plugin: @fastify/helmet - expected '4.x' fastify version, '5.8.5' is installed
+flamecore-api |     at Object.checkVersion (/app/node_modules/fastify/lib/plugin-utils.js:127:11)
+flamecore-api |     at Object.registerPlugin (/app/node_modules/fastify/lib/plugin-utils.js:150:16)
+flamecore-api |     at Boot.override (/app/node_modules/fastify/lib/plugin-override.js:29:57)
+flamecore-api |     at Boot._loadPlugin (/app/node_modules/avvio/boot.js:439:25)
+flamecore-api |     at process.processTicksAndRejections (node:internal/process/task_queues:82:21) {
+flamecore-api |   code: 'FST_ERR_PLUGIN_VERSION_MISMATCH',
+flamecore-api |   statusCode: 500
+flamecore-api | }
+flamecore-api |
+flamecore-api | Node.js v20.20.2
+root@vmi3227630:~/flame-core/backend#

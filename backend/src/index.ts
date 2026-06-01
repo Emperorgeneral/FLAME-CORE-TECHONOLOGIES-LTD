@@ -2,7 +2,6 @@ import Fastify from 'fastify';
 import fastifyCors from '@fastify/cors';
 import fastifyJwt from '@fastify/jwt';
 import fastifyCookie from '@fastify/cookie';
-import fastifyHelmet from '@fastify/helmet';
 import fastifyRateLimit from '@fastify/rate-limit';
 import { config } from './config/env.js';
 import { initializeDatabase } from './db/init.js';
@@ -88,12 +87,6 @@ async function bootstrap() {
       logger: false, // We use our own Pino instance + pino-http
       trustProxy: true,
       genReqId: () => `req_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`,
-    });
-
-    // ─── Security: Helmet (headers) ───────────────────────────────────
-    await app.register(fastifyHelmet, {
-      contentSecurityPolicy: false, // Relaxed for API; tighten if serving HTML
-      crossOriginEmbedderPolicy: false,
     });
 
     // ─── Security: CORS (strict allowlist) ────────────────────────────
