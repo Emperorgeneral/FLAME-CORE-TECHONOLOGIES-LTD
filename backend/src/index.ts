@@ -193,9 +193,13 @@ async function bootstrap() {
 
     // ─── Start ───────────────────────────────────────────────────────
     try {
-      await app.listen({ port: config.api.port, host: config.api.host });
-      logger.info(`🔥 Flame Core API listening on http://${config.api.host}:${config.api.port}`);
-      logger.info({ processRole, env: config.api.env, admin: process.env.ADMIN_EMAIL ?? 'admin@flamecore.app' }, 'startup complete');
+      // In production, use port 0 to auto-select available port; otherwise use configured port
+      const port = config.api.env === 'production' ? 0 : config.api.port;
+      const address = await app.listen({ port, host: config.api.host });
+      // Extract actual port from address string (format: "http://host:port")
+      const actualPort = parseInt(address.split(':').pop() || '3001');
+      logger.info(`🔥 Flame Core API listening on http://${config.api.host}:${actualPort}`);
+      logger.info({ processRole, env: config.api.env, admin: process.env.ADMIN_EMAIL ?? 'admin@flamecore.app', port: actualPort }, 'startup complete');
     } catch (err) {
       logger.error({ err }, 'listen failed');
       process.exit(1);
