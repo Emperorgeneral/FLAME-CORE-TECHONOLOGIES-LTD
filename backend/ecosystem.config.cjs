@@ -1,7 +1,7 @@
 /**
  * PM2 Ecosystem Configuration for Flame Core
  *
- * Run: pm2 start ecosystem.config.js
+ * Run: pm2 start ecosystem.config.cjs
  * Logs: pm2 logs
  * Monitor: pm2 monit
  * Restart: pm2 restart all
@@ -87,7 +87,7 @@ module.exports = {
       ref: 'origin/main',
       repo: 'https://github.com/Emperorgeneral/FLAME-CORE-TECHONOLOGIES-LTD.git',
       path: '/root/flame-core',
-      'post-deploy': 'git pull origin main && npm install && cd backend && npm install && npm run build && cd .. && npm run build && pm2 start ecosystem.config.js',
+      'post-deploy': 'git pull origin main && npm install && cd backend && npm install && npm run build && cd .. && npm run build && pm2 start ecosystem.config.cjs',
       'pre-setup': 'mkdir -p /root/flame-core/logs',
     },
   },
