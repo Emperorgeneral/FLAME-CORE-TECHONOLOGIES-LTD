@@ -217,12 +217,50 @@ export default function App() {
   void logs
 
   useEffect(() => {
-    const stored = localStorage.getItem("flamecore_session")
-    if (stored === "active") setAuthed(true)
-    const storedCurrency = localStorage.getItem("flamecore_currency") as Currency["code"] | null
-    if (storedCurrency) setCurrency(storedCurrency)
-    const storedTeamId = localStorage.getItem("flamecore_team")
-    if (storedTeamId) setTeamId(storedTeamId)
+    const initAuth = async () => {
+      // Only trust tokens from the backend, NOT localStorage
+      const token = localStorage.getItem("flame_token")
+      
+      if (!token) {
+        // No token = not authenticated
+        setAuthed(false)
+        setView("public")
+        return
+      }
+
+      try {
+        // Validate token with backend API
+        const userData = await apiClient.me()
+        if (userData && userData.user) {
+          // Token is valid
+          setAuthed(true)
+          setIsAdmin(userData.user.role === "admin")
+          setUserId(userData.user.id)
+          
+          // Restore currency preference
+          const storedCurrency = localStorage.getItem("flamecore_currency") as Currency["code"] | null
+          if (storedCurrency) setCurrency(storedCurrency)
+          
+          // Restore team context
+          const storedTeamId = localStorage.getItem("flamecore_team")
+          if (storedTeamId) setTeamId(storedTeamId)
+          
+          setView("console")
+        } else {
+          // Invalid token
+          localStorage.removeItem("flame_token")
+          setAuthed(false)
+          setView("public")
+        }
+      } catch (err) {
+        // Token validation failed - remove invalid token
+        console.error("Auth validation failed:", err)
+        localStorage.removeItem("flame_token")
+        localStorage.removeItem("flamecore_session")
+        setAuthed(false)
+        setView("public")
+      }
+    }
 
     // Handle URL parameters: ?verify=token or ?token=... (OAuth)
     const params = new URLSearchParams(window.location.search)
@@ -236,7 +274,6 @@ export default function App() {
       window.history.replaceState({}, "", window.location.pathname)
     } else if (oauthToken) {
       localStorage.setItem("flame_token", oauthToken)
-      localStorage.setItem("flamecore_session", "active")
       if (params.get("team")) {
         const team = params.get("team")!
         localStorage.setItem("flamecore_team", team)
@@ -255,8 +292,10 @@ export default function App() {
         server_error: "Something went wrong — please try again",
       }
       setToast(`ERROR · ${errors[oauthError] || oauthError}`)
-      setView("console")
       window.history.replaceState({}, "", window.location.pathname)
+    } else {
+      // Normal case: validate existing token
+      initAuth()
     }
 
     setTimeout(() => setHeroVisible(true), 50)
@@ -337,9 +376,14 @@ export default function App() {
   }
 
   const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!loginEmail || loginPassword.length < 8) {
-      setToast("ERROR · invalid email or password")
+    
+    // Strict validation
+    if (!loginEmail || !loginEmail.includes("@")) {
+      setToast("ERROR · valid email required")
+      return
+    }
+    if (loginPassword.length < 8) {
+      setToast("ERROR · password must be at least 8 characters")
       return
     }
 
@@ -348,13 +392,15 @@ export default function App() {
       setAuthed(true)
       setIsAdmin(result.user.role === "admin")
       setUserId(result.user.id)
-      localStorage.setItem("flamecore_session", "active")
       setToast(`AUTHENTICATED · welcome ${result.user.email}`)
       setLoginEmail("")
       setLoginPassword("")
       setView("console")
     } catch (error: any) {
       if (error.status === 403) {
+        setToast("⚠️ EMAIL NOT VERIFIED · check your inbox for verification link")
+      } else if (error.status === 401) {
+        setToast("ERROR · invalid email or password
         setToast("⚠️ EMAIL NOT VERIFIED · check your inbox for verification link")
       } else {
         setToast(`ERROR · ${error.message || "login failed"}`)
@@ -371,6 +417,14 @@ export default function App() {
       return
     }
 
+    // Strict email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    if (!emailRegex.test(registerData.email)) {
+      setToast("ERROR · valid email address required")
+      return
+    }
+
+    // Strong password requirements
     if (registerData.password.length < 8) {
       setToast("ERROR · password must be at least 8 characters")
       return
@@ -391,7 +445,9 @@ export default function App() {
         country_code: registerData.country,
       })
 
-      setToast("✅ ACCOUNT CREATED · check your email to verify")
+      // Switch to signin view and show message
+      setAuthMode("signin")
+      setToast("✅ ACCOUNT CREATED · check your email to verify and login")
       setRegisterData({
         firstName: "",
         lastName: "",
@@ -565,7 +621,17 @@ export default function App() {
                   <span className="mono text-[11px] text-[#A8A29C]">operator</span>
                 </div>
                 <button
-                  onClick={() => { setAuthed(false); localStorage.removeItem("flamecore_session") }}
+                  onClick={() => { 
+                    setAuthed(false)
+                    setIsAdmin(false)
+                    setUserId(null)
+                    setTeamId(null)
+                    localStorage.removeItem("flame_token")
+                    localStorage.removeItem("flamecore_session")
+                    localStorage.removeItem("flamecore_currency")
+                    localStorage.removeItem("flamecore_team")
+                    setView("public")
+                  }}
                   className="px-3 h-9 rounded-md border border-white/[0.08] text-[12px] font-medium hover:border-[#FF4D1F]/40 hover:text-[#FF4D1F] transition-colors"
                 >
                   Sign out
