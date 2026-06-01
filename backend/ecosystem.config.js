@@ -26,6 +26,10 @@ module.exports = {
       env: {
         NODE_ENV: 'production',
         PROCESS_ROLE: 'api',
+        DATABASE_URL: process.env.DATABASE_URL,
+        REDIS_URL: process.env.REDIS_URL,
+        API_PORT: process.env.API_PORT || '3002',
+        JWT_SECRET: process.env.JWT_SECRET,
       },
       // Resource limits
       max_memory_restart: '512M',
@@ -55,6 +59,9 @@ module.exports = {
         NODE_ENV: 'production',
         PROCESS_ROLE: 'worker',
         REGION_CODE: process.env.REGION_CODE || 'los1',
+        DATABASE_URL: process.env.DATABASE_URL,
+        REDIS_URL: process.env.REDIS_URL,
+        JWT_SECRET: process.env.JWT_SECRET,
       },
       // Higher memory for builds
       max_memory_restart: '2G',
