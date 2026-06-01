@@ -399,9 +399,6 @@ export default function App() {
     } catch (error: any) {
       if (error.status === 403) {
         setToast("⚠️ EMAIL NOT VERIFIED · check your inbox for verification link")
-      } else if (error.status === 401) {
-        setToast("ERROR · invalid email or password
-        setToast("⚠️ EMAIL NOT VERIFIED · check your inbox for verification link")
       } else {
         setToast(`ERROR · ${error.message || "login failed"}`)
       }
