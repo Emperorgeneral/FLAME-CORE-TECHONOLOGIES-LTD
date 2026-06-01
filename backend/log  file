@@ -1,6 +1,23 @@
-root@vmi3227630:~/flame-core/backend# npm run build
+root@vmi3227630:~/flame-core/backend# cd ~/flame-core/backend
+git pull origin main
+npm run build
 docker-compose down
 docker-compose up -d --build
+docker-compose ps
+curl http://localhost:3001/api/health
+remote: Enumerating objects: 14, done.
+remote: Counting objects: 100% (14/14), done.
+remote: Compressing objects: 100% (3/3), done.
+remote: Total 8 (delta 5), reused 8 (delta 5), pack-reused 0 (from 0)
+Unpacking objects: 100% (8/8), 38.40 KiB | 374.00 KiB/s, done.
+From https://github.com/Emperorgeneral/FLAME-CORE-TECHONOLOGIES-LTD
+ * branch            main       -> FETCH_HEAD
+   f2953a2..703a8f5  main       -> origin/main
+Updating f2953a2..703a8f5
+error: The following untracked working tree files would be overwritten by merge:
+        backend/package-lock.json
+Please move or remove them before you merge.
+Aborting
 
 > flame-core-backend@1.0.0 build
 > tsc
@@ -18,63 +35,57 @@ src/index.ts:171:69 - error TS18046: 'err' is of type 'unknown'.
 
 Found 2 errors in the same file, starting at: src/index.ts:169
 
-Stopping flamecore-api      ... done
-Stopping flamecore-postgres ... done
-Stopping flamecore-redis    ... done
-Removing flamecore-api      ... done
-Removing flamecore-postgres ... done
-Removing flamecore-redis    ... done
 Removing network backend_default
 Creating network "backend_default" with the default driver
 Building api
-[+] Building 9.4s (9/13)                                                                                                                                 docker:default
- => [internal] load build definition from Dockerfile                                                                                                               0.0s
+[+] Building 7.2s (9/13)                                                                                                                                 docker:default
+ => [internal] load build definition from Dockerfile                                                                                                               0.1s
  => => transferring dockerfile: 677B                                                                                                                               0.0s
- => [internal] load metadata for docker.io/library/node:20-alpine                                                                                                  0.4s
+ => [internal] load metadata for docker.io/library/node:20-alpine                                                                                                  0.5s
  => [internal] load .dockerignore                                                                                                                                  0.0s
  => => transferring context: 2B                                                                                                                                    0.0s
- => [1/9] FROM docker.io/library/node:20-alpine@sha256:fb4cd12c85ee03686f6af5362a0b0d56d50c58a04632e6c0fb8363f609372293                                            0.2s
- => => resolve docker.io/library/node:20-alpine@sha256:fb4cd12c85ee03686f6af5362a0b0d56d50c58a04632e6c0fb8363f609372293                                            0.2s
- => [internal] load build context                                                                                                                                  3.5s
- => => transferring context: 35.28MB                                                                                                                               3.5s
+ => [1/9] FROM docker.io/library/node:20-alpine@sha256:fb4cd12c85ee03686f6af5362a0b0d56d50c58a04632e6c0fb8363f609372293                                            0.0s
+ => => resolve docker.io/library/node:20-alpine@sha256:fb4cd12c85ee03686f6af5362a0b0d56d50c58a04632e6c0fb8363f609372293                                            0.0s
+ => [internal] load build context                                                                                                                                  2.2s
+ => => transferring context: 1.68MB                                                                                                                                2.1s
  => CACHED [2/9] WORKDIR /app                                                                                                                                      0.0s
  => CACHED [3/9] RUN apk add --no-cache git docker                                                                                                                 0.0s
- => [4/9] COPY package*.json ./                                                                                                                                    1.1s
- => ERROR [5/9] RUN npm install                                                                                                                                    3.8s
+ => CACHED [4/9] COPY package*.json ./                                                                                                                             0.0s
+ => ERROR [5/9] RUN npm install                                                                                                                                    4.0s
 ------
  > [5/9] RUN npm install:
-3.586 npm error code ERESOLVE
-3.586 npm error ERESOLVE could not resolve
-3.588 npm error
-3.590 npm error While resolving: bullmq@5.77.6
-3.590 npm error Found: redis@4.6.0
-3.590 npm error node_modules/redis
-3.590 npm error   redis@"4.6.0" from the root project
-3.590 npm error
-3.590 npm error Could not resolve dependency:
-3.590 npm error peerOptional redis@">=5.0.0" from bullmq@5.77.6
-3.590 npm error node_modules/bullmq
-3.590 npm error   bullmq@"^5.77.6" from the root project
-3.590 npm error
-3.590 npm error Conflicting peer dependency: redis@6.0.0
-3.590 npm error node_modules/redis
-3.590 npm error   peerOptional redis@">=5.0.0" from bullmq@5.77.6
-3.590 npm error   node_modules/bullmq
-3.590 npm error     bullmq@"^5.77.6" from the root project
-3.590 npm error
-3.590 npm error Fix the upstream dependency conflict, or retry
-3.590 npm error this command with --force or --legacy-peer-deps
-3.590 npm error to accept an incorrect (and potentially broken) dependency resolution.
-3.590 npm error
-3.590 npm error
-3.590 npm error For a full report see:
-3.590 npm error /root/.npm/_logs/2026-05-31T23_28_47_382Z-eresolve-report.txt
-3.609 npm notice
-3.609 npm notice New major version of npm available! 10.8.2 -> 11.16.0
-3.609 npm notice Changelog: https://github.com/npm/cli/releases/tag/v11.16.0
-3.609 npm notice To update run: npm install -g npm@11.16.0
-3.609 npm notice
-3.609 npm error A complete log of this run can be found in: /root/.npm/_logs/2026-05-31T23_28_47_382Z-debug-0.log
+3.759 npm error code ERESOLVE
+3.759 npm error ERESOLVE could not resolve
+3.759 npm error
+3.759 npm error While resolving: bullmq@5.77.6
+3.759 npm error Found: redis@4.6.0
+3.759 npm error node_modules/redis
+3.759 npm error   redis@"4.6.0" from the root project
+3.759 npm error
+3.759 npm error Could not resolve dependency:
+3.759 npm error peerOptional redis@">=5.0.0" from bullmq@5.77.6
+3.759 npm error node_modules/bullmq
+3.759 npm error   bullmq@"^5.77.6" from the root project
+3.759 npm error
+3.759 npm error Conflicting peer dependency: redis@6.0.0
+3.759 npm error node_modules/redis
+3.759 npm error   peerOptional redis@">=5.0.0" from bullmq@5.77.6
+3.759 npm error   node_modules/bullmq
+3.759 npm error     bullmq@"^5.77.6" from the root project
+3.759 npm error
+3.759 npm error Fix the upstream dependency conflict, or retry
+3.759 npm error this command with --force or --legacy-peer-deps
+3.759 npm error to accept an incorrect (and potentially broken) dependency resolution.
+3.759 npm error
+3.759 npm error
+3.759 npm error For a full report see:
+3.759 npm error /root/.npm/_logs/2026-05-31T23_33_24_382Z-eresolve-report.txt
+3.777 npm notice
+3.777 npm notice New major version of npm available! 10.8.2 -> 11.16.0
+3.777 npm notice Changelog: https://github.com/npm/cli/releases/tag/v11.16.0
+3.777 npm notice To update run: npm install -g npm@11.16.0
+3.777 npm notice
+3.780 npm error A complete log of this run can be found in: /root/.npm/_logs/2026-05-31T23_33_24_382Z-debug-0.log
 ------
 Dockerfile:12
 --------------------
@@ -86,4 +97,7 @@ Dockerfile:12
 --------------------
 ERROR: failed to build: failed to solve: process "/bin/sh -c npm install" did not complete successfully: exit code: 1
 ERROR: Service 'api' failed to build : Build failed
-root@vmi3227630:~/flame-core/backend#
+Name   Command   State   Ports
+------------------------------
+curl: (7) Failed to connect to localhost port 3001 after 1 ms: Couldn't connect to server
+root@vmi3227630:~/flame-core/backend# 

@@ -368,6 +368,42 @@ export async function initializeDatabase() {
       PRIMARY KEY (user_id, provider)
     )`,
 
+    // ─── Email verification tokens ───────────────────────────────────────
+    `CREATE TABLE IF NOT EXISTS email_verification_tokens (
+      id                    UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      user_id               UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      email                 CITEXT NOT NULL,
+      token                 VARCHAR(64) UNIQUE NOT NULL,  -- hex token
+      is_used               BOOLEAN NOT NULL DEFAULT false,
+      created_at            TIMESTAMPTZ NOT NULL DEFAULT now(),
+      expires_at            TIMESTAMPTZ NOT NULL DEFAULT now() + INTERVAL '24 hours',
+      verified_at           TIMESTAMPTZ
+    )`,
+
+    // ─── Refresh tokens (long-lived, stored server-side) ──────────────────
+    `CREATE TABLE IF NOT EXISTS refresh_tokens (
+      id                    UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      user_id               UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      token_hash            VARCHAR(64) UNIQUE NOT NULL,  -- SHA256 hash for security
+      is_revoked            BOOLEAN NOT NULL DEFAULT false,
+      created_at            TIMESTAMPTZ NOT NULL DEFAULT now(),
+      expires_at            TIMESTAMPTZ NOT NULL DEFAULT now() + INTERVAL '7 days',
+      revoked_at            TIMESTAMPTZ,
+      last_used_at          TIMESTAMPTZ
+    )`,
+
+    // ─── Password reset tokens ───────────────────────────────────────────
+    `CREATE TABLE IF NOT EXISTS password_reset_tokens (
+      id                    UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      user_id               UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      email                 CITEXT NOT NULL,
+      token                 VARCHAR(64) UNIQUE NOT NULL,
+      is_used               BOOLEAN NOT NULL DEFAULT false,
+      created_at            TIMESTAMPTZ NOT NULL DEFAULT now(),
+      expires_at            TIMESTAMPTZ NOT NULL DEFAULT now() + INTERVAL '1 hour',
+      used_at               TIMESTAMPTZ
+    )`,
+
     // ─── Usage counters (for quotas, billing, abuse detection) ───────────
     `CREATE TABLE IF NOT EXISTS usage_counters (
       team_id             UUID NOT NULL REFERENCES teams(id) ON DELETE CASCADE,

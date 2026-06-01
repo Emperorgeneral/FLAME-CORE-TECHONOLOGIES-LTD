@@ -137,7 +137,34 @@ export async function seedDatabase() {
      ON CONFLICT (email) DO NOTHING`,
     [hashedCustomer]
   );
-  console.log('✅ Demo user → demo@example.com / CustomerPass123!');
+  console.log('✅ Demo user (verified) → demo@example.com / CustomerPass123!');
+
+  // ─── Test user (email NOT verified) ────────────────────────────────────
+  const testPassword = 'TestPass123!';
+  const hashedTest = await bcrypt.hash(testPassword, 10);
+
+  const testRes = await query(
+    `INSERT INTO users (email, username, password_hash, full_name, role, status,
+                        email_verified, preferred_currency, preferred_region, locale, timezone)
+     VALUES ('unverified@test.com', 'testuser', $1, 'Test User', 'member', 'pending',
+             false, 'USD', 'los1', 'en-US', 'Africa/Lagos')
+     ON CONFLICT (email) DO NOTHING
+     RETURNING id`,
+    [hashedTest]
+  );
+  
+  if (testRes.rows[0]) {
+    const testUserId = testRes.rows[0].id;
+    const verifyToken = require('crypto').randomBytes(32).toString('hex');
+    await query(
+      `INSERT INTO email_verification_tokens (user_id, email, token)
+       VALUES ($1, 'unverified@test.com', $2)
+       ON CONFLICT DO NOTHING`,
+      [testUserId, verifyToken]
+    );
+    console.log('✅ Test user (unverified) → unverified@test.com / TestPass123!');
+    console.log(`   Verification token: ${verifyToken}`);
+  }
 
   console.log('🎉 Seed complete');
 }
