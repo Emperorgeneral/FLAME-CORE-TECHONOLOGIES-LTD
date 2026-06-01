@@ -90,10 +90,18 @@ async function bootstrap() {
     });
 
     // ─── Security: CORS (strict allowlist) ────────────────────────────
-    const allowedOrigins = (process.env.CORS_ORIGINS || 'http://localhost:5173,http://localhost:3000')
+    const defaultOrigins = process.env.NODE_ENV === 'development' 
+      ? 'http://localhost:5173,http://localhost:3000'
+      : ''; // Must be explicitly set via CORS_ORIGINS env var in production
+    
+    const allowedOrigins = (process.env.CORS_ORIGINS || defaultOrigins)
       .split(',')
       .map(o => o.trim())
       .filter(Boolean);
+
+    if (allowedOrigins.length === 0) {
+      throw new Error('ERROR: CORS_ORIGINS must be set in production environment');
+    }
 
     await app.register(fastifyCors, {
       origin: (origin, cb) => {

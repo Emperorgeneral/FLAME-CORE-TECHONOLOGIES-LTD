@@ -38,10 +38,19 @@ const GOOGLE_TOKEN_URL = 'https://oauth2.googleapis.com/token';
 const GOOGLE_USERINFO_URL = 'https://www.googleapis.com/oauth2/v2/userinfo';
 
 function apiBase(): string {
-  return process.env.API_BASE_URL ?? 'http://localhost:3001';
+  const base = process.env.API_BASE_URL;
+  if (!base && process.env.NODE_ENV === 'production') {
+    throw new Error('API_BASE_URL must be set in production');
+  }
+  return base ?? 'http://localhost:3001';
 }
+
 function frontendBase(): string {
-  return process.env.FRONTEND_URL ?? 'http://localhost:5173';
+  const base = process.env.FRONTEND_URL;
+  if (!base && process.env.NODE_ENV === 'production') {
+    throw new Error('FRONTEND_URL must be set in production');
+  }
+  return base ?? 'http://localhost:5173';
 }
 
 export async function registerOAuthRoutes(fastify: FastifyInstance) {

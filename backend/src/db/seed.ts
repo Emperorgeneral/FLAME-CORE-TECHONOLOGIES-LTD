@@ -2,8 +2,8 @@ import { query } from './pool.js';
 import bcrypt from 'bcrypt';
 
 /**
- * Seeds reference data (currencies, regions, plans) + a default admin
- * and demo team. Idempotent — safe to re-run.
+ * Seeds reference data (currencies, regions, plans) + admin user.
+ * Idempotent — safe to re-run. No demo/test users in production.
  */
 export async function seedDatabase() {
   console.log('🌱 Seeding reference data…');
@@ -87,84 +87,26 @@ export async function seedDatabase() {
   `);
   console.log('✅ Plans (4) seeded');
 
-  // ─── Admin user + demo team ────────────────────────────────────────────
-  const adminEmail = process.env.ADMIN_EMAIL ?? 'admin@flamecore.app';
-  const adminPassword = process.env.ADMIN_PASSWORD ?? 'AdminPassword123!';
-  const hashedAdmin = await bcrypt.hash(adminPassword, 10);
+  // ─── Admin user (production only) ────────────────────────────────────────
+  // Admin credentials MUST be set via environment variables for production
+  const adminEmail = process.env.ADMIN_EMAIL;
+  const adminPassword = process.env.ADMIN_PASSWORD;
 
-  const adminRes = await query(
-    `INSERT INTO users (email, username, password_hash, full_name, role, status,
-                        email_verified, preferred_currency, preferred_region, locale, timezone)
-     VALUES ($1, 'admin', $2, 'Flame Core Operator', 'admin', 'active', true, 'USD', 'los1', 'en-US', 'Africa/Lagos')
-     ON CONFLICT (email) DO UPDATE SET updated_at = now()
-     RETURNING id`,
-    [adminEmail, hashedAdmin]
-  );
-  const adminId = adminRes.rows[0].id;
-  console.log(`✅ Admin user ready → ${adminEmail}`);
-
-  // Demo team
-  const planRes = await query(`SELECT id FROM plans WHERE slug = 'pro' LIMIT 1`);
-  const planId = planRes.rows[0]?.id;
-
-  const teamRes = await query(
-    `INSERT INTO teams (slug, name, owner_id, billing_email, billing_currency, plan_id)
-     VALUES ('flamecore', 'Flame Core', $1, $2, 'USD', $3)
-     ON CONFLICT (slug) DO NOTHING
-     RETURNING id`,
-    [adminId, adminEmail, planId]
-  );
-
-  if (teamRes.rows[0]) {
+  if (!adminEmail || !adminPassword) {
+    console.warn('⚠️  ADMIN_EMAIL and ADMIN_PASSWORD env vars not set. Skipping admin user creation.');
+    console.warn('    Set these in production to access the admin panel.');
+  } else {
+    const hashedAdmin = await bcrypt.hash(adminPassword, 10);
     await query(
-      `INSERT INTO team_members (team_id, user_id, role)
-       VALUES ($1, $2, 'owner')
-       ON CONFLICT DO NOTHING`,
-      [teamRes.rows[0].id, adminId]
+      `INSERT INTO users (email, username, password_hash, full_name, role, status,
+                          email_verified, preferred_currency, preferred_region, locale, timezone)
+       VALUES ($1, 'admin', $2, 'Flame Core Administrator', 'admin', 'active', true, 'USD', 'los1', 'en-US', 'Africa/Lagos')
+       ON CONFLICT (email) DO UPDATE SET updated_at = now()
+       RETURNING id`,
+      [adminEmail, hashedAdmin]
     );
-    console.log('✅ Demo team "flamecore" created');
+    console.log(`✅ Admin user provisioned → ${adminEmail}`);
   }
 
-  // ─── Demo customer ─────────────────────────────────────────────────────
-  const customerPassword = 'CustomerPass123!';
-  const hashedCustomer = await bcrypt.hash(customerPassword, 10);
-
-  await query(
-    `INSERT INTO users (email, username, password_hash, full_name, role, status,
-                        email_verified, preferred_currency, preferred_region, locale, timezone)
-     VALUES ('demo@example.com', 'demo', $1, 'Demo Developer', 'member', 'active', true,
-             'USD', 'los1', 'en-US', 'Africa/Lagos')
-     ON CONFLICT (email) DO NOTHING`,
-    [hashedCustomer]
-  );
-  console.log('✅ Demo user (verified) → demo@example.com / CustomerPass123!');
-
-  // ─── Test user (email NOT verified) ────────────────────────────────────
-  const testPassword = 'TestPass123!';
-  const hashedTest = await bcrypt.hash(testPassword, 10);
-
-  const testRes = await query(
-    `INSERT INTO users (email, username, password_hash, full_name, role, status,
-                        email_verified, preferred_currency, preferred_region, locale, timezone)
-     VALUES ('unverified@test.com', 'testuser', $1, 'Test User', 'member', 'pending',
-             false, 'USD', 'los1', 'en-US', 'Africa/Lagos')
-     ON CONFLICT (email) DO NOTHING
-     RETURNING id`,
-    [hashedTest]
-  );
-  
-  if (testRes.rows[0]) {
-    const testUserId = testRes.rows[0].id;
-    const verifyToken = require('crypto').randomBytes(32).toString('hex');
-    await query(
-      `INSERT INTO email_verification_tokens (user_id, email, token)
-       VALUES ($1, 'unverified@test.com', $2)
-       ON CONFLICT DO NOTHING`,
-      [testUserId, verifyToken]
-    );
-    console.log('✅ Test user (unverified) → unverified@test.com / TestPass123!');
-    console.log(`   Verification token: ${verifyToken}`);
-  }
-
-  console.log('🎉 Seed complete');
+  console.log('🎉 Seed complete - Ready for production use');
 }

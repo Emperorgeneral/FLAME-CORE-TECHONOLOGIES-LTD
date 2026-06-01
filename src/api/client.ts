@@ -11,7 +11,11 @@
  */
 const API_URL =
   (import.meta.env.VITE_API_URL as string | undefined)?.replace(/\/$/, '') ||
-  'http://localhost:3001'
+  (import.meta.env.MODE === 'production'
+    ? ((): never => {
+        throw new Error('VITE_API_URL must be set in production');
+      })()
+    : 'http://localhost:3001')
 
 export type CurrencyCode = 'USD' | 'NGN' | 'GBP' | 'EUR' | 'ZAR' | 'KES' | 'GHS'
 export type RegionCode = 'los1' | 'lhr1' | 'fra1' | 'nyc1' | 'sin1' | 'jnb1' | 'nbo1'

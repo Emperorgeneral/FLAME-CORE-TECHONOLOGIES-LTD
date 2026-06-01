@@ -37,7 +37,7 @@ class PaymentRegistry {
       this.providers.set('paypal', new PayPalProvider(
         process.env.PAYPAL_CLIENT_ID,
         process.env.PAYPAL_CLIENT_SECRET,
-        (process.env.PAYPAL_MODE as 'sandbox' | 'live') ?? 'sandbox',
+        (process.env.PAYPAL_MODE as 'sandbox' | 'live') ?? 'live',
       ));
     }
 

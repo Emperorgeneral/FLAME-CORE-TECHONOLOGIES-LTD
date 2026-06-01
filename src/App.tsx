@@ -213,24 +213,7 @@ export default function App() {
   // Use real deployments for authenticated users, empty for new users
   const deployments = authed ? userDeployments : []
 
-  const [logs, setLogs] = useState<LogLine[]>([
-    { t: "14:22:01", level: "info", msg: "→ cloning github.com/flamecore/payments-svc#main" },
-    { t: "14:22:03", level: "ok", msg: "✓ repository cloned (1.2 MB)" },
-    { t: "14:22:03", level: "info", msg: "→ detecting build system" },
-    { t: "14:22:04", level: "ok", msg: "✓ detected Dockerfile (custom build)" },
-    { t: "14:22:05", level: "info", msg: "→ building image flame-dpl_7d1b40:latest" },
-    { t: "14:22:08", level: "info", msg: "  step 1/9 : FROM node:20-alpine" },
-    { t: "14:22:11", level: "info", msg: "  step 2/9 : WORKDIR /app" },
-    { t: "14:22:11", level: "info", msg: "  step 3/9 : COPY package*.json ./" },
-    { t: "14:22:12", level: "info", msg: "  step 4/9 : RUN npm ci --omit=dev" },
-    { t: "14:22:34", level: "ok", msg: "  ✓ installed 248 packages in 22s" },
-    { t: "14:22:35", level: "info", msg: "  step 5/9 : COPY . ." },
-    { t: "14:22:36", level: "info", msg: "  step 6/9 : RUN npm run build" },
-    { t: "14:22:48", level: "warn", msg: "  ⚠ deprecation: subdependency 'inflight' is deprecated" },
-    { t: "14:22:51", level: "ok", msg: "  ✓ build complete (bundle 412 KB)" },
-    { t: "14:22:52", level: "info", msg: "→ pushing to internal registry" },
-    { t: "14:22:55", level: "info", msg: "→ provisioning container in lagos (los1)" },
-  ])
+  const [logs, setLogs] = useState<LogLine[]>([])
   void logs
 
   useEffect(() => {
@@ -645,10 +628,6 @@ export default function App() {
                         <path d="M12 2C6.48 2 2 6.48 2 12c0 4.42 2.87 8.17 6.84 9.5.5.08.66-.23.66-.5v-1.69c-2.77.6-3.36-1.34-3.36-1.34-.46-1.16-1.11-1.47-1.11-1.47-.91-.62.07-.6.07-.6 1 .07 1.53 1.03 1.53 1.03.87 1.52 2.34 1.07 2.91.83.09-.65.35-1.09.63-1.34-2.22-.25-4.55-1.11-4.55-4.94 0-1.1.39-1.99 1.03-2.69-.1-.25-.45-1.27.1-2.65 0 0 .84-.27 2.75 1.02.79-.22 1.65-.33 2.5-.33.85 0 1.71.11 2.5.33 1.91-1.29 2.75-1.02 2.75-1.02.55 1.38.2 2.4.1 2.65.64.7 1.03 1.59 1.03 2.69 0 3.84-2.34 4.68-4.57 4.93.36.31.69.92.69 1.85V21c0 .27.16.59.67.5C19.14 20.16 22 16.42 22 12A10 10 0 0012 2z" fill="#050407"/>
                       </svg>
                       <span className="text-[14px] font-[650] text-[#050407]">Deploy from GitHub</span>
-                    </button>
-                    <button className="flex items-center gap-2.5 rounded-lg border border-white/[0.1] bg-white/[0.02] px-5 h-12 hover:border-white/[0.18] hover:bg-white/[0.04] transition-all backdrop-blur-xl">
-                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none"><polygon points="6 4 20 12 6 20 6 4" fill="#E8E6E3"/></svg>
-                      <span className="text-[14px] font-[550] text-[#E8E6E3]">Watch 60s demo</span>
                     </button>
                   </div>
 
@@ -1434,7 +1413,6 @@ function AdminSuperConsole({ onToast, adminTab, setAdminTab }: { onToast: (m: st
                 {[
                   ["flamecore", "12.8 GB", "84k objects"],
                   ["acme-corp", "4.2 GB", "12k objects"],
-                  ["demo-team", "440 MB", "1.2k objects"],
                 ].map(([team, size, objects]) => (
                   <div key={team} className="flex items-center justify-between text-[12px]">
                     <div>

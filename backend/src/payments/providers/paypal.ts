@@ -15,7 +15,7 @@ export class PayPalProvider implements PaymentProviderAdapter {
   constructor(
     private readonly clientId: string,
     private readonly clientSecret: string,
-    private readonly mode: 'sandbox' | 'live' = 'sandbox',
+    private readonly mode: 'sandbox' | 'live' = 'live',
   ) {}
 
   async charge(req: ChargeRequest): Promise<ChargeResult> {
