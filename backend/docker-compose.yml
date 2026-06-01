@@ -42,6 +42,7 @@ services:
       API_HOST: 0.0.0.0
       NODE_ENV: production
       JWT_SECRET: ${JWT_SECRET}
+      CORS_ORIGINS: ${CORS_ORIGINS}
     ports:
       - "3002:3002"
     depends_on:
