@@ -7,7 +7,7 @@ services:
     environment:
       POSTGRES_DB: flamecore
       POSTGRES_USER: flame
-      POSTGRES_PASSWORD: password
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     ports:
       - "5433:5432"
     volumes:
@@ -35,7 +35,7 @@ services:
     build: .
     container_name: flamecore-api
     environment:
-      DATABASE_URL: postgresql://flame:password@postgres:5432/flamecore
+      DATABASE_URL: postgresql://flame:${POSTGRES_PASSWORD}@postgres:5432/flamecore
       REDIS_URL: redis://redis:6379
       API_PORT: 3001
       API_HOST: 0.0.0.0
