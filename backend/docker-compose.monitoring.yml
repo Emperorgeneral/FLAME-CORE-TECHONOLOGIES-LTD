@@ -23,7 +23,7 @@ services:
     image: grafana/grafana:latest
     container_name: flame-grafana
     ports:
-      - "127.0.0.1:3000:3000"
+      - "127.0.0.1:4001:3000"
     environment:
       GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_PASSWORD:-admin}
       GF_INSTALL_PLUGINS: 'grafana-piechart-panel,grafana-clock-panel'
