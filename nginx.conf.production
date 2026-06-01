@@ -114,14 +114,14 @@ server {
 
     # Static files (from Vite build: dist/)
     location ~* \.(js|css|png|jpg|jpeg|gif|svg|woff|woff2|ttf|eot)$ {
-        root /var/www/html;
+        root /var/www/marketing;
         expires 30d;
         add_header Cache-Control "public, immutable";
     }
 
     # SPA fallback (index.html for React Router)
     location / {
-        root /var/www/html;
+        root /var/www/marketing;
         try_files $uri /index.html;
         add_header Cache-Control "no-cache, no-store, must-revalidate";
         add_header Pragma "no-cache";
@@ -194,14 +194,14 @@ server {
 
     # ─── Static files (console dashboard) ──────────────────
     location ~* \.(js|css|png|jpg|jpeg|gif|svg|woff|woff2)$ {
-        root /root/flame-core/frontend-dist;
+        root /var/www/flame-core;
         expires 30d;
         add_header Cache-Control "public, immutable";
     }
 
     # ─── SPA fallback ──────────────────────────────────────
     location / {
-        root /root/flame-core/frontend-dist;
+        root /var/www/flame-core;
         try_files $uri /index.html;
         add_header Cache-Control "no-cache, no-store, must-revalidate";
         add_header Pragma "no-cache";
