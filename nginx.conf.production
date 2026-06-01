@@ -128,143 +128,136 @@ server {
 }
 
 # ========================================================
-# HTTPS: Hosting Platform (subdomain) - DISABLED UNTIL CERTS READY
+# HTTPS: Hosting Platform (subdomain)
 # ========================================================
-# TODO: Set up certificates with:
-#   certbot certonly --standalone -d hosting.flamecoretechltd.com -d api.flamecoretechltd.com
-# Then uncomment these server blocks
 
-# server {
-#     listen 443 ssl http2;
-#     listen [::]:443 ssl http2;
-#     server_name hosting.flamecoretechltd.com;
-# 
-#     ssl_certificate /etc/letsencrypt/live/hosting.flamecoretechltd.com/fullchain.pem;
-#     ssl_certificate_key /etc/letsencrypt/live/hosting.flamecoretechltd.com/privkey.pem;
-# 
-#     ssl_protocols TLSv1.2 TLSv1.3;
-#     ssl_ciphers HIGH:!aNULL:!MD5;
-#     ssl_prefer_server_ciphers on;
-#     ssl_session_cache shared:SSL:10m;
-# 
-#     add_header Strict-Transport-Security "max-age=31536000; includeSubDomains" always;
-#     add_header X-Content-Type-Options "nosniff" always;
-#     add_header X-Frame-Options "SAMEORIGIN" always;
-# 
-#     access_log /var/log/nginx/flamecore-hosting-access.log combined;
-#     error_log /var/log/nginx/flamecore-hosting-error.log warn;
-# 
-#     gzip on;
-#     gzip_types text/plain text/css application/json application/javascript;
-#     gzip_min_length 256;
-# 
-#     # ─── API proxy: /api/v1/* → backend ───────────────────
-#     location /api/v1 {
-#         limit_req zone=api burst=50 nodelay;
-# 
-#         proxy_pass http://flamecore_api;
-#         proxy_http_version 1.1;
-#         proxy_set_header Upgrade $http_upgrade;
-#         proxy_set_header Connection "upgrade";
-#         proxy_set_header Host $host;
-#         proxy_set_header X-Real-IP $remote_addr;
-#         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-#         proxy_set_header X-Forwarded-Proto $scheme;
-#         proxy_set_header X-Forwarded-Host $server_name;
-# 
-#         proxy_buffering off;
-#         proxy_request_buffering off;
-#         proxy_cache off;
-# 
-#         # WebSocket support for SSE/logs
-#         proxy_read_timeout 300s;
-#         proxy_connect_timeout 75s;
-#     }
-# 
-#     # ─── Auth endpoints: public but rate-limited ───────────
-#     location ~ ^/api/v1/(auth|oauth) {
-#         limit_req zone=auth burst=5 nodelay;
-# 
-#         proxy_pass http://flamecore_api;
-#         proxy_http_version 1.1;
-#         proxy_set_header Host $host;
-#         proxy_set_header X-Real-IP $remote_addr;
-#         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-#         proxy_set_header X-Forwarded-Proto $scheme;
-#     }
-# 
-#     # ─── Static files (console dashboard) ──────────────────
-#     location ~* \.(js|css|png|jpg|jpeg|gif|svg|woff|woff2)$ {
-#         root /var/www/html;
-#         expires 30d;
-#         add_header Cache-Control "public, immutable";
-#     }
-# 
-#     # ─── SPA fallback ──────────────────────────────────────
-#     location / {
-#         root /var/www/html;
-#         try_files $uri /index.html;
-#         add_header Cache-Control "no-cache, no-store, must-revalidate";
-#         add_header Pragma "no-cache";
-#         add_header Expires "0";
-#     }
-# }
+server {
+    listen 443 ssl http2;
+    listen [::]:443 ssl http2;
+    server_name hosting.flamecoretechltd.com;
+
+    ssl_certificate /etc/letsencrypt/live/hosting.flamecoretechltd.com/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/hosting.flamecoretechltd.com/privkey.pem;
+
+    ssl_protocols TLSv1.2 TLSv1.3;
+    ssl_ciphers HIGH:!aNULL:!MD5;
+    ssl_prefer_server_ciphers on;
+    ssl_session_cache shared:SSL:10m;
+
+    add_header Strict-Transport-Security "max-age=31536000; includeSubDomains" always;
+    add_header X-Content-Type-Options "nosniff" always;
+    add_header X-Frame-Options "SAMEORIGIN" always;
+
+    access_log /var/log/nginx/flamecore-hosting-access.log combined;
+    error_log /var/log/nginx/flamecore-hosting-error.log warn;
+
+    gzip on;
+    gzip_types text/plain text/css application/json application/javascript;
+    gzip_min_length 256;
+
+    # ─── API proxy: /api/v1/* → backend ───────────────────
+    location /api/v1 {
+        limit_req zone=api burst=50 nodelay;
+
+        proxy_pass http://flamecore_api;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header X-Forwarded-Host $server_name;
+
+        proxy_buffering off;
+        proxy_request_buffering off;
+        proxy_cache off;
+
+        # WebSocket support for SSE/logs
+        proxy_read_timeout 300s;
+        proxy_connect_timeout 75s;
+    }
+
+    # ─── Auth endpoints: public but rate-limited ───────────
+    location ~ ^/api/v1/(auth|oauth) {
+        limit_req zone=auth burst=5 nodelay;
+
+        proxy_pass http://flamecore_api;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+
+    # ─── Static files (console dashboard) ──────────────────
+    location ~* \.(js|css|png|jpg|jpeg|gif|svg|woff|woff2)$ {
+        root /var/www/html;
+        expires 30d;
+        add_header Cache-Control "public, immutable";
+    }
+
+    # ─── SPA fallback ──────────────────────────────────────
+    location / {
+        root /var/www/html;
+        try_files $uri /index.html;
+        add_header Cache-Control "no-cache, no-store, must-revalidate";
+        add_header Pragma "no-cache";
+        add_header Expires "0";
+    }
+}
 
 # ========================================================
-# HTTPS: API Backend (optional separate subdomain) - DISABLED UNTIL CERTS READY
+# HTTPS: API Backend (optional separate subdomain)
 # ========================================================
-# If you want API on its own subdomain (api.flamecoretechltd.com)
-# instead of serving from hosting.flamecoretechltd.com/api/v1
-# First set up certs with:
-#   certbot certonly --standalone -d api.flamecoretechltd.com
 
-# server {
-#     listen 443 ssl http2;
-#     listen [::]:443 ssl http2;
-#     server_name api.flamecoretechltd.com;
-# 
-#     ssl_certificate /etc/letsencrypt/live/api.flamecoretechltd.com/fullchain.pem;
-#     ssl_certificate_key /etc/letsencrypt/live/api.flamecoretechltd.com/privkey.pem;
-# 
-#     ssl_protocols TLSv1.2 TLSv1.3;
-#     ssl_ciphers HIGH:!aNULL:!MD5;
-# 
-#     add_header Strict-Transport-Security "max-age=31536000; includeSubDomains" always;
-#     add_header Access-Control-Allow-Origin "*" always;
-#     add_header Access-Control-Allow-Methods "GET, POST, PUT, PATCH, DELETE, OPTIONS" always;
-#     add_header Access-Control-Allow-Headers "Content-Type, Authorization" always;
-# 
-#     access_log /var/log/nginx/flamecore-api-access.log combined;
-#     error_log /var/log/nginx/flamecore-api-error.log warn;
-# 
-#     # Health check endpoint (no rate limit)
-#     location /health {
-#         proxy_pass http://flamecore_api;
-#         access_log off;
-#     }
-# 
-#     # API endpoints with rate limiting
-#     location / {
-#         limit_req zone=api burst=100 nodelay;
-# 
-#         proxy_pass http://flamecore_api;
-#         proxy_http_version 1.1;
-#         proxy_set_header Upgrade $http_upgrade;
-#         proxy_set_header Connection "upgrade";
-#         proxy_set_header Host $host;
-#         proxy_set_header X-Real-IP $remote_addr;
-#         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-#         proxy_set_header X-Forwarded-Proto $scheme;
-# 
-#         proxy_buffering off;
-#         proxy_read_timeout 300s;
-#     }
-# 
-#     # CORS preflight
-#     if ($request_method = "OPTIONS") {
-#         return 204;
-#     }
-# }
+server {
+    listen 443 ssl http2;
+    listen [::]:443 ssl http2;
+    server_name api.flamecoretechltd.com;
+
+    ssl_certificate /etc/letsencrypt/live/api.flamecoretechltd.com/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/api.flamecoretechltd.com/privkey.pem;
+
+    ssl_protocols TLSv1.2 TLSv1.3;
+    ssl_ciphers HIGH:!aNULL:!MD5;
+
+    add_header Strict-Transport-Security "max-age=31536000; includeSubDomains" always;
+    add_header Access-Control-Allow-Origin "*" always;
+    add_header Access-Control-Allow-Methods "GET, POST, PUT, PATCH, DELETE, OPTIONS" always;
+    add_header Access-Control-Allow-Headers "Content-Type, Authorization" always;
+
+    access_log /var/log/nginx/flamecore-api-access.log combined;
+    error_log /var/log/nginx/flamecore-api-error.log warn;
+
+    # Health check endpoint (no rate limit)
+    location /health {
+        proxy_pass http://flamecore_api;
+        access_log off;
+    }
+
+    # API endpoints with rate limiting
+    location / {
+        limit_req zone=api burst=100 nodelay;
+
+        proxy_pass http://flamecore_api;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+
+        proxy_buffering off;
+        proxy_read_timeout 300s;
+    }
+
+    # CORS preflight
+    if ($request_method = "OPTIONS") {
+        return 204;
+    }
+}
 
 # ========================================================
 # Redirect customer app subdomains to their deployments
