@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { Toast } from '@/components/ui/Toast'
-import apiClient from '@/api/client'
+import { apiClient } from '@/api/client'
 
 interface VerifyEmailProps {
   onSuccess?: () => void

@@ -7,7 +7,7 @@ import { HouseView } from "@/features/console/HouseView"
 import { RoomPanel } from "@/features/console/RoomPanel"
 import { VerifyEmail } from "@/features/auth/VerifyEmail"
 import { useConsole } from "@/features/console/useConsole"
-import apiClient from "@/api/client"
+import { apiClient } from "@/api/client"
 import type { NewProjectStep } from "@/features/console/useConsole"
 
 type Region = {
