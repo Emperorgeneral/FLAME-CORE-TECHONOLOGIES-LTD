@@ -18,11 +18,11 @@
 module.exports = {
   apps: [
     {
-      name: 'flame-api',
+      name: 'flame-core-backend',
       script: './dist/index.js',
-      cwd: '/app/flame-core/backend',
+      cwd: '/root/flame-core/backend',
       instances: 1,
-      exec_mode: 'cluster',
+      exec_mode: 'fork',
       env: {
         NODE_ENV: 'production',
         PROCESS_ROLE: 'api',
@@ -35,9 +35,9 @@ module.exports = {
       max_restarts: 10,
       min_uptime: '10s',
       // Logging
-      log_file: '/var/log/flame/api-combined.log',
-      out_file: '/var/log/flame/api-out.log',
-      error_file: '/var/log/flame/api-error.log',
+      log_file: '/root/flame-core/logs/api-combined.log',
+      out_file: '/root/flame-core/logs/api-out.log',
+      error_file: '/root/flame-core/logs/api-error.log',
       log_date_format: 'YYYY-MM-DD HH:mm:ss Z',
       merge_logs: true,
       // Graceful shutdown
@@ -46,9 +46,9 @@ module.exports = {
       listen_timeout: 10000,
     },
     {
-      name: 'flame-worker',
+      name: 'flame-core-worker',
       script: './dist/index.js',
-      cwd: '/app/flame-core/backend',
+      cwd: '/root/flame-core/backend',
       instances: 1,
       exec_mode: 'fork',
       env: {
@@ -63,9 +63,9 @@ module.exports = {
       max_restarts: 5,
       min_uptime: '30s',
       // Logging
-      log_file: '/var/log/flame/worker-combined.log',
-      out_file: '/var/log/flame/worker-out.log',
-      error_file: '/var/log/flame/worker-error.log',
+      log_file: '/root/flame-core/logs/worker-combined.log',
+      out_file: '/root/flame-core/logs/worker-out.log',
+      error_file: '/root/flame-core/logs/worker-error.log',
       log_date_format: 'YYYY-MM-DD HH:mm:ss Z',
       merge_logs: true,
       kill_timeout: 30000, // allow builds to finish gracefully
@@ -82,14 +82,13 @@ module.exports = {
 
   deploy: {
     production: {
-      user: 'flame',
-      host: ['your-vps-ip'],
+      user: 'root',
+      host: ['vmi3227630'],
       ref: 'origin/main',
-      repo: 'git@github.com:flamecore/platform.git',
-      path: '/app/flame-core',
-      'pre-deploy-local': '',
-      'post-deploy': 'cd backend && npm ci && npm run build && pm2 reload ecosystem.config.js --env production',
-      'pre-setup': '',
+      repo: 'https://github.com/Emperorgeneral/FLAME-CORE-TECHONOLOGIES-LTD.git',
+      path: '/root/flame-core',
+      'post-deploy': 'git pull origin main && npm install && cd backend && npm install && npm run build && cd .. && npm run build && pm2 start ecosystem.config.js',
+      'pre-setup': 'mkdir -p /root/flame-core/logs',
     },
   },
 };
