@@ -1,95 +1,29 @@
-root@vmi3227630:~/flame-core/backend# cd ~/flame-core && git pull origin main && cd ~/flame-core/backend && docker-compose down -v && docker-compose build --no-cache && docker-compose up -d && sleep 20 && docker-compose logs api | tail -50
-remote: Enumerating objects: 7, done.
-remote: Counting objects: 100% (7/7), done.
-remote: Compressing objects: 100% (1/1), done.
-remote: Total 4 (delta 3), reused 4 (delta 3), pack-reused 0 (from 0)
-Unpacking objects: 100% (4/4), 463 bytes | 115.00 KiB/s, done.
-From https://github.com/Emperorgeneral/FLAME-CORE-TECHONOLOGIES-LTD
- * branch            main       -> FETCH_HEAD
-   2eabac6..3a0f3d6  main       -> origin/main
-Updating 2eabac6..3a0f3d6
-Fast-forward
- backend/docker-compose.yml | 1 +
- 1 file changed, 1 insertion(+)
-Stopping flamecore-api      ... done
-Stopping flamecore-postgres ... done
-Stopping flamecore-redis    ... done
-Removing flamecore-api      ... done
-Removing flamecore-postgres ... done
-Removing flamecore-redis    ... done
-Removing network backend_default
-Removing volume backend_postgres_data
-Removing volume backend_redis_data
-postgres uses an image, skipping
-redis uses an image, skipping
-Building api
-[+] Building 93.0s (14/14) FINISHED                                                                                                                      docker:default
- => [internal] load build definition from Dockerfile                                                                                                               0.0s
- => => transferring dockerfile: 696B                                                                                                                               0.0s
- => [internal] load metadata for docker.io/library/node:20-alpine                                                                                                  0.3s
- => [internal] load .dockerignore                                                                                                                                  0.0s
- => => transferring context: 2B                                                                                                                                    0.0s
- => [internal] load build context                                                                                                                                  0.1s
- => => transferring context: 14.62kB                                                                                                                               0.0s
- => [1/9] FROM docker.io/library/node:20-alpine@sha256:fb4cd12c85ee03686f6af5362a0b0d56d50c58a04632e6c0fb8363f609372293                                            0.1s
- => => resolve docker.io/library/node:20-alpine@sha256:fb4cd12c85ee03686f6af5362a0b0d56d50c58a04632e6c0fb8363f609372293                                            0.1s
- => CACHED [2/9] WORKDIR /app                                                                                                                                      0.0s
- => [3/9] RUN apk add --no-cache git docker                                                                                                                        5.5s
- => [4/9] COPY package*.json ./                                                                                                                                    0.1s
- => [5/9] RUN npm install --legacy-peer-deps                                                                                                                      31.6s
- => [6/9] COPY . .                                                                                                                                                 0.7s
- => [7/9] RUN echo "Source files:" && ls -la src/ && echo "Package.json:" && head -5 package.json                                                                  0.5s
- => [8/9] RUN npm run build && echo "Build complete" && ls -la                                                                                                    14.3s
- => [9/9] RUN test -f dist/index.js || (echo "ERROR: dist/index.js not found!" && ls -la dist/ 2>&1 && exit 1) && echo "dist/index.js exists!"                     0.6s
- => exporting to image                                                                                                                                            38.6s
- => => exporting layers                                                                                                                                           21.5s
- => => exporting manifest sha256:7ca13023ce35640041baa2a3cb3bfe2cfae3163c08f6d7eb82826f9215c1be3e                                                                  0.1s
- => => exporting config sha256:cdceb6f0ead9c49deb88a644433973db82fe16459c701f6410efd09cdf0ee7c5                                                                    0.0s
- => => exporting attestation manifest sha256:bb5349941b34b4e8a8905a629cdfb771b0219e29f811adf30f053e0a3c1f6834                                                      0.1s
- => => exporting manifest list sha256:2afa1b63099b60cbdec8d241c5bf81c6f4a54477bffd518593fd0df3c3725b15                                                             0.1s
- => => naming to docker.io/library/backend_api:latest                                                                                                              0.0s
- => => unpacking to docker.io/library/backend_api:latest                                                                                                          16.6s
-Creating network "backend_default" with the default driver
-Creating volume "backend_postgres_data" with default driver
-Creating volume "backend_redis_data" with default driver
-Creating flamecore-redis    ... done
-Creating flamecore-postgres ... done
-Creating flamecore-api      ... done
-flamecore-api |     where: undefined,
-flamecore-api |     schema: undefined,
-flamecore-api |     table: undefined,
-flamecore-api |     column: undefined,
-flamecore-api |     dataType: undefined,
-flamecore-api |     constraint: undefined,
-flamecore-api |     file: 'namespace.c',
-flamecore-api |     line: '434',
-flamecore-api |     routine: 'RangeVarGetRelidExtended'
-flamecore-api |   }
-flamecore-api | }
-flamecore-api | Schema error on: CREATE INDEX IF NOT EXISTS idx_log_events_stream          ON deployment_log_even error: relation "deployment_log_events" does not exist
-flamecore-api |     at /app/node_modules/pg-pool/index.js:45:11
-flamecore-api |     at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
-flamecore-api |     at async query (file:///app/dist/db/pool.js:14:24)
-flamecore-api |     at async initializeDatabase (file:///app/dist/db/init.js:691:13)
-flamecore-api |     at async bootstrap (file:///app/dist/index.js:40:9) {
-flamecore-api |   length: 119,
-flamecore-api |   severity: 'ERROR',
-flamecore-api |   code: '42P01',
-flamecore-api |   detail: undefined,
-flamecore-api |   hint: undefined,
-flamecore-api |   position: undefined,
-flamecore-api |   internalPosition: undefined,
-flamecore-api |   internalQuery: undefined,
-flamecore-api |   where: undefined,
-flamecore-api |   schema: undefined,
-flamecore-api |   table: undefined,
-flamecore-api |   column: undefined,
-flamecore-api |   dataType: undefined,
-flamecore-api |   constraint: undefined,
-flamecore-api |   file: 'namespace.c',
-flamecore-api |   line: '434',
-flamecore-api |   routine: 'RangeVarGetRelidExtended'
-flamecore-api | }
+root@vmi3227630:~/flame-core# sudo systemctl stop nginx
+sudo certbot certonly --standalone -d hosting.flamecoretechltd.com -d api.flamecoretechltd.com
+sudo systemctl start nginx
+sudo systemctl reload nginx
+Saving debug log to /var/log/letsencrypt/letsencrypt.log
+Requesting a certificate for hosting.flamecoretechltd.com and api.flamecoretechltd.com
+
+Certbot failed to authenticate some domains (authenticator: standalone). The Certificate Authority reported these problems:
+  Domain: api.flamecoretechltd.com
+  Type:   dns
+  Detail: DNS problem: NXDOMAIN looking up A for api.flamecoretechltd.com - check that a DNS record exists for this domain; DNS problem: NXDOMAIN looking up AAAA for api.flamecoretechltd.com - check that a DNS record exists for this domain
+
+  Domain: hosting.flamecoretechltd.com
+  Type:   dns
+  Detail: DNS problem: NXDOMAIN looking up A for hosting.flamecoretechltd.com - check that a DNS record exists for this domain; DNS problem: NXDOMAIN looking up AAAA for hosting.flamecoretechltd.com - check that a DNS record exists for this domain
+
+Hint: The Certificate Authority failed to download the challenge files from the temporary standalone webserver started by Certbot on port 80. Ensure that the listed domains point to this machine and that it can accept inbound connections from the internet.
+
+Some challenges have failed.
+Ask for help or search for solutions at https://community.letsencrypt.org. See the logfile /var/log/letsencrypt/letsencrypt.log or re-run Certbot with -v for more details.
+root@vmi3227630:~/flame-core# sudo tail -50 /var/log/nginx/error.log
+docker-compose -f ~/flame-core/backend/docker-compose.yml logs api | tail -50
+2026/06/01 05:20:56 [error] 2118991#2118991: *6218 connect() failed (111: Connection refused) while connecting to upstream, client: 31.58.51.24, server: flamecoretechltd.com, request: "GET /api/.env HTTP/1.1", upstream: "http://127.0.0.1:3001/api/.env", host: "flamecoretechltd.com"
+2026/06/01 09:34:50 [error] 2118990#2118990: *6442 connect() failed (111: Connection refused) while connecting to upstream, client: 45.45.237.206, server: flamecoretechltd.com, request: "GET /api/env HTTP/1.1", upstream: "http://127.0.0.1:3001/api/env", host: "www.flamecoretechltd.com"
+2026/06/01 09:34:50 [error] 2118990#2118990: *6459 connect() failed (111: Connection refused) while connecting to upstream, client: 45.45.237.206, server: flamecoretechltd.com, request: "GET /api/config HTTP/1.1", upstream: "http://127.0.0.1:3001/api/config", host: "www.flamecoretechltd.com"
+flamecore-api | {"level":30,"time":"2026-06-01T14:18:20.572Z","service":"flame-core-api","region":"los1","msg":"storage: using local filesystem"}
 flamecore-api | ✅ Schema initialized
 flamecore-api | 🌱 Seeding reference data…
 flamecore-api | ✅ Currencies (7) seeded
@@ -98,11 +32,45 @@ flamecore-api | ✅ Plans (4) seeded
 flamecore-api | ⚠️  ADMIN_EMAIL and ADMIN_PASSWORD env vars not set. Skipping admin user creation.
 flamecore-api |     Set these in production to access the admin panel.
 flamecore-api | 🎉 Seed complete - Ready for production use
-flamecore-api | {"level":30,"time":"2026-06-01T13:00:19.799Z","service":"flame-core-api","region":"los1","msg":"Worker starting (region=los1)"}
-flamecore-api | {"level":30,"time":"2026-06-01T13:00:19.803Z","service":"flame-core-api","region":"los1","msg":"deployment worker ready (region=los1)"}
-flamecore-api | {"level":30,"time":"2026-06-01T13:00:19.803Z","service":"flame-core-api","region":"los1","msg":"deployment worker initialized"}
-flamecore-api | {"level":30,"time":"2026-06-01T13:00:20.004Z","service":"flame-core-api","region":"los1","msg":"🔥 Flame Core API listening on http://0.0.0.0:3001"}
-flamecore-api | {"level":30,"time":"2026-06-01T13:00:20.004Z","service":"flame-core-api","region":"los1","processRole":"all","env":"production","admin":"admin@flamecore.app","msg":"startup complete"}
-flamecore-api | {"level":30,"time":"2026-06-01T13:00:20.005Z","service":"flame-core-api","region":"los1","msg":"deployment worker ready (region=los1)"}
-flamecore-api | {"level":30,"time":"2026-06-01T13:00:20.005Z","service":"flame-core-api","region":"los1","msg":"deployment worker initialized"}
-root@vmi3227630:~/flame-core/backend#
+flamecore-api | {"level":30,"time":"2026-06-01T14:18:21.073Z","service":"flame-core-api","region":"los1","msg":"Worker starting (region=los1)"}
+flamecore-api | {"level":30,"time":"2026-06-01T14:18:21.076Z","service":"flame-core-api","region":"los1","msg":"deployment worker ready (region=los1)"}
+flamecore-api | {"level":30,"time":"2026-06-01T14:18:21.076Z","service":"flame-core-api","region":"los1","msg":"deployment worker initialized"}
+flamecore-api | {"level":30,"time":"2026-06-01T14:18:21.239Z","service":"flame-core-api","region":"los1","msg":"🔥 Flame Core API listening on http://0.0.0.0:3001"}
+flamecore-api | {"level":30,"time":"2026-06-01T14:18:21.239Z","service":"flame-core-api","region":"los1","processRole":"all","env":"production","admin":"admin@flamecore.app","msg":"startup complete"}
+flamecore-api | {"level":30,"time":"2026-06-01T14:18:21.240Z","service":"flame-core-api","region":"los1","msg":"deployment worker ready (region=los1)"}
+flamecore-api | {"level":30,"time":"2026-06-01T14:18:21.240Z","service":"flame-core-api","region":"los1","msg":"deployment worker initialized"}
+flamecore-api | Executed query {
+flamecore-api |   text: 'SELECT hc.*, d.container_id, d.internal_port, d.deployment_url, d.status as deploy_status\n' +
+flamecore-api |     '         FROM health_checks hc\n' +
+flamecore-api |     '         JOIN deployments d ON d.id = hc.deployment_id\n' +
+flamecore-api |     "        WHERE d.status IN ('ready','healthy') AND hc.current_status != 'unknown'\n" +
+flamecore-api |     "           OR (d.status = 'ready' AND hc.last_check_at IS NULL)\n" +
+flamecore-api |     '        ORDER BY hc.last_check_at ASC NULLS FIRST\n' +
+flamecore-api |     '        LIMIT 50',
+flamecore-api |   duration: 102,
+flamecore-api |   rows: 0
+flamecore-api | }
+flamecore-api | Executed query {
+flamecore-api |   text: 'SELECT hc.*, d.container_id, d.internal_port, d.deployment_url, d.status as deploy_status\n' +
+flamecore-api |     '         FROM health_checks hc\n' +
+flamecore-api |     '         JOIN deployments d ON d.id = hc.deployment_id\n' +
+flamecore-api |     "        WHERE d.status IN ('ready','healthy') AND hc.current_status != 'unknown'\n" +
+flamecore-api |     "           OR (d.status = 'ready' AND hc.last_check_at IS NULL)\n" +
+flamecore-api |     '        ORDER BY hc.last_check_at ASC NULLS FIRST\n' +
+flamecore-api |     '        LIMIT 50',
+flamecore-api |   duration: 102,
+flamecore-api |   rows: 0
+flamecore-api | }
+flamecore-api | Executed query {
+flamecore-api |   text: 'SELECT hc.*, d.container_id, d.internal_port, d.deployment_url, d.status as deploy_status\n' +
+flamecore-api |     '         FROM health_checks hc\n' +
+flamecore-api |     '         JOIN deployments d ON d.id = hc.deployment_id\n' +
+flamecore-api |     "        WHERE d.status IN ('ready','healthy') AND hc.current_status != 'unknown'\n" +
+flamecore-api |     "           OR (d.status = 'ready' AND hc.last_check_at IS NULL)\n" +
+flamecore-api |     '        ORDER BY hc.last_check_at ASC NULLS FIRST\n' +
+flamecore-api |     '        LIMIT 50',
+flamecore-api |   duration: 122,
+flamecore-api |   rows: 0
+flamecore-api | }
+flamecore-api | {"level":30,"time":"2026-06-01T14:35:53.882Z","service":"flame-core-api","region":"los1","trace_id":"req_mpvb9thq_28fozk","method":"GET","url":"/","ip":"172.19.0.1","msg":"Route GET:/ not found"}
+root@vmi3227630:~/flame-core#

@@ -1,0 +1,80 @@
+version: '3.8'
+
+services:
+  # Prometheus - Time-series database for metrics
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: flame-prometheus
+    ports:
+      - "127.0.0.1:9090:9090"
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--storage.tsdb.retention.time=30d'
+    networks:
+      - backend_default
+    restart: unless-stopped
+
+  # Grafana - Visualization dashboard
+  grafana:
+    image: grafana/grafana:latest
+    container_name: flame-grafana
+    ports:
+      - "127.0.0.1:3000:3000"
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_PASSWORD:-admin}
+      GF_INSTALL_PLUGINS: 'grafana-piechart-panel,grafana-clock-panel'
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
+    networks:
+      - backend_default
+    restart: unless-stopped
+    depends_on:
+      - prometheus
+
+  # Node Exporter - Host metrics (CPU, memory, disk, network)
+  node-exporter:
+    image: prom/node-exporter:latest
+    container_name: flame-node-exporter
+    ports:
+      - "127.0.0.1:9100:9100"
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/rootfs:ro
+    command:
+      - '--path.procfs=/host/proc'
+      - '--path.sysfs=/host/sys'
+      - '--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)'
+    networks:
+      - backend_default
+    restart: unless-stopped
+
+  # cAdvisor - Docker container metrics
+  cadvisor:
+    image: gcr.io/cadvisor/cadvisor:latest
+    container_name: flame-cadvisor
+    ports:
+      - "127.0.0.1:8080:8080"
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:ro
+      - /sys:/sys:ro
+      - /var/lib/docker/:/var/lib/docker:ro
+    networks:
+      - backend_default
+    restart: unless-stopped
+
+volumes:
+  prometheus_data:
+    driver: local
+  grafana_data:
+    driver: local
+
+networks:
+  backend_default:
+    driver: bridge

@@ -11,16 +11,7 @@
  */
 const API_URL =
   (import.meta.env.VITE_API_URL as string | undefined)?.replace(/\/$/, '') ||
-  (import.meta.env.MODE === 'production'
-    ? ((): never => {
-        throw new Error('VITE_API_URL must be set in production');
-      })()
-    : 'http://localhost:3001')
-
-// DEBUG: Log the API URL so we can see what's being used
-if (typeof window !== 'undefined') {
-  console.log('🔥 Flame Core API URL:', API_URL)
-}
+  'http://localhost:3001'
 
 export type CurrencyCode = 'USD' | 'NGN' | 'GBP' | 'EUR' | 'ZAR' | 'KES' | 'GHS'
 export type RegionCode = 'los1' | 'lhr1' | 'fra1' | 'nyc1' | 'sin1' | 'jnb1' | 'nbo1'

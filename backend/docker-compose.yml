@@ -41,7 +41,6 @@ services:
       API_HOST: 0.0.0.0
       NODE_ENV: production
       JWT_SECRET: dev-secret-key-change-in-production
-      CORS_ORIGINS: https://217.216.80.90,https://flamecoreltd.com,http://localhost:5173,http://localhost:3000
     ports:
       - "3001:3001"
     depends_on:

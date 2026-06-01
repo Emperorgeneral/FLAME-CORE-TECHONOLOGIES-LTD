@@ -1,4 +1,5 @@
 # Environment variables
+.env
 .env.local
 .env.development
 .env.production.local
@@ -25,6 +26,7 @@ coverage/
 *.swo
 *~
 .DS_Store
+.env.production
 
 # OS
 Thumbs.db
