@@ -7,6 +7,7 @@ import { HouseView } from "@/features/console/HouseView"
 import { RoomPanel } from "@/features/console/RoomPanel"
 import { VerifyEmail } from "@/features/auth/VerifyEmail"
 import { useConsole } from "@/features/console/useConsole"
+import apiClient from "@/api/client"
 import type { NewProjectStep } from "@/features/console/useConsole"
 
 type Region = {
@@ -408,26 +409,38 @@ export default function App() {
     }).format(price)
   }
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (loginEmail && loginPassword.length >= 4) {
+    if (!loginEmail || loginPassword.length < 8) {
+      setToast("ERROR · invalid email or password")
+      return
+    }
+
+    try {
+      const result = await apiClient.login(loginEmail, loginPassword)
       setAuthed(true)
-      setIsAdmin(loginEmail.includes("admin"))
+      setIsAdmin(result.user.role === "admin")
+      setUserId(result.user.id)
       localStorage.setItem("flamecore_session", "active")
-      setToast("AUTHENTICATED · welcome back, operator")
+      setToast(`AUTHENTICATED · welcome ${result.user.email}`)
       setLoginEmail("")
       setLoginPassword("")
-    } else {
-      setToast("ERROR · invalid credentials")
+      setView("console")
+    } catch (error: any) {
+      if (error.status === 403) {
+        setToast("⚠️ EMAIL NOT VERIFIED · check your inbox for verification link")
+      } else {
+        setToast(`ERROR · ${error.message || "login failed"}`)
+      }
     }
   }
 
-  const handleRegister = (e: React.FormEvent) => {
+  const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault()
     const fullName = `${registerData.firstName} ${registerData.lastName}`.trim()
 
-    if (!registerData.firstName || !registerData.lastName || !registerData.email || !registerData.company || !registerData.teamName) {
-      setToast("ERROR · complete all required registration fields")
+    if (!registerData.firstName || !registerData.lastName || !registerData.email) {
+      setToast("ERROR · complete all required fields")
       return
     }
 
@@ -441,32 +454,33 @@ export default function App() {
       return
     }
 
-    setAuthed(true)
-    setIsAdmin(registerData.email.includes("admin"))
-    localStorage.setItem("flamecore_session", "active")
-    localStorage.setItem("flamecore_profile", JSON.stringify({
-      name: fullName,
-      email: registerData.email,
-      company: registerData.company,
-      team: registerData.teamName,
-      role: registerData.role,
-      country: registerData.country,
-    }))
-    setToast(`ACCOUNT CREATED · welcome ${registerData.firstName}`)
-    setRegisterData({
-      firstName: "",
-      lastName: "",
-      email: "",
-      company: "",
-      phone: "",
-      country: "Nigeria",
-      teamName: "",
-      role: "Founder",
-      password: "",
-      confirmPassword: "",
-    })
-    setAuthMode("signin")
-    setView("console")
+    try {
+      // Register user - doesn't log in, requires email verification
+      await apiClient.register({
+        email: registerData.email,
+        username: registerData.email.split("@")[0],
+        password: registerData.password,
+        full_name: fullName,
+        country_code: registerData.country,
+      })
+
+      setToast("✅ ACCOUNT CREATED · check your email to verify")
+      setRegisterData({
+        firstName: "",
+        lastName: "",
+        email: "",
+        company: "",
+        phone: "",
+        country: "Nigeria",
+        teamName: "",
+        role: "Founder",
+        password: "",
+        confirmPassword: "",
+      })
+      setAuthMode("signin")
+    } catch (error: any) {
+      setToast(`ERROR · ${error.message || "registration failed"}`)
+    }
   }
 
   const handleDeploy = (e: React.FormEvent) => {
@@ -1258,7 +1272,7 @@ export default function App() {
                 </div>
 
                 <div className="mt-3 text-center mono text-[10px] uppercase tracking-[0.14em] text-[#4a4540]">
-                  {authMode === "signin" ? "any email + 4+ chars works for demo" : "registration now includes richer onboarding fields"}
+                  {authMode === "signin" ? "enter your registered email and password" : "register with a valid email and strong password"}
                 </div>
               </div>
             </div>
