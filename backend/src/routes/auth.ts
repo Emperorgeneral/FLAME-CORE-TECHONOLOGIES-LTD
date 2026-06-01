@@ -46,7 +46,7 @@ export async function registerAuthRoutes(fastify: FastifyInstance) {
       );
 
       // Send verification email
-      const verifyUrl = `${process.env.FRONTEND_URL || 'https://flamecoretechltd.com'}/auth/verify?token=${verificationToken}`;
+      const verifyUrl = `${process.env.FRONTEND_URL || 'https://hosting.flamecoretechltd.com'}?verify=${verificationToken}`;
       await emailService.queue(email, 'verify_email', {
         name: user.full_name || user.username || 'User',
         verify_url: verifyUrl,
@@ -198,6 +198,7 @@ export async function registerAuthRoutes(fastify: FastifyInstance) {
       return reply.send({
         user: publicUser(user),
         teams: teams.map((t) => ({ id: t.id, slug: t.slug, name: t.name, role: t.member_role })),
+        token: accessToken,
         access_token: accessToken,
         token_type: 'Bearer',
         expires_in: 900,

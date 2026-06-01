@@ -70,6 +70,7 @@ type LogLine = {
 }
 
 export default function App() {
+  const [pathname, setPathname] = useState(window.location.pathname)
   const [view, setView] = useState<"public" | "console" | "admin" | "verify">("public")
   const [mobileMenu, setMobileMenu] = useState(false)
   const [authed, setAuthed] = useState(false)
@@ -224,6 +225,9 @@ export default function App() {
     const storedTeamId = localStorage.getItem("flamecore_team")
     if (storedTeamId) setTeamId(storedTeamId)
 
+    // Sync pathname with URL
+    setPathname(window.location.pathname)
+
     // Handle URL parameters: ?verify=token or ?token=... (OAuth)
     const params = new URLSearchParams(window.location.search)
     const verifyToken = params.get("verify")
@@ -260,6 +264,11 @@ export default function App() {
     }
 
     setTimeout(() => setHeroVisible(true), 50)
+
+    // Listen for URL changes (back/forward)
+    const handlePopState = () => setPathname(window.location.pathname)
+    window.addEventListener("popstate", handlePopState)
+    return () => window.removeEventListener("popstate", handlePopState)
   }, [])
 
   // Load user deployments when authenticated
@@ -346,13 +355,23 @@ export default function App() {
     try {
       const result = await apiClient.login(loginEmail, loginPassword)
       setAuthed(true)
-      setIsAdmin(result.user.role === "admin")
+      const isAdminUser = result.user.role === "admin"
+      setIsAdmin(isAdminUser)
       setUserId(result.user.id)
+      // Store first team if available
+      if (result.teams && result.teams.length > 0) {
+        setTeamId(result.teams[0].id)
+        localStorage.setItem("flamecore_team", result.teams[0].id)
+      }
       localStorage.setItem("flamecore_session", "active")
       setToast(`AUTHENTICATED · welcome ${result.user.email}`)
       setLoginEmail("")
       setLoginPassword("")
-      setView("console")
+      // Redirect via URL: /admin for admins, /console for users
+      const redirectPath = isAdminUser ? "/admin" : "/console"
+      window.history.pushState({}, "", redirectPath)
+      setPathname(redirectPath)
+      setView(isAdminUser ? "admin" : "console")
     } catch (error: any) {
       if (error.status === 403) {
         setToast("⚠️ EMAIL NOT VERIFIED · check your inbox for verification link")
@@ -480,20 +499,34 @@ export default function App() {
             </select>
             <div className="flex items-center gap-1.5">
               {isAdmin && (
-                <button
-                  onClick={() => setView(view === "admin" ? "console" : "admin")}
-                  className="flex items-center gap-1 rounded-md border border-[#FFBD2E]/30 bg-[#FFBD2E]/[0.08] px-2 py-0.5 text-[10px] font-medium text-[#FFBD2E] hover:bg-[#FFBD2E]/15 transition-colors"
+                <a
+                  href={pathname === "/admin" ? "/console" : "/admin"}
+                  onClick={(e) => {
+                    e.preventDefault()
+                    const newPath = pathname === "/admin" ? "/console" : "/admin"
+                    window.history.pushState({}, "", newPath)
+                    setPathname(newPath)
+                    setView(pathname === "/admin" ? "console" : "admin")
+                  }}
+                  className="flex items-center gap-1 rounded-md border border-[#FFBD2E]/30 bg-[#FFBD2E]/[0.08] px-2 py-0.5 text-[10px] font-medium text-[#FFBD2E] hover:bg-[#FFBD2E]/15 transition-colors cursor-pointer"
                 >
-                  {view === "admin" ? "← console" : "ops"}
-                </button>
+                  {pathname === "/admin" ? "← console" : "ops"}
+                </a>
               )}
-              <button
-                onClick={() => setView(view === "public" ? "console" : "public")}
-                className="flex items-center gap-1.5 rounded-md border border-[#FF4D1F]/30 bg-[#FF4D1F]/[0.08] px-2 py-0.5 text-[10px] font-medium text-[#FF4D1F] hover:bg-[#FF4D1F]/15 transition-colors"
+              <a
+                href={pathname === "/" ? "/console" : "/"}
+                onClick={(e) => {
+                  e.preventDefault()
+                  const newPath = pathname === "/" ? "/console" : "/"
+                  window.history.pushState({}, "", newPath)
+                  setPathname(newPath)
+                  setView(pathname === "/" ? "console" : "public")
+                }}
+                className="flex items-center gap-1.5 rounded-md border border-[#FF4D1F]/30 bg-[#FF4D1F]/[0.08] px-2 py-0.5 text-[10px] font-medium text-[#FF4D1F] hover:bg-[#FF4D1F]/15 transition-colors cursor-pointer"
               >
                 <span className="h-1 w-1 rounded-full bg-[#FF4D1F]" />
-                {view === "public" ? "→ console" : "← website"}
-              </button>
+                {pathname === "/" ? "→ console" : "← website"}
+              </a>
             </div>
           </div>
         </div>
@@ -620,15 +653,21 @@ export default function App() {
                   </p>
 
                   <div className={`mt-9 flex flex-wrap items-center gap-3 transition-all duration-1000 delay-300 ${heroVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`}>
-                    <button
-                      onClick={() => setView("console")}
-                      className="group relative overflow-hidden rounded-lg bg-[#E8E6E3] px-5 h-12 flex items-center gap-2.5 hover:bg-white transition-colors"
+                    <a
+                      href="/console"
+                      onClick={(e) => {
+                        e.preventDefault()
+                        window.history.pushState({}, "", "/console")
+                        setPathname("/console")
+                        setView("console")
+                      }}
+                      className="group relative overflow-hidden rounded-lg bg-[#E8E6E3] px-5 h-12 flex items-center gap-2.5 hover:bg-white transition-colors cursor-pointer"
                     >
                       <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
                         <path d="M12 2C6.48 2 2 6.48 2 12c0 4.42 2.87 8.17 6.84 9.5.5.08.66-.23.66-.5v-1.69c-2.77.6-3.36-1.34-3.36-1.34-.46-1.16-1.11-1.47-1.11-1.47-.91-.62.07-.6.07-.6 1 .07 1.53 1.03 1.53 1.03.87 1.52 2.34 1.07 2.91.83.09-.65.35-1.09.63-1.34-2.22-.25-4.55-1.11-4.55-4.94 0-1.1.39-1.99 1.03-2.69-.1-.25-.45-1.27.1-2.65 0 0 .84-.27 2.75 1.02.79-.22 1.65-.33 2.5-.33.85 0 1.71.11 2.5.33 1.91-1.29 2.75-1.02 2.75-1.02.55 1.38.2 2.4.1 2.65.64.7 1.03 1.59 1.03 2.69 0 3.84-2.34 4.68-4.57 4.93.36.31.69.92.69 1.85V21c0 .27.16.59.67.5C19.14 20.16 22 16.42 22 12A10 10 0 0012 2z" fill="#050407"/>
                       </svg>
                       <span className="text-[14px] font-[650] text-[#050407]">Deploy from GitHub</span>
-                    </button>
+                    </a>
                   </div>
 
                   {/* Command line teaser */}
@@ -1221,10 +1260,32 @@ export default function App() {
     </main>
   )}
 
-  {/* ADMIN SUPER CONSOLE */}
-  {view === "admin" && authed && (
+  {/* ADMIN SUPER CONSOLE - URL-based routing with auth gates */}
+  {pathname === "/admin" && (
     <main className="min-h-[calc(100vh-92px)]">
-      <AdminSuperConsole onToast={setToast} adminTab={adminTab} setAdminTab={setAdminTab} />
+      {!authed ? (
+        <div className="fixed inset-0 z-40 flex items-center justify-center bg-[#050407]/80 backdrop-blur">
+          <div className="text-center">
+            <h2 className="text-2xl font-bold text-white mb-2">Admin Access Required</h2>
+            <p className="text-[#A8A29C] mb-4">Please sign in to access the admin panel</p>
+            <a href="/" onClick={(e) => { e.preventDefault(); window.history.pushState({}, "", "/"); setPathname("/"); setView("public") }} className="inline-block px-4 py-2 bg-[#FF4D1F] text-white rounded-lg hover:bg-[#FF5C2E]">
+              Go to Sign In
+            </a>
+          </div>
+        </div>
+      ) : !isAdmin ? (
+        <div className="fixed inset-0 z-40 flex items-center justify-center bg-[#050407]/80 backdrop-blur">
+          <div className="text-center">
+            <h2 className="text-2xl font-bold text-white mb-2">🔒 Admin Only</h2>
+            <p className="text-[#A8A29C] mb-4">You don't have permission to access the admin panel</p>
+            <a href="/console" onClick={(e) => { e.preventDefault(); window.history.pushState({}, "", "/console"); setPathname("/console"); setView("console") }} className="inline-block px-4 py-2 bg-[#FF4D1F] text-white rounded-lg hover:bg-[#FF5C2E]">
+              Go to Console
+            </a>
+          </div>
+        </div>
+      ) : (
+        <AdminSuperConsole onToast={setToast} adminTab={adminTab} setAdminTab={setAdminTab} />
+      )}
     </main>
   )}
 

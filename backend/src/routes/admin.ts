@@ -8,15 +8,31 @@ import { logger } from '../utils/logger.js';
  * All metrics are currency-aware — we aggregate in USD (the canonical
  * accounting currency) but optionally surface a localised total too.
  */
-export async function registerAdminRoutes(fastify: FastifyInstance) {
-  // Admin-only routes: use per-route hooks
-  fastify.get('/api/admin/stats', async (request, reply) => {
+
+// Middleware to verify admin access
+async function requireAdmin(request: any, reply: any) {
+  try {
     await request.jwtVerify();
-    const userId = (request.user as any).sub;
-    const r = await query(`SELECT role FROM users WHERE id = $1`, [userId]);
-    if (!r.rows[0] || r.rows[0].role !== 'admin') {
-      return reply.status(403).send({ error: 'admin only' });
+  } catch (err) {
+    return reply.status(401).send({ error: 'unauthorized' });
+  }
+  const userId = (request.user as any).sub;
+  const r = await query(`SELECT role FROM users WHERE id = $1`, [userId]);
+  if (!r.rows[0] || r.rows[0].role !== 'admin') {
+    return reply.status(403).send({ error: 'admin access required' });
+  }
+}
+
+export async function registerAdminRoutes(fastify: FastifyInstance) {
+  // Global hook: all /api/admin/* routes require admin auth
+  fastify.addHook('onRequest', async (request, reply) => {
+    if (request.url.startsWith('/api/admin/')) {
+      await requireAdmin(request, reply);
     }
+  });
+
+  // Admin-only routes
+  fastify.get('/api/admin/stats', async (request, reply) => {
     const [users, teams, projects, deps, mrr, regions] = await Promise.all([
       query(`SELECT COUNT(*)::int AS n FROM users WHERE status = 'active'`),
       query(`SELECT COUNT(*)::int AS n FROM teams`),
