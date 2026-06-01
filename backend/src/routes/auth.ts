@@ -47,15 +47,9 @@ export async function registerAuthRoutes(fastify: FastifyInstance) {
 
       // Send verification email
       const verifyUrl = `${process.env.FRONTEND_URL || 'https://flamecoretechltd.com'}/auth/verify?token=${verificationToken}`;
-      await emailService.send({
-        to: email,
-        subject: 'Verify Your Flame Core Account',
-        html: `
-          <h2>Welcome to Flame Core!</h2>
-          <p>Click the link below to verify your email and activate your account:</p>
-          <a href="${verifyUrl}">Verify Email</a>
-          <p>Link expires in 24 hours.</p>
-        `,
+      await emailService.queue(email, 'verify_email', {
+        name: user.full_name || user.username || 'User',
+        verify_url: verifyUrl,
       });
 
       return reply.status(201).send({
