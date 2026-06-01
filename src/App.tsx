@@ -207,91 +207,11 @@ export default function App() {
     },
   ]
 
-  const deployments: Deployment[] = [
-    {
-      id: "dpl_8f2a91",
-      project: "api-gateway",
-      repo: "flamecore/api-gateway",
-      branch: "main",
-      framework: "Node.js",
-      region: "los1",
-      status: "healthy",
-      commit: "a4f8c2e",
-      commitMsg: "fix: handle webhook retries with exponential backoff",
-      duration: "42s",
-      deployedAt: "2m ago",
-      url: "api-gateway.flame.app",
-      health: "healthy",
-      cpuPct: 12,
-      ramMB: 186,
-      restarts: 0,
-    },
-    {
-      id: "dpl_7d1b40",
-      project: "payments-svc",
-      repo: "flamecore/payments-svc",
-      branch: "main",
-      framework: "Docker",
-      region: "los1",
-      status: "building",
-      commit: "92b1f0d",
-      commitMsg: "feat: add Stripe Connect for multi-currency payouts",
-      duration: "—",
-      deployedAt: "now",
-      url: "payments.flame.app",
-      health: "unknown",
-    },
-    {
-      id: "dpl_6c0a12",
-      project: "dashboard-web",
-      repo: "flamecore/dashboard-web",
-      branch: "main",
-      framework: "Next.js",
-      region: "los1",
-      status: "ready",
-      commit: "1de7a39",
-      commitMsg: "ui: dark mode polish + region selector",
-      duration: "1m 18s",
-      deployedAt: "1h ago",
-      url: "dashboard.flame.app",
-      health: "healthy",
-      cpuPct: 8,
-      ramMB: 312,
-      restarts: 0,
-    },
-    {
-      id: "dpl_5b9f81",
-      project: "telegram-bot",
-      repo: "flamecore/notify-bot",
-      branch: "main",
-      framework: "Python",
-      region: "los1",
-      status: "sleeping",
-      commit: "8c3e221",
-      commitMsg: "chore: bump aiogram to 3.13",
-      duration: "55s",
-      deployedAt: "4h ago",
-      url: "bot.flame.app",
-      health: "unknown",
-      cpuPct: 0,
-      ramMB: 0,
-    },
-    {
-      id: "dpl_4a8e72",
-      project: "marketing-site",
-      repo: "flamecore/marketing",
-      branch: "preview/landing-v3",
-      framework: "Astro",
-      region: "los1",
-      status: "failed",
-      commit: "ff219a0",
-      commitMsg: "wip: redesign hero section",
-      duration: "12s",
-      deployedAt: "6h ago",
-      url: "—",
-      health: "unhealthy",
-    },
-  ]
+  const [userDeployments, setUserDeployments] = useState<Deployment[]>([])
+  const [deploymentLoading, setDeploymentLoading] = useState(false)
+
+  // Use real deployments for authenticated users, empty for new users
+  const deployments = authed ? userDeployments : []
 
   const [logs, setLogs] = useState<LogLine[]>([
     { t: "14:22:01", level: "info", msg: "→ cloning github.com/flamecore/payments-svc#main" },
@@ -358,6 +278,30 @@ export default function App() {
 
     setTimeout(() => setHeroVisible(true), 50)
   }, [])
+
+  // Load user deployments when authenticated
+  useEffect(() => {
+    if (!authed) {
+      setUserDeployments([])
+      return
+    }
+
+    const loadDeployments = async () => {
+      try {
+        setDeploymentLoading(true)
+        // TODO: Replace with actual API call: const deployments = await apiClient.getDeployments()
+        // For now, show empty state for new users
+        setUserDeployments([])
+      } catch (error) {
+        console.error("Failed to load deployments:", error)
+        setUserDeployments([])
+      } finally {
+        setDeploymentLoading(false)
+      }
+    }
+
+    loadDeployments()
+  }, [authed])
 
   useEffect(() => {
     const handleMouse = (e: MouseEvent) => {
