@@ -109,6 +109,21 @@ class APIClient {
     return out
   }
 
+  async verifyEmail(token: string) {
+    const out = await this.req<{ user: SessionUser; message: string }>(
+      'POST', '/api/auth/verify', { token }
+    )
+    return out
+  }
+
+  async refreshToken() {
+    const out = await this.req<{ token: string }>(
+      'POST', '/api/auth/refresh'
+    )
+    this.setToken(out.token)
+    return out
+  }
+
   me() { return this.req<{ user: SessionUser; teams: SessionTeam[] }>('GET', '/api/auth/me') }
 
   updatePreferences(prefs: { preferred_currency?: CurrencyCode; preferred_region?: RegionCode; locale?: string; timezone?: string }) {

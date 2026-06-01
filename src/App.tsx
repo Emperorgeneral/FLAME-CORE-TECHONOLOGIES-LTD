@@ -5,6 +5,7 @@ import { ConsoleDashboard, StatusBadge } from "@/features/console/ConsoleDashboa
 import { HouseDashboard } from "@/features/console/HouseDashboard"
 import { HouseView } from "@/features/console/HouseView"
 import { RoomPanel } from "@/features/console/RoomPanel"
+import { VerifyEmail } from "@/features/auth/VerifyEmail"
 import { useConsole } from "@/features/console/useConsole"
 import type { NewProjectStep } from "@/features/console/useConsole"
 
@@ -68,7 +69,7 @@ type LogLine = {
 }
 
 export default function App() {
-  const [view, setView] = useState<"public" | "console" | "admin">("public")
+  const [view, setView] = useState<"public" | "console" | "admin" | "verify">("public")
   const [mobileMenu, setMobileMenu] = useState(false)
   const [authed, setAuthed] = useState(false)
   const [isAdmin, setIsAdmin] = useState(false)
@@ -319,11 +320,17 @@ export default function App() {
     const storedTeamId = localStorage.getItem("flamecore_team")
     if (storedTeamId) setTeamId(storedTeamId)
 
-    // Handle OAuth callback: /auth/callback?token=...&team=...
+    // Handle URL parameters: ?verify=token or ?token=... (OAuth)
     const params = new URLSearchParams(window.location.search)
+    const verifyToken = params.get("verify")
     const oauthToken = params.get("token")
     const oauthError = params.get("error")
-    if (oauthToken) {
+    
+    if (verifyToken) {
+      // Email verification flow
+      setView("verify")
+      window.history.replaceState({}, "", window.location.pathname)
+    } else if (oauthToken) {
       localStorage.setItem("flame_token", oauthToken)
       localStorage.setItem("flamecore_session", "active")
       if (params.get("team")) {
@@ -1282,6 +1289,11 @@ export default function App() {
     <main className="min-h-[calc(100vh-92px)]">
       <AdminSuperConsole onToast={setToast} adminTab={adminTab} setAdminTab={setAdminTab} />
     </main>
+  )}
+
+  {/* EMAIL VERIFICATION */}
+  {view === "verify" && (
+    <VerifyEmail onSuccess={() => { setView("console"); setAuthMode("signin") }} />
   )}
 
   {/* ─── Admin Super Console ───────────────────────────────────────────── */}
