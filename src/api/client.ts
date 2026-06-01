@@ -227,6 +227,30 @@ class APIClient {
   adminSetUserStatus(userId: string, status: 'active'|'suspended'|'pending') {
     return this.req('POST', `/api/admin/users/${userId}/status`, { status })
   }
+
+  // ── Admin Email Management ──────────────────────────────────────────
+  adminEmails(page: number = 1, status?: string, recipient?: string) {
+    const params = new URLSearchParams()
+    params.append('page', page.toString())
+    if (status) params.append('status', status)
+    if (recipient) params.append('recipient', recipient)
+    return this.req('GET', `/api/admin/emails?${params.toString()}`)
+  }
+  adminEmailDetails(id: string) {
+    return this.req('GET', `/api/admin/emails/${id}`)
+  }
+  adminSendEmail(recipient: string, subject: string, body: string, template?: string) {
+    return this.req('POST', '/api/admin/emails/send', { recipient, template, subject, body })
+  }
+  adminEmailTemplates() {
+    return this.req('GET', '/api/admin/emails/templates')
+  }
+  adminDeleteEmail(id: string) {
+    return this.req('DELETE', `/api/admin/emails/${id}`)
+  }
+  adminEmailStats() {
+    return this.req('GET', '/api/admin/emails/stats')
+  }
 }
 
 export const api = new APIClient()

@@ -1,76 +1,820 @@
-root@vmi3227630:~/flame-core# sudo systemctl stop nginx
-sudo certbot certonly --standalone -d hosting.flamecoretechltd.com -d api.flamecoretechltd.com
-sudo systemctl start nginx
-sudo systemctl reload nginx
-Saving debug log to /var/log/letsencrypt/letsencrypt.log
-Requesting a certificate for hosting.flamecoretechltd.com and api.flamecoretechltd.com
-
-Certbot failed to authenticate some domains (authenticator: standalone). The Certificate Authority reported these problems:
-  Domain: api.flamecoretechltd.com
-  Type:   dns
-  Detail: DNS problem: NXDOMAIN looking up A for api.flamecoretechltd.com - check that a DNS record exists for this domain; DNS problem: NXDOMAIN looking up AAAA for api.flamecoretechltd.com - check that a DNS record exists for this domain
-
-  Domain: hosting.flamecoretechltd.com
-  Type:   dns
-  Detail: DNS problem: NXDOMAIN looking up A for hosting.flamecoretechltd.com - check that a DNS record exists for this domain; DNS problem: NXDOMAIN looking up AAAA for hosting.flamecoretechltd.com - check that a DNS record exists for this domain
-
-Hint: The Certificate Authority failed to download the challenge files from the temporary standalone webserver started by Certbot on port 80. Ensure that the listed domains point to this machine and that it can accept inbound connections from the internet.
-
-Some challenges have failed.
-Ask for help or search for solutions at https://community.letsencrypt.org. See the logfile /var/log/letsencrypt/letsencrypt.log or re-run Certbot with -v for more details.
-root@vmi3227630:~/flame-core# sudo tail -50 /var/log/nginx/error.log
-docker-compose -f ~/flame-core/backend/docker-compose.yml logs api | tail -50
-2026/06/01 05:20:56 [error] 2118991#2118991: *6218 connect() failed (111: Connection refused) while connecting to upstream, client: 31.58.51.24, server: flamecoretechltd.com, request: "GET /api/.env HTTP/1.1", upstream: "http://127.0.0.1:3001/api/.env", host: "flamecoretechltd.com"
-2026/06/01 09:34:50 [error] 2118990#2118990: *6442 connect() failed (111: Connection refused) while connecting to upstream, client: 45.45.237.206, server: flamecoretechltd.com, request: "GET /api/env HTTP/1.1", upstream: "http://127.0.0.1:3001/api/env", host: "www.flamecoretechltd.com"
-2026/06/01 09:34:50 [error] 2118990#2118990: *6459 connect() failed (111: Connection refused) while connecting to upstream, client: 45.45.237.206, server: flamecoretechltd.com, request: "GET /api/config HTTP/1.1", upstream: "http://127.0.0.1:3001/api/config", host: "www.flamecoretechltd.com"
-flamecore-api | {"level":30,"time":"2026-06-01T14:18:20.572Z","service":"flame-core-api","region":"los1","msg":"storage: using local filesystem"}
-flamecore-api | ✅ Schema initialized
-flamecore-api | 🌱 Seeding reference data…
-flamecore-api | ✅ Currencies (7) seeded
-flamecore-api | ✅ Regions (7) seeded
-flamecore-api | ✅ Plans (4) seeded
-flamecore-api | ⚠️  ADMIN_EMAIL and ADMIN_PASSWORD env vars not set. Skipping admin user creation.
-flamecore-api |     Set these in production to access the admin panel.
-flamecore-api | 🎉 Seed complete - Ready for production use
-flamecore-api | {"level":30,"time":"2026-06-01T14:18:21.073Z","service":"flame-core-api","region":"los1","msg":"Worker starting (region=los1)"}
-flamecore-api | {"level":30,"time":"2026-06-01T14:18:21.076Z","service":"flame-core-api","region":"los1","msg":"deployment worker ready (region=los1)"}
-flamecore-api | {"level":30,"time":"2026-06-01T14:18:21.076Z","service":"flame-core-api","region":"los1","msg":"deployment worker initialized"}
-flamecore-api | {"level":30,"time":"2026-06-01T14:18:21.239Z","service":"flame-core-api","region":"los1","msg":"🔥 Flame Core API listening on http://0.0.0.0:3001"}
-flamecore-api | {"level":30,"time":"2026-06-01T14:18:21.239Z","service":"flame-core-api","region":"los1","processRole":"all","env":"production","admin":"admin@flamecore.app","msg":"startup complete"}
-flamecore-api | {"level":30,"time":"2026-06-01T14:18:21.240Z","service":"flame-core-api","region":"los1","msg":"deployment worker ready (region=los1)"}
-flamecore-api | {"level":30,"time":"2026-06-01T14:18:21.240Z","service":"flame-core-api","region":"los1","msg":"deployment worker initialized"}
-flamecore-api | Executed query {
-flamecore-api |   text: 'SELECT hc.*, d.container_id, d.internal_port, d.deployment_url, d.status as deploy_status\n' +
-flamecore-api |     '         FROM health_checks hc\n' +
-flamecore-api |     '         JOIN deployments d ON d.id = hc.deployment_id\n' +
-flamecore-api |     "        WHERE d.status IN ('ready','healthy') AND hc.current_status != 'unknown'\n" +
-flamecore-api |     "           OR (d.status = 'ready' AND hc.last_check_at IS NULL)\n" +
-flamecore-api |     '        ORDER BY hc.last_check_at ASC NULLS FIRST\n' +
-flamecore-api |     '        LIMIT 50',
-flamecore-api |   duration: 102,
-flamecore-api |   rows: 0
-flamecore-api | }
-flamecore-api | Executed query {
-flamecore-api |   text: 'SELECT hc.*, d.container_id, d.internal_port, d.deployment_url, d.status as deploy_status\n' +
-flamecore-api |     '         FROM health_checks hc\n' +
-flamecore-api |     '         JOIN deployments d ON d.id = hc.deployment_id\n' +
-flamecore-api |     "        WHERE d.status IN ('ready','healthy') AND hc.current_status != 'unknown'\n" +
-flamecore-api |     "           OR (d.status = 'ready' AND hc.last_check_at IS NULL)\n" +
-flamecore-api |     '        ORDER BY hc.last_check_at ASC NULLS FIRST\n' +
-flamecore-api |     '        LIMIT 50',
-flamecore-api |   duration: 102,
-flamecore-api |   rows: 0
-flamecore-api | }
-flamecore-api | Executed query {
-flamecore-api |   text: 'SELECT hc.*, d.container_id, d.internal_port, d.deployment_url, d.status as deploy_status\n' +
-flamecore-api |     '         FROM health_checks hc\n' +
-flamecore-api |     '         JOIN deployments d ON d.id = hc.deployment_id\n' +
-flamecore-api |     "        WHERE d.status IN ('ready','healthy') AND hc.current_status != 'unknown'\n" +
-flamecore-api |     "           OR (d.status = 'ready' AND hc.last_check_at IS NULL)\n" +
-flamecore-api |     '        ORDER BY hc.last_check_at ASC NULLS FIRST\n' +
-flamecore-api |     '        LIMIT 50',
-flamecore-api |   duration: 122,
-flamecore-api |   rows: 0
-flamecore-api | }
-flamecore-api | {"level":30,"time":"2026-06-01T14:35:53.882Z","service":"flame-core-api","region":"los1","trace_id":"req_mpvb9thq_28fozk","method":"GET","url":"/","ip":"172.19.0.1","msg":"Route GET:/ not found"}
-root@vmi3227630:~/flame-core#
+0|flame-core-backend  |   internalQuery: undefined,
+0|flame-core-backend  |   where: undefined,
+0|flame-core-backend  |   schema: undefined,
+0|flame-core-backend  |   table: undefined,
+0|flame-core-backend  |   column: undefined,
+0|flame-core-backend  |   dataType: undefined,
+0|flame-core-backend  |   constraint: undefined,
+0|flame-core-backend  |   file: 'auth.c',
+0|flame-core-backend  |   line: '317',
+0|flame-core-backend  |   routine: 'auth_failed'
+0|flame-core-backend  | }
+0|flame-core-backend  | Database error {
+0|flame-core-backend  |   text: 'CREATE INDEX IF NOT EXISTS idx_audit_team_created         ON audit_logs(team_id, created_at DESC)',
+0|flame-core-backend  |   error: error: password authentication failed for user "flame"
+0|flame-core-backend  |       at /root/flame-core/backend/node_modules/pg-pool/index.js:45:11
+0|flame-core-backend  |       at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+0|flame-core-backend  |       at async query (file:///root/flame-core/backend/dist/db/pool.js:14:24)
+0|flame-core-backend  |       at async initializeDatabase (file:///root/flame-core/backend/dist/db/init.js:691:13)
+0|flame-core-backend  |       at async bootstrap (file:///root/flame-core/backend/dist/index.js:40:9) {
+0|flame-core-backend  |     length: 101,
+0|flame-core-backend  |     severity: 'FATAL',
+0|flame-core-backend  |     code: '28P01',
+0|flame-core-backend  |     detail: undefined,
+0|flame-core-backend  |     hint: undefined,
+0|flame-core-backend  |     position: undefined,
+0|flame-core-backend  |     internalPosition: undefined,
+0|flame-core-backend  |     internalQuery: undefined,
+0|flame-core-backend  |     where: undefined,
+0|flame-core-backend  |     schema: undefined,
+0|flame-core-backend  |     table: undefined,
+0|flame-core-backend  |     column: undefined,
+0|flame-core-backend  |     dataType: undefined,
+0|flame-core-backend  |     constraint: undefined,
+0|flame-core-backend  |     file: 'auth.c',
+0|flame-core-backend  |     line: '317',
+0|flame-core-backend  |     routine: 'auth_failed'
+0|flame-core-backend  |   }
+0|flame-core-backend  | }
+0|flame-core-backend  | Schema error on: CREATE INDEX IF NOT EXISTS idx_audit_team_created         ON audit_logs(team_id, error: password authentication failed for user "flame"
+0|flame-core-backend  |     at /root/flame-core/backend/node_modules/pg-pool/index.js:45:11
+0|flame-core-backend  |     at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+0|flame-core-backend  |     at async query (file:///root/flame-core/backend/dist/db/pool.js:14:24)
+0|flame-core-backend  |     at async initializeDatabase (file:///root/flame-core/backend/dist/db/init.js:691:13)
+0|flame-core-backend  |     at async bootstrap (file:///root/flame-core/backend/dist/index.js:40:9) {
+0|flame-core-backend  |   length: 101,
+0|flame-core-backend  |   severity: 'FATAL',
+0|flame-core-backend  |   code: '28P01',
+0|flame-core-backend  |   detail: undefined,
+0|flame-core-backend  |   hint: undefined,
+0|flame-core-backend  |   position: undefined,
+0|flame-core-backend  |   internalPosition: undefined,
+0|flame-core-backend  |   internalQuery: undefined,
+0|flame-core-backend  |   where: undefined,
+0|flame-core-backend  |   schema: undefined,
+0|flame-core-backend  |   table: undefined,
+0|flame-core-backend  |   column: undefined,
+0|flame-core-backend  |   dataType: undefined,
+0|flame-core-backend  |   constraint: undefined,
+0|flame-core-backend  |   file: 'auth.c',
+0|flame-core-backend  |   line: '317',
+0|flame-core-backend  |   routine: 'auth_failed'
+0|flame-core-backend  | }
+0|flame-core-backend  | Database error {
+0|flame-core-backend  |   text: 'CREATE INDEX IF NOT EXISTS idx_usage_team_month           ON usage_counters(team_id, period_month)',
+0|flame-core-backend  |   error: error: password authentication failed for user "flame"
+0|flame-core-backend  |       at /root/flame-core/backend/node_modules/pg-pool/index.js:45:11
+0|flame-core-backend  |       at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+0|flame-core-backend  |       at async query (file:///root/flame-core/backend/dist/db/pool.js:14:24)
+0|flame-core-backend  |       at async initializeDatabase (file:///root/flame-core/backend/dist/db/init.js:691:13)
+0|flame-core-backend  |       at async bootstrap (file:///root/flame-core/backend/dist/index.js:40:9) {
+0|flame-core-backend  |     length: 101,
+0|flame-core-backend  |     severity: 'FATAL',
+0|flame-core-backend  |     code: '28P01',
+0|flame-core-backend  |     detail: undefined,
+0|flame-core-backend  |     hint: undefined,
+0|flame-core-backend  |     position: undefined,
+0|flame-core-backend  |     internalPosition: undefined,
+0|flame-core-backend  |     internalQuery: undefined,
+0|flame-core-backend  |     where: undefined,
+0|flame-core-backend  |     schema: undefined,
+0|flame-core-backend  |     table: undefined,
+0|flame-core-backend  |     column: undefined,
+0|flame-core-backend  |     dataType: undefined,
+0|flame-core-backend  |     constraint: undefined,
+0|flame-core-backend  |     file: 'auth.c',
+0|flame-core-backend  |     line: '317',
+0|flame-core-backend  |     routine: 'auth_failed'
+0|flame-core-backend  |   }
+0|flame-core-backend  | }
+0|flame-core-backend  | Schema error on: CREATE INDEX IF NOT EXISTS idx_usage_team_month           ON usage_counters(team error: password authentication failed for user "flame"
+0|flame-core-backend  |     at /root/flame-core/backend/node_modules/pg-pool/index.js:45:11
+0|flame-core-backend  |     at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+0|flame-core-backend  |     at async query (file:///root/flame-core/backend/dist/db/pool.js:14:24)
+0|flame-core-backend  |     at async initializeDatabase (file:///root/flame-core/backend/dist/db/init.js:691:13)
+0|flame-core-backend  |     at async bootstrap (file:///root/flame-core/backend/dist/index.js:40:9) {
+0|flame-core-backend  |   length: 101,
+0|flame-core-backend  |   severity: 'FATAL',
+0|flame-core-backend  |   code: '28P01',
+0|flame-core-backend  |   detail: undefined,
+0|flame-core-backend  |   hint: undefined,
+0|flame-core-backend  |   position: undefined,
+0|flame-core-backend  |   internalPosition: undefined,
+0|flame-core-backend  |   internalQuery: undefined,
+0|flame-core-backend  |   where: undefined,
+0|flame-core-backend  |   schema: undefined,
+0|flame-core-backend  |   table: undefined,
+0|flame-core-backend  |   column: undefined,
+0|flame-core-backend  |   dataType: undefined,
+0|flame-core-backend  |   constraint: undefined,
+0|flame-core-backend  |   file: 'auth.c',
+0|flame-core-backend  |   line: '317',
+0|flame-core-backend  |   routine: 'auth_failed'
+0|flame-core-backend  | }
+0|flame-core-backend  | Database error {
+0|flame-core-backend  |   text: 'CREATE INDEX IF NOT EXISTS idx_preview_project            ON preview_deployments(project_id, status)',
+0|flame-core-backend  |   error: error: password authentication failed for user "flame"
+0|flame-core-backend  |       at /root/flame-core/backend/node_modules/pg-pool/index.js:45:11
+0|flame-core-backend  |       at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+0|flame-core-backend  |       at async query (file:///root/flame-core/backend/dist/db/pool.js:14:24)
+0|flame-core-backend  |       at async initializeDatabase (file:///root/flame-core/backend/dist/db/init.js:691:13)
+0|flame-core-backend  |       at async bootstrap (file:///root/flame-core/backend/dist/index.js:40:9) {
+0|flame-core-backend  |     length: 101,
+0|flame-core-backend  |     severity: 'FATAL',
+0|flame-core-backend  |     code: '28P01',
+0|flame-core-backend  |     detail: undefined,
+0|flame-core-backend  |     hint: undefined,
+0|flame-core-backend  |     position: undefined,
+0|flame-core-backend  |     internalPosition: undefined,
+0|flame-core-backend  |     internalQuery: undefined,
+0|flame-core-backend  |     where: undefined,
+0|flame-core-backend  |     schema: undefined,
+0|flame-core-backend  |     table: undefined,
+0|flame-core-backend  |     column: undefined,
+0|flame-core-backend  |     dataType: undefined,
+0|flame-core-backend  |     constraint: undefined,
+0|flame-core-backend  |     file: 'auth.c',
+0|flame-core-backend  |     line: '317',
+0|flame-core-backend  |     routine: 'auth_failed'
+0|flame-core-backend  |   }
+0|flame-core-backend  | }
+0|flame-core-backend  | Schema error on: CREATE INDEX IF NOT EXISTS idx_preview_project            ON preview_deployments error: password authentication failed for user "flame"
+0|flame-core-backend  |     at /root/flame-core/backend/node_modules/pg-pool/index.js:45:11
+0|flame-core-backend  |     at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+0|flame-core-backend  |     at async query (file:///root/flame-core/backend/dist/db/pool.js:14:24)
+0|flame-core-backend  |     at async initializeDatabase (file:///root/flame-core/backend/dist/db/init.js:691:13)
+0|flame-core-backend  |     at async bootstrap (file:///root/flame-core/backend/dist/index.js:40:9) {
+0|flame-core-backend  |   length: 101,
+0|flame-core-backend  |   severity: 'FATAL',
+0|flame-core-backend  |   code: '28P01',
+0|flame-core-backend  |   detail: undefined,
+0|flame-core-backend  |   hint: undefined,
+0|flame-core-backend  |   position: undefined,
+0|flame-core-backend  |   internalPosition: undefined,
+0|flame-core-backend  |   internalQuery: undefined,
+0|flame-core-backend  |   where: undefined,
+0|flame-core-backend  |   schema: undefined,
+0|flame-core-backend  |   table: undefined,
+0|flame-core-backend  |   column: undefined,
+0|flame-core-backend  |   dataType: undefined,
+0|flame-core-backend  |   constraint: undefined,
+0|flame-core-backend  |   file: 'auth.c',
+0|flame-core-backend  |   line: '317',
+0|flame-core-backend  |   routine: 'auth_failed'
+0|flame-core-backend  | }
+0|flame-core-backend  | Database error {
+0|flame-core-backend  |   text: 'CREATE INDEX IF NOT EXISTS idx_oauth_tokens_user          ON user_oauth_tokens(user_id)',
+0|flame-core-backend  |   error: error: password authentication failed for user "flame"
+0|flame-core-backend  |       at /root/flame-core/backend/node_modules/pg-pool/index.js:45:11
+0|flame-core-backend  |       at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+0|flame-core-backend  |       at async query (file:///root/flame-core/backend/dist/db/pool.js:14:24)
+0|flame-core-backend  |       at async initializeDatabase (file:///root/flame-core/backend/dist/db/init.js:691:13)
+0|flame-core-backend  |       at async bootstrap (file:///root/flame-core/backend/dist/index.js:40:9) {
+0|flame-core-backend  |     length: 101,
+0|flame-core-backend  |     severity: 'FATAL',
+0|flame-core-backend  |     code: '28P01',
+0|flame-core-backend  |     detail: undefined,
+0|flame-core-backend  |     hint: undefined,
+0|flame-core-backend  |     position: undefined,
+0|flame-core-backend  |     internalPosition: undefined,
+0|flame-core-backend  |     internalQuery: undefined,
+0|flame-core-backend  |     where: undefined,
+0|flame-core-backend  |     schema: undefined,
+0|flame-core-backend  |     table: undefined,
+0|flame-core-backend  |     column: undefined,
+0|flame-core-backend  |     dataType: undefined,
+0|flame-core-backend  |     constraint: undefined,
+0|flame-core-backend  |     file: 'auth.c',
+0|flame-core-backend  |     line: '317',
+0|flame-core-backend  |     routine: 'auth_failed'
+0|flame-core-backend  |   }
+0|flame-core-backend  | }
+0|flame-core-backend  | Schema error on: CREATE INDEX IF NOT EXISTS idx_oauth_tokens_user          ON user_oauth_tokens(u error: password authentication failed for user "flame"
+0|flame-core-backend  |     at /root/flame-core/backend/node_modules/pg-pool/index.js:45:11
+0|flame-core-backend  |     at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+0|flame-core-backend  |     at async query (file:///root/flame-core/backend/dist/db/pool.js:14:24)
+0|flame-core-backend  |     at async initializeDatabase (file:///root/flame-core/backend/dist/db/init.js:691:13)
+0|flame-core-backend  |     at async bootstrap (file:///root/flame-core/backend/dist/index.js:40:9) {
+0|flame-core-backend  |   length: 101,
+0|flame-core-backend  |   severity: 'FATAL',
+0|flame-core-backend  |   code: '28P01',
+0|flame-core-backend  |   detail: undefined,
+0|flame-core-backend  |   hint: undefined,
+0|flame-core-backend  |   position: undefined,
+0|flame-core-backend  |   internalPosition: undefined,
+0|flame-core-backend  |   internalQuery: undefined,
+0|flame-core-backend  |   where: undefined,
+0|flame-core-backend  |   schema: undefined,
+0|flame-core-backend  |   table: undefined,
+0|flame-core-backend  |   column: undefined,
+0|flame-core-backend  |   dataType: undefined,
+0|flame-core-backend  |   constraint: undefined,
+0|flame-core-backend  |   file: 'auth.c',
+0|flame-core-backend  |   line: '317',
+0|flame-core-backend  |   routine: 'auth_failed'
+0|flame-core-backend  | }
+0|flame-core-backend  | Database error {
+0|flame-core-backend  |   text: "CREATE INDEX IF NOT EXISTS idx_email_outbox_status        ON email_outbox(status, created_at) WHERE status IN ('pending','sending')",
+0|flame-core-backend  |   error: error: password authentication failed for user "flame"
+0|flame-core-backend  |       at /root/flame-core/backend/node_modules/pg-pool/index.js:45:11
+0|flame-core-backend  |       at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+0|flame-core-backend  |       at async query (file:///root/flame-core/backend/dist/db/pool.js:14:24)
+0|flame-core-backend  |       at async initializeDatabase (file:///root/flame-core/backend/dist/db/init.js:691:13)
+0|flame-core-backend  |       at async bootstrap (file:///root/flame-core/backend/dist/index.js:40:9) {
+0|flame-core-backend  |     length: 101,
+0|flame-core-backend  |     severity: 'FATAL',
+0|flame-core-backend  |     code: '28P01',
+0|flame-core-backend  |     detail: undefined,
+0|flame-core-backend  |     hint: undefined,
+0|flame-core-backend  |     position: undefined,
+0|flame-core-backend  |     internalPosition: undefined,
+0|flame-core-backend  |     internalQuery: undefined,
+0|flame-core-backend  |     where: undefined,
+0|flame-core-backend  |     schema: undefined,
+0|flame-core-backend  |     table: undefined,
+0|flame-core-backend  |     column: undefined,
+0|flame-core-backend  |     dataType: undefined,
+0|flame-core-backend  |     constraint: undefined,
+0|flame-core-backend  |     file: 'auth.c',
+0|flame-core-backend  |     line: '317',
+0|flame-core-backend  |     routine: 'auth_failed'
+0|flame-core-backend  |   }
+0|flame-core-backend  | }
+0|flame-core-backend  | Schema error on: CREATE INDEX IF NOT EXISTS idx_email_outbox_status        ON email_outbox(status error: password authentication failed for user "flame"
+0|flame-core-backend  |     at /root/flame-core/backend/node_modules/pg-pool/index.js:45:11
+0|flame-core-backend  |     at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+0|flame-core-backend  |     at async query (file:///root/flame-core/backend/dist/db/pool.js:14:24)
+0|flame-core-backend  |     at async initializeDatabase (file:///root/flame-core/backend/dist/db/init.js:691:13)
+0|flame-core-backend  |     at async bootstrap (file:///root/flame-core/backend/dist/index.js:40:9) {
+0|flame-core-backend  |   length: 101,
+0|flame-core-backend  |   severity: 'FATAL',
+0|flame-core-backend  |   code: '28P01',
+0|flame-core-backend  |   detail: undefined,
+0|flame-core-backend  |   hint: undefined,
+0|flame-core-backend  |   position: undefined,
+0|flame-core-backend  |   internalPosition: undefined,
+0|flame-core-backend  |   internalQuery: undefined,
+0|flame-core-backend  |   where: undefined,
+0|flame-core-backend  |   schema: undefined,
+0|flame-core-backend  |   table: undefined,
+0|flame-core-backend  |   column: undefined,
+0|flame-core-backend  |   dataType: undefined,
+0|flame-core-backend  |   constraint: undefined,
+0|flame-core-backend  |   file: 'auth.c',
+0|flame-core-backend  |   line: '317',
+0|flame-core-backend  |   routine: 'auth_failed'
+0|flame-core-backend  | }
+0|flame-core-backend  | Database error {
+0|flame-core-backend  |   text: 'CREATE INDEX IF NOT EXISTS idx_health_checks_deployment   ON health_checks(deployment_id)',
+0|flame-core-backend  |   error: error: password authentication failed for user "flame"
+0|flame-core-backend  |       at /root/flame-core/backend/node_modules/pg-pool/index.js:45:11
+0|flame-core-backend  |       at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+0|flame-core-backend  |       at async query (file:///root/flame-core/backend/dist/db/pool.js:14:24)
+0|flame-core-backend  |       at async initializeDatabase (file:///root/flame-core/backend/dist/db/init.js:691:13)
+0|flame-core-backend  |       at async bootstrap (file:///root/flame-core/backend/dist/index.js:40:9) {
+0|flame-core-backend  |     length: 101,
+0|flame-core-backend  |     severity: 'FATAL',
+0|flame-core-backend  |     code: '28P01',
+0|flame-core-backend  |     detail: undefined,
+0|flame-core-backend  |     hint: undefined,
+0|flame-core-backend  |     position: undefined,
+0|flame-core-backend  |     internalPosition: undefined,
+0|flame-core-backend  |     internalQuery: undefined,
+0|flame-core-backend  |     where: undefined,
+0|flame-core-backend  |     schema: undefined,
+0|flame-core-backend  |     table: undefined,
+0|flame-core-backend  |     column: undefined,
+0|flame-core-backend  |     dataType: undefined,
+0|flame-core-backend  |     constraint: undefined,
+0|flame-core-backend  |     file: 'auth.c',
+0|flame-core-backend  |     line: '317',
+0|flame-core-backend  |     routine: 'auth_failed'
+0|flame-core-backend  |   }
+0|flame-core-backend  | }
+0|flame-core-backend  | Schema error on: CREATE INDEX IF NOT EXISTS idx_health_checks_deployment   ON health_checks(deplo error: password authentication failed for user "flame"
+0|flame-core-backend  |     at /root/flame-core/backend/node_modules/pg-pool/index.js:45:11
+0|flame-core-backend  |     at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+0|flame-core-backend  |     at async query (file:///root/flame-core/backend/dist/db/pool.js:14:24)
+0|flame-core-backend  |     at async initializeDatabase (file:///root/flame-core/backend/dist/db/init.js:691:13)
+0|flame-core-backend  |     at async bootstrap (file:///root/flame-core/backend/dist/index.js:40:9) {
+0|flame-core-backend  |   length: 101,
+0|flame-core-backend  |   severity: 'FATAL',
+0|flame-core-backend  |   code: '28P01',
+0|flame-core-backend  |   detail: undefined,
+0|flame-core-backend  |   hint: undefined,
+0|flame-core-backend  |   position: undefined,
+0|flame-core-backend  |   internalPosition: undefined,
+0|flame-core-backend  |   internalQuery: undefined,
+0|flame-core-backend  |   where: undefined,
+0|flame-core-backend  |   schema: undefined,
+0|flame-core-backend  |   table: undefined,
+0|flame-core-backend  |   column: undefined,
+0|flame-core-backend  |   dataType: undefined,
+0|flame-core-backend  |   constraint: undefined,
+0|flame-core-backend  |   file: 'auth.c',
+0|flame-core-backend  |   line: '317',
+0|flame-core-backend  |   routine: 'auth_failed'
+0|flame-core-backend  | }
+0|flame-core-backend  | Database error {
+0|flame-core-backend  |   text: 'CREATE INDEX IF NOT EXISTS idx_user_sessions_user         ON user_sessions(user_id, expires_at)',
+0|flame-core-backend  |   error: error: password authentication failed for user "flame"
+0|flame-core-backend  |       at /root/flame-core/backend/node_modules/pg-pool/index.js:45:11
+0|flame-core-backend  |       at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+0|flame-core-backend  |       at async query (file:///root/flame-core/backend/dist/db/pool.js:14:24)
+0|flame-core-backend  |       at async initializeDatabase (file:///root/flame-core/backend/dist/db/init.js:691:13)
+0|flame-core-backend  |       at async bootstrap (file:///root/flame-core/backend/dist/index.js:40:9) {
+0|flame-core-backend  |     length: 101,
+0|flame-core-backend  |     severity: 'FATAL',
+0|flame-core-backend  |     code: '28P01',
+0|flame-core-backend  |     detail: undefined,
+0|flame-core-backend  |     hint: undefined,
+0|flame-core-backend  |     position: undefined,
+0|flame-core-backend  |     internalPosition: undefined,
+0|flame-core-backend  |     internalQuery: undefined,
+0|flame-core-backend  |     where: undefined,
+0|flame-core-backend  |     schema: undefined,
+0|flame-core-backend  |     table: undefined,
+0|flame-core-backend  |     column: undefined,
+0|flame-core-backend  |     dataType: undefined,
+0|flame-core-backend  |     constraint: undefined,
+0|flame-core-backend  |     file: 'auth.c',
+0|flame-core-backend  |     line: '317',
+0|flame-core-backend  |     routine: 'auth_failed'
+0|flame-core-backend  |   }
+0|flame-core-backend  | }
+0|flame-core-backend  | Schema error on: CREATE INDEX IF NOT EXISTS idx_user_sessions_user         ON user_sessions(user_ error: password authentication failed for user "flame"
+0|flame-core-backend  |     at /root/flame-core/backend/node_modules/pg-pool/index.js:45:11
+0|flame-core-backend  |     at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+0|flame-core-backend  |     at async query (file:///root/flame-core/backend/dist/db/pool.js:14:24)
+0|flame-core-backend  |     at async initializeDatabase (file:///root/flame-core/backend/dist/db/init.js:691:13)
+0|flame-core-backend  |     at async bootstrap (file:///root/flame-core/backend/dist/index.js:40:9) {
+0|flame-core-backend  |   length: 101,
+0|flame-core-backend  |   severity: 'FATAL',
+0|flame-core-backend  |   code: '28P01',
+0|flame-core-backend  |   detail: undefined,
+0|flame-core-backend  |   hint: undefined,
+0|flame-core-backend  |   position: undefined,
+0|flame-core-backend  |   internalPosition: undefined,
+0|flame-core-backend  |   internalQuery: undefined,
+0|flame-core-backend  |   where: undefined,
+0|flame-core-backend  |   schema: undefined,
+0|flame-core-backend  |   table: undefined,
+0|flame-core-backend  |   column: undefined,
+0|flame-core-backend  |   dataType: undefined,
+0|flame-core-backend  |   constraint: undefined,
+0|flame-core-backend  |   file: 'auth.c',
+0|flame-core-backend  |   line: '317',
+0|flame-core-backend  |   routine: 'auth_failed'
+0|flame-core-backend  | }
+0|flame-core-backend  | Database error {
+0|flame-core-backend  |   text: 'CREATE INDEX IF NOT EXISTS idx_log_events_service         ON deployment_log_events(service_id, created_at DESC)',
+0|flame-core-backend  |   error: error: password authentication failed for user "flame"
+0|flame-core-backend  |       at /root/flame-core/backend/node_modules/pg-pool/index.js:45:11
+0|flame-core-backend  |       at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+0|flame-core-backend  |       at async query (file:///root/flame-core/backend/dist/db/pool.js:14:24)
+0|flame-core-backend  |       at async initializeDatabase (file:///root/flame-core/backend/dist/db/init.js:691:13)
+0|flame-core-backend  |       at async bootstrap (file:///root/flame-core/backend/dist/index.js:40:9) {
+0|flame-core-backend  |     length: 101,
+0|flame-core-backend  |     severity: 'FATAL',
+0|flame-core-backend  |     code: '28P01',
+0|flame-core-backend  |     detail: undefined,
+0|flame-core-backend  |     hint: undefined,
+0|flame-core-backend  |     position: undefined,
+0|flame-core-backend  |     internalPosition: undefined,
+0|flame-core-backend  |     internalQuery: undefined,
+0|flame-core-backend  |     where: undefined,
+0|flame-core-backend  |     schema: undefined,
+0|flame-core-backend  |     table: undefined,
+0|flame-core-backend  |     column: undefined,
+0|flame-core-backend  |     dataType: undefined,
+0|flame-core-backend  |     constraint: undefined,
+0|flame-core-backend  |     file: 'auth.c',
+0|flame-core-backend  |     line: '317',
+0|flame-core-backend  |     routine: 'auth_failed'
+0|flame-core-backend  |   }
+0|flame-core-backend  | }
+0|flame-core-backend  | Schema error on: CREATE INDEX IF NOT EXISTS idx_log_events_service         ON deployment_log_even error: password authentication failed for user "flame"
+0|flame-core-backend  |     at /root/flame-core/backend/node_modules/pg-pool/index.js:45:11
+0|flame-core-backend  |     at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+0|flame-core-backend  |     at async query (file:///root/flame-core/backend/dist/db/pool.js:14:24)
+0|flame-core-backend  |     at async initializeDatabase (file:///root/flame-core/backend/dist/db/init.js:691:13)
+0|flame-core-backend  |     at async bootstrap (file:///root/flame-core/backend/dist/index.js:40:9) {
+0|flame-core-backend  |   length: 101,
+0|flame-core-backend  |   severity: 'FATAL',
+0|flame-core-backend  |   code: '28P01',
+0|flame-core-backend  |   detail: undefined,
+0|flame-core-backend  |   hint: undefined,
+0|flame-core-backend  |   position: undefined,
+0|flame-core-backend  |   internalPosition: undefined,
+0|flame-core-backend  |   internalQuery: undefined,
+0|flame-core-backend  |   where: undefined,
+0|flame-core-backend  |   schema: undefined,
+0|flame-core-backend  |   table: undefined,
+0|flame-core-backend  |   column: undefined,
+0|flame-core-backend  |   dataType: undefined,
+0|flame-core-backend  |   constraint: undefined,
+0|flame-core-backend  |   file: 'auth.c',
+0|flame-core-backend  |   line: '317',
+0|flame-core-backend  |   routine: 'auth_failed'
+0|flame-core-backend  | }
+0|flame-core-backend  | Database error {
+0|flame-core-backend  |   text: 'CREATE INDEX IF NOT EXISTS idx_log_events_deployment      ON deployment_log_events(deployment_id, created_at DESC)',
+0|flame-core-backend  |   error: error: password authentication failed for user "flame"
+0|flame-core-backend  |       at /root/flame-core/backend/node_modules/pg-pool/index.js:45:11
+0|flame-core-backend  |       at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+0|flame-core-backend  |       at async query (file:///root/flame-core/backend/dist/db/pool.js:14:24)
+0|flame-core-backend  |       at async initializeDatabase (file:///root/flame-core/backend/dist/db/init.js:691:13)
+0|flame-core-backend  |       at async bootstrap (file:///root/flame-core/backend/dist/index.js:40:9) {
+0|flame-core-backend  |     length: 101,
+0|flame-core-backend  |     severity: 'FATAL',
+0|flame-core-backend  |     code: '28P01',
+0|flame-core-backend  |     detail: undefined,
+0|flame-core-backend  |     hint: undefined,
+0|flame-core-backend  |     position: undefined,
+0|flame-core-backend  |     internalPosition: undefined,
+0|flame-core-backend  |     internalQuery: undefined,
+0|flame-core-backend  |     where: undefined,
+0|flame-core-backend  |     schema: undefined,
+0|flame-core-backend  |     table: undefined,
+0|flame-core-backend  |     column: undefined,
+0|flame-core-backend  |     dataType: undefined,
+0|flame-core-backend  |     constraint: undefined,
+0|flame-core-backend  |     file: 'auth.c',
+0|flame-core-backend  |     line: '317',
+0|flame-core-backend  |     routine: 'auth_failed'
+0|flame-core-backend  |   }
+0|flame-core-backend  | }
+0|flame-core-backend  | Schema error on: CREATE INDEX IF NOT EXISTS idx_log_events_deployment      ON deployment_log_even error: password authentication failed for user "flame"
+0|flame-core-backend  |     at /root/flame-core/backend/node_modules/pg-pool/index.js:45:11
+0|flame-core-backend  |     at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+0|flame-core-backend  |     at async query (file:///root/flame-core/backend/dist/db/pool.js:14:24)
+0|flame-core-backend  |     at async initializeDatabase (file:///root/flame-core/backend/dist/db/init.js:691:13)
+0|flame-core-backend  |     at async bootstrap (file:///root/flame-core/backend/dist/index.js:40:9) {
+0|flame-core-backend  |   length: 101,
+0|flame-core-backend  |   severity: 'FATAL',
+0|flame-core-backend  |   code: '28P01',
+0|flame-core-backend  |   detail: undefined,
+0|flame-core-backend  |   hint: undefined,
+0|flame-core-backend  |   position: undefined,
+0|flame-core-backend  |   internalPosition: undefined,
+0|flame-core-backend  |   internalQuery: undefined,
+0|flame-core-backend  |   where: undefined,
+0|flame-core-backend  |   schema: undefined,
+0|flame-core-backend  |   table: undefined,
+0|flame-core-backend  |   column: undefined,
+0|flame-core-backend  |   dataType: undefined,
+0|flame-core-backend  |   constraint: undefined,
+0|flame-core-backend  |   file: 'auth.c',
+0|flame-core-backend  |   line: '317',
+0|flame-core-backend  |   routine: 'auth_failed'
+0|flame-core-backend  | }
+0|flame-core-backend  | Database error {
+0|flame-core-backend  |   text: 'CREATE INDEX IF NOT EXISTS idx_log_events_stream          ON deployment_log_events(service_id, stream, created_at DESC)',
+0|flame-core-backend  |   error: error: password authentication failed for user "flame"
+0|flame-core-backend  |       at /root/flame-core/backend/node_modules/pg-pool/index.js:45:11
+0|flame-core-backend  |       at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+0|flame-core-backend  |       at async query (file:///root/flame-core/backend/dist/db/pool.js:14:24)
+0|flame-core-backend  |       at async initializeDatabase (file:///root/flame-core/backend/dist/db/init.js:691:13)
+0|flame-core-backend  |       at async bootstrap (file:///root/flame-core/backend/dist/index.js:40:9) {
+0|flame-core-backend  |     length: 101,
+0|flame-core-backend  |     severity: 'FATAL',
+0|flame-core-backend  |     code: '28P01',
+0|flame-core-backend  |     detail: undefined,
+0|flame-core-backend  |     hint: undefined,
+0|flame-core-backend  |     position: undefined,
+0|flame-core-backend  |     internalPosition: undefined,
+0|flame-core-backend  |     internalQuery: undefined,
+0|flame-core-backend  |     where: undefined,
+0|flame-core-backend  |     schema: undefined,
+0|flame-core-backend  |     table: undefined,
+0|flame-core-backend  |     column: undefined,
+0|flame-core-backend  |     dataType: undefined,
+0|flame-core-backend  |     constraint: undefined,
+0|flame-core-backend  |     file: 'auth.c',
+0|flame-core-backend  |     line: '317',
+0|flame-core-backend  |     routine: 'auth_failed'
+0|flame-core-backend  |   }
+0|flame-core-backend  | }
+0|flame-core-backend  | Schema error on: CREATE INDEX IF NOT EXISTS idx_log_events_stream          ON deployment_log_even error: password authentication failed for user "flame"
+0|flame-core-backend  |     at /root/flame-core/backend/node_modules/pg-pool/index.js:45:11
+0|flame-core-backend  |     at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+0|flame-core-backend  |     at async query (file:///root/flame-core/backend/dist/db/pool.js:14:24)
+0|flame-core-backend  |     at async initializeDatabase (file:///root/flame-core/backend/dist/db/init.js:691:13)
+0|flame-core-backend  |     at async bootstrap (file:///root/flame-core/backend/dist/index.js:40:9) {
+0|flame-core-backend  |   length: 101,
+0|flame-core-backend  |   severity: 'FATAL',
+0|flame-core-backend  |   code: '28P01',
+0|flame-core-backend  |   detail: undefined,
+0|flame-core-backend  |   hint: undefined,
+0|flame-core-backend  |   position: undefined,
+0|flame-core-backend  |   internalPosition: undefined,
+0|flame-core-backend  |   internalQuery: undefined,
+0|flame-core-backend  |   where: undefined,
+0|flame-core-backend  |   schema: undefined,
+0|flame-core-backend  |   table: undefined,
+0|flame-core-backend  |   column: undefined,
+0|flame-core-backend  |   dataType: undefined,
+0|flame-core-backend  |   constraint: undefined,
+0|flame-core-backend  |   file: 'auth.c',
+0|flame-core-backend  |   line: '317',
+0|flame-core-backend  |   routine: 'auth_failed'
+0|flame-core-backend  | }
+0|flame-core-backend  | Database error {
+0|flame-core-backend  |   text: 'CREATE INDEX IF NOT EXISTS idx_volumes_project            ON persistent_volumes(project_id, is_active)',
+0|flame-core-backend  |   error: error: password authentication failed for user "flame"
+0|flame-core-backend  |       at /root/flame-core/backend/node_modules/pg-pool/index.js:45:11
+0|flame-core-backend  |       at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+0|flame-core-backend  |       at async query (file:///root/flame-core/backend/dist/db/pool.js:14:24)
+0|flame-core-backend  |       at async initializeDatabase (file:///root/flame-core/backend/dist/db/init.js:691:13)
+0|flame-core-backend  |       at async bootstrap (file:///root/flame-core/backend/dist/index.js:40:9) {
+0|flame-core-backend  |     length: 101,
+0|flame-core-backend  |     severity: 'FATAL',
+0|flame-core-backend  |     code: '28P01',
+0|flame-core-backend  |     detail: undefined,
+0|flame-core-backend  |     hint: undefined,
+0|flame-core-backend  |     position: undefined,
+0|flame-core-backend  |     internalPosition: undefined,
+0|flame-core-backend  |     internalQuery: undefined,
+0|flame-core-backend  |     where: undefined,
+0|flame-core-backend  |     schema: undefined,
+0|flame-core-backend  |     table: undefined,
+0|flame-core-backend  |     column: undefined,
+0|flame-core-backend  |     dataType: undefined,
+0|flame-core-backend  |     constraint: undefined,
+0|flame-core-backend  |     file: 'auth.c',
+0|flame-core-backend  |     line: '317',
+0|flame-core-backend  |     routine: 'auth_failed'
+0|flame-core-backend  |   }
+0|flame-core-backend  | }
+0|flame-core-backend  | Schema error on: CREATE INDEX IF NOT EXISTS idx_volumes_project            ON persistent_volumes( error: password authentication failed for user "flame"
+0|flame-core-backend  |     at /root/flame-core/backend/node_modules/pg-pool/index.js:45:11
+0|flame-core-backend  |     at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+0|flame-core-backend  |     at async query (file:///root/flame-core/backend/dist/db/pool.js:14:24)
+0|flame-core-backend  |     at async initializeDatabase (file:///root/flame-core/backend/dist/db/init.js:691:13)
+0|flame-core-backend  |     at async bootstrap (file:///root/flame-core/backend/dist/index.js:40:9) {
+0|flame-core-backend  |   length: 101,
+0|flame-core-backend  |   severity: 'FATAL',
+0|flame-core-backend  |   code: '28P01',
+0|flame-core-backend  |   detail: undefined,
+0|flame-core-backend  |   hint: undefined,
+0|flame-core-backend  |   position: undefined,
+0|flame-core-backend  |   internalPosition: undefined,
+0|flame-core-backend  |   internalQuery: undefined,
+0|flame-core-backend  |   where: undefined,
+0|flame-core-backend  |   schema: undefined,
+0|flame-core-backend  |   table: undefined,
+0|flame-core-backend  |   column: undefined,
+0|flame-core-backend  |   dataType: undefined,
+0|flame-core-backend  |   constraint: undefined,
+0|flame-core-backend  |   file: 'auth.c',
+0|flame-core-backend  |   line: '317',
+0|flame-core-backend  |   routine: 'auth_failed'
+0|flame-core-backend  | }
+0|flame-core-backend  | Database error {
+0|flame-core-backend  |   text: 'CREATE INDEX IF NOT EXISTS idx_objects_project            ON storage_objects(project_id, created_at DESC)',
+0|flame-core-backend  |   error: error: password authentication failed for user "flame"
+0|flame-core-backend  |       at /root/flame-core/backend/node_modules/pg-pool/index.js:45:11
+0|flame-core-backend  |       at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+0|flame-core-backend  |       at async query (file:///root/flame-core/backend/dist/db/pool.js:14:24)
+0|flame-core-backend  |       at async initializeDatabase (file:///root/flame-core/backend/dist/db/init.js:691:13)
+0|flame-core-backend  |       at async bootstrap (file:///root/flame-core/backend/dist/index.js:40:9) {
+0|flame-core-backend  |     length: 101,
+0|flame-core-backend  |     severity: 'FATAL',
+0|flame-core-backend  |     code: '28P01',
+0|flame-core-backend  |     detail: undefined,
+0|flame-core-backend  |     hint: undefined,
+0|flame-core-backend  |     position: undefined,
+0|flame-core-backend  |     internalPosition: undefined,
+0|flame-core-backend  |     internalQuery: undefined,
+0|flame-core-backend  |     where: undefined,
+0|flame-core-backend  |     schema: undefined,
+0|flame-core-backend  |     table: undefined,
+0|flame-core-backend  |     column: undefined,
+0|flame-core-backend  |     dataType: undefined,
+0|flame-core-backend  |     constraint: undefined,
+0|flame-core-backend  |     file: 'auth.c',
+0|flame-core-backend  |     line: '317',
+0|flame-core-backend  |     routine: 'auth_failed'
+0|flame-core-backend  |   }
+0|flame-core-backend  | }
+0|flame-core-backend  | Schema error on: CREATE INDEX IF NOT EXISTS idx_objects_project            ON storage_objects(pro error: password authentication failed for user "flame"
+0|flame-core-backend  |     at /root/flame-core/backend/node_modules/pg-pool/index.js:45:11
+0|flame-core-backend  |     at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+0|flame-core-backend  |     at async query (file:///root/flame-core/backend/dist/db/pool.js:14:24)
+0|flame-core-backend  |     at async initializeDatabase (file:///root/flame-core/backend/dist/db/init.js:691:13)
+0|flame-core-backend  |     at async bootstrap (file:///root/flame-core/backend/dist/index.js:40:9) {
+0|flame-core-backend  |   length: 101,
+0|flame-core-backend  |   severity: 'FATAL',
+0|flame-core-backend  |   code: '28P01',
+0|flame-core-backend  |   detail: undefined,
+0|flame-core-backend  |   hint: undefined,
+0|flame-core-backend  |   position: undefined,
+0|flame-core-backend  |   internalPosition: undefined,
+0|flame-core-backend  |   internalQuery: undefined,
+0|flame-core-backend  |   where: undefined,
+0|flame-core-backend  |   schema: undefined,
+0|flame-core-backend  |   table: undefined,
+0|flame-core-backend  |   column: undefined,
+0|flame-core-backend  |   dataType: undefined,
+0|flame-core-backend  |   constraint: undefined,
+0|flame-core-backend  |   file: 'auth.c',
+0|flame-core-backend  |   line: '317',
+0|flame-core-backend  |   routine: 'auth_failed'
+0|flame-core-backend  | }
+0|flame-core-backend  | Database error {
+0|flame-core-backend  |   text: 'CREATE INDEX IF NOT EXISTS idx_objects_team               ON storage_objects(team_id, status)',
+0|flame-core-backend  |   error: error: password authentication failed for user "flame"
+0|flame-core-backend  |       at /root/flame-core/backend/node_modules/pg-pool/index.js:45:11
+0|flame-core-backend  |       at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+0|flame-core-backend  |       at async query (file:///root/flame-core/backend/dist/db/pool.js:14:24)
+0|flame-core-backend  |       at async initializeDatabase (file:///root/flame-core/backend/dist/db/init.js:691:13)
+0|flame-core-backend  |       at async bootstrap (file:///root/flame-core/backend/dist/index.js:40:9) {
+0|flame-core-backend  |     length: 101,
+0|flame-core-backend  |     severity: 'FATAL',
+0|flame-core-backend  |     code: '28P01',
+0|flame-core-backend  |     detail: undefined,
+0|flame-core-backend  |     hint: undefined,
+0|flame-core-backend  |     position: undefined,
+0|flame-core-backend  |     internalPosition: undefined,
+0|flame-core-backend  |     internalQuery: undefined,
+0|flame-core-backend  |     where: undefined,
+0|flame-core-backend  |     schema: undefined,
+0|flame-core-backend  |     table: undefined,
+0|flame-core-backend  |     column: undefined,
+0|flame-core-backend  |     dataType: undefined,
+0|flame-core-backend  |     constraint: undefined,
+0|flame-core-backend  |     file: 'auth.c',
+0|flame-core-backend  |     line: '317',
+0|flame-core-backend  |     routine: 'auth_failed'
+0|flame-core-backend  |   }
+0|flame-core-backend  | }
+0|flame-core-backend  | Schema error on: CREATE INDEX IF NOT EXISTS idx_objects_team               ON storage_objects(tea error: password authentication failed for user "flame"
+0|flame-core-backend  |     at /root/flame-core/backend/node_modules/pg-pool/index.js:45:11
+0|flame-core-backend  |     at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+0|flame-core-backend  |     at async query (file:///root/flame-core/backend/dist/db/pool.js:14:24)
+0|flame-core-backend  |     at async initializeDatabase (file:///root/flame-core/backend/dist/db/init.js:691:13)
+0|flame-core-backend  |     at async bootstrap (file:///root/flame-core/backend/dist/index.js:40:9) {
+0|flame-core-backend  |   length: 101,
+0|flame-core-backend  |   severity: 'FATAL',
+0|flame-core-backend  |   code: '28P01',
+0|flame-core-backend  |   detail: undefined,
+0|flame-core-backend  |   hint: undefined,
+0|flame-core-backend  |   position: undefined,
+0|flame-core-backend  |   internalPosition: undefined,
+0|flame-core-backend  |   internalQuery: undefined,
+0|flame-core-backend  |   where: undefined,
+0|flame-core-backend  |   schema: undefined,
+0|flame-core-backend  |   table: undefined,
+0|flame-core-backend  |   column: undefined,
+0|flame-core-backend  |   dataType: undefined,
+0|flame-core-backend  |   constraint: undefined,
+0|flame-core-backend  |   file: 'auth.c',
+0|flame-core-backend  |   line: '317',
+0|flame-core-backend  |   routine: 'auth_failed'
+0|flame-core-backend  | }
+0|flame-core-backend  | Database error {
+0|flame-core-backend  |   text: 'CREATE INDEX IF NOT EXISTS idx_upload_tickets_project     ON upload_tickets(project_id, expires_at)',
+0|flame-core-backend  |   error: error: password authentication failed for user "flame"
+0|flame-core-backend  |       at /root/flame-core/backend/node_modules/pg-pool/index.js:45:11
+0|flame-core-backend  |       at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+0|flame-core-backend  |       at async query (file:///root/flame-core/backend/dist/db/pool.js:14:24)
+0|flame-core-backend  |       at async initializeDatabase (file:///root/flame-core/backend/dist/db/init.js:691:13)
+0|flame-core-backend  |       at async bootstrap (file:///root/flame-core/backend/dist/index.js:40:9) {
+0|flame-core-backend  |     length: 101,
+0|flame-core-backend  |     severity: 'FATAL',
+0|flame-core-backend  |     code: '28P01',
+0|flame-core-backend  |     detail: undefined,
+0|flame-core-backend  |     hint: undefined,
+0|flame-core-backend  |     position: undefined,
+0|flame-core-backend  |     internalPosition: undefined,
+0|flame-core-backend  |     internalQuery: undefined,
+0|flame-core-backend  |     where: undefined,
+0|flame-core-backend  |     schema: undefined,
+0|flame-core-backend  |     table: undefined,
+0|flame-core-backend  |     column: undefined,
+0|flame-core-backend  |     dataType: undefined,
+0|flame-core-backend  |     constraint: undefined,
+0|flame-core-backend  |     file: 'auth.c',
+0|flame-core-backend  |     line: '317',
+0|flame-core-backend  |     routine: 'auth_failed'
+0|flame-core-backend  |   }
+0|flame-core-backend  | }
+0|flame-core-backend  | Schema error on: CREATE INDEX IF NOT EXISTS idx_upload_tickets_project     ON upload_tickets(proj error: password authentication failed for user "flame"
+0|flame-core-backend  |     at /root/flame-core/backend/node_modules/pg-pool/index.js:45:11
+0|flame-core-backend  |     at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+0|flame-core-backend  |     at async query (file:///root/flame-core/backend/dist/db/pool.js:14:24)
+0|flame-core-backend  |     at async initializeDatabase (file:///root/flame-core/backend/dist/db/init.js:691:13)
+0|flame-core-backend  |     at async bootstrap (file:///root/flame-core/backend/dist/index.js:40:9) {
+0|flame-core-backend  |   length: 101,
+0|flame-core-backend  |   severity: 'FATAL',
+0|flame-core-backend  |   code: '28P01',
+0|flame-core-backend  |   detail: undefined,
+0|flame-core-backend  |   hint: undefined,
+0|flame-core-backend  |   position: undefined,
+0|flame-core-backend  |   internalPosition: undefined,
+0|flame-core-backend  |   internalQuery: undefined,
+0|flame-core-backend  |   where: undefined,
+0|flame-core-backend  |   schema: undefined,
+0|flame-core-backend  |   table: undefined,
+0|flame-core-backend  |   column: undefined,
+0|flame-core-backend  |   dataType: undefined,
+0|flame-core-backend  |   constraint: undefined,
+0|flame-core-backend  |   file: 'auth.c',
+0|flame-core-backend  |   line: '317',
+0|flame-core-backend  |   routine: 'auth_failed'
+0|flame-core-backend  | }
+0|flame-core-backend  | Database error {
+0|flame-core-backend  |   text: 'CREATE INDEX IF NOT EXISTS idx_media_jobs_status          ON media_jobs(status, created_at)',
+0|flame-core-backend  |   error: error: password authentication failed for user "flame"
+0|flame-core-backend  |       at /root/flame-core/backend/node_modules/pg-pool/index.js:45:11
+0|flame-core-backend  |       at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+0|flame-core-backend  |       at async query (file:///root/flame-core/backend/dist/db/pool.js:14:24)
+0|flame-core-backend  |       at async initializeDatabase (file:///root/flame-core/backend/dist/db/init.js:691:13)
+0|flame-core-backend  |       at async bootstrap (file:///root/flame-core/backend/dist/index.js:40:9) {
+0|flame-core-backend  |     length: 101,
+0|flame-core-backend  |     severity: 'FATAL',
+0|flame-core-backend  |     code: '28P01',
+0|flame-core-backend  |     detail: undefined,
+0|flame-core-backend  |     hint: undefined,
+0|flame-core-backend  |     position: undefined,
+0|flame-core-backend  |     internalPosition: undefined,
+0|flame-core-backend  |     internalQuery: undefined,
+0|flame-core-backend  |     where: undefined,
+0|flame-core-backend  |     schema: undefined,
+0|flame-core-backend  |     table: undefined,
+0|flame-core-backend  |     column: undefined,
+0|flame-core-backend  |     dataType: undefined,
+0|flame-core-backend  |     constraint: undefined,
+0|flame-core-backend  |     file: 'auth.c',
+0|flame-core-backend  |     line: '317',
+0|flame-core-backend  |     routine: 'auth_failed'
+0|flame-core-backend  |   }
+0|flame-core-backend  | }
+0|flame-core-backend  | Schema error on: CREATE INDEX IF NOT EXISTS idx_media_jobs_status          ON media_jobs(status,  error: password authentication failed for user "flame"
+0|flame-core-backend  |     at /root/flame-core/backend/node_modules/pg-pool/index.js:45:11
+0|flame-core-backend  |     at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+0|flame-core-backend  |     at async query (file:///root/flame-core/backend/dist/db/pool.js:14:24)
+0|flame-core-backend  |     at async initializeDatabase (file:///root/flame-core/backend/dist/db/init.js:691:13)
+0|flame-core-backend  |     at async bootstrap (file:///root/flame-core/backend/dist/index.js:40:9) {
+0|flame-core-backend  |   length: 101,
+0|flame-core-backend  |   severity: 'FATAL',
+0|flame-core-backend  |   code: '28P01',
+0|flame-core-backend  |   detail: undefined,
+0|flame-core-backend  |   hint: undefined,
+0|flame-core-backend  |   position: undefined,
+0|flame-core-backend  |   internalPosition: undefined,
+0|flame-core-backend  |   internalQuery: undefined,
+0|flame-core-backend  |   where: undefined,
+0|flame-core-backend  |   schema: undefined,
+0|flame-core-backend  |   table: undefined,
+0|flame-core-backend  |   column: undefined,
+0|flame-core-backend  |   dataType: undefined,
+0|flame-core-backend  |   constraint: undefined,
+0|flame-core-backend  |   file: 'auth.c',
+0|flame-core-backend  |   line: '317',
+0|flame-core-backend  |   routine: 'auth_failed'
+0|flame-core-backend  | }
+0|flame-core-backend  | ✅ Schema initialized
+0|flame-core-backend  | 🌱 Seeding reference data…
+0|flame-core-backend  | Database error {
+0|flame-core-backend  |   text: '\n' +
+0|flame-core-backend  |     '    INSERT INTO currencies (code, symbol, name, locale, decimals, fx_rate_to_usd) VALUES\n' +
+0|flame-core-backend  |     "      ('USD', '$',  'US Dollar',          'en-US', 2, 1.00000000),\n" +
+0|flame-core-backend  |     "      ('NGN', '₦',  'Nigerian Naira',     'en-NG', 2, 1600.00000000),\n" +
+0|flame-core-backend  |     "      ('GBP', '£',  'British Pound',      'en-GB', 2, 0.79000000),\n" +
+0|flame-core-backend  |     "      ('EUR', '€',  'Euro',               'de-DE', 2, 0.92000000),\n" +
+0|flame-core-backend  |     "      ('ZAR', 'R',  'South African Rand', 'en-ZA', 2, 18.50000000),\n" +
+0|flame-core-backend  |     "      ('KES', 'KSh','Kenyan Shilling',    'en-KE', 2, 129.00000000),\n" +
+0|flame-core-backend  |     "      ('GHS', '₵',  'Ghanaian Cedi',      'en-GH', 2, 15.20000000)\n" +
+0|flame-core-backend  |     '    ON CONFLICT (code) DO NOTHING\n' +
+0|flame-core-backend  |     '  ',
+0|flame-core-backend  |   error: error: password authentication failed for user "flame"
+0|flame-core-backend  |       at /root/flame-core/backend/node_modules/pg-pool/index.js:45:11
+0|flame-core-backend  |       at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+0|flame-core-backend  |       at async query (file:///root/flame-core/backend/dist/db/pool.js:14:24)
+0|flame-core-backend  |       at async seedDatabase (file:///root/flame-core/backend/dist/db/seed.js:10:5)
+0|flame-core-backend  |       at async bootstrap (file:///root/flame-core/backend/dist/index.js:41:9) {
+0|flame-core-backend  |     length: 101,
+0|flame-core-backend  |     severity: 'FATAL',
+0|flame-core-backend  |     code: '28P01',
+0|flame-core-backend  |     detail: undefined,
+0|flame-core-backend  |     hint: undefined,
+0|flame-core-backend  |     position: undefined,
+0|flame-core-backend  |     internalPosition: undefined,
+0|flame-core-backend  |     internalQuery: undefined,
+0|flame-core-backend  |     where: undefined,
+0|flame-core-backend  |     schema: undefined,
+0|flame-core-backend  |     table: undefined,
+0|flame-core-backend  |     column: undefined,
+0|flame-core-backend  |     dataType: undefined,
+0|flame-core-backend  |     constraint: undefined,
+0|flame-core-backend  |     file: 'auth.c',
+0|flame-core-backend  |     line: '317',
+0|flame-core-backend  |     routine: 'auth_failed'
+0|flame-core-backend  |   }
+0|flame-core-backend  | }
+0|flame-core-backend  | [17:59:45 UTC] ERROR: database init failed
+0|flame-core-backend  |     service: "flame-core-api"
+0|flame-core-backend  |     region: "los1"
+0|flame-core-backend  | > flame-core-backend@1.0.0 start
+0|flame-core-backend  | > node dist/index.js

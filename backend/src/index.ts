@@ -13,6 +13,7 @@ import { registerProjectRoutes } from './routes/projects.js';
 import { registerDeploymentRoutes } from './routes/deployments.js';
 import { registerBillingRoutes } from './routes/billing.js';
 import { registerAdminRoutes } from './routes/admin.js';
+import { registerAdminEmailRoutes } from './routes/adminEmails.js';
 import { registerOAuthRoutes } from './routes/oauth.js';
 import { registerWebhookRoutes } from './routes/webhooks.js';
 import { registerSSERoutes } from './routes/sse.js';
@@ -159,6 +160,7 @@ async function bootstrap() {
     await registerDeploymentRoutes(app);
     await registerBillingRoutes(app);
     await registerAdminRoutes(app);
+    await registerAdminEmailRoutes(app);
     await registerAdminSuperRoutes(app);
 
     // ─── Error handler (safe in production) ──────────────────────────

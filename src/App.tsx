@@ -6,6 +6,7 @@ import { HouseDashboard } from "@/features/console/HouseDashboard"
 import { HouseView } from "@/features/console/HouseView"
 import { RoomPanel } from "@/features/console/RoomPanel"
 import { VerifyEmail } from "@/features/auth/VerifyEmail"
+import { AdminEmailManager } from "@/components/admin/AdminEmailManager"
 import { useConsole } from "@/features/console/useConsole"
 import { apiClient } from "@/api/client"
 import type { NewProjectStep } from "@/features/console/useConsole"
@@ -1366,7 +1367,7 @@ function AdminSuperConsole({ onToast, adminTab, setAdminTab }: { onToast: (m: st
       <div className="flex items-center gap-1 border-b border-white/[0.06] mb-6 overflow-x-auto">
         {[
           ["overview", "Overview"], ["deployments", "All Deploys"], ["users", "Users"], ["domains", "Domains"],
-          ["billing", "Billing"], ["security", "Security"], ["storage", "Storage"], ["settings", "Settings"],
+          ["emails", "📧 Emails"], ["billing", "Billing"], ["security", "Security"], ["storage", "Storage"], ["settings", "Settings"],
         ].map(([id, label]) => (
           <button key={id} onClick={() => setAdminTab(id)}
             className={`relative px-3.5 h-10 text-[13px] font-[550] tracking-tight whitespace-nowrap transition-colors ${adminTab === id ? "text-[#FFBD2E]" : "text-[#6B6560] hover:text-[#A8A29C]"}`}>
@@ -1523,6 +1524,12 @@ function AdminSuperConsole({ onToast, adminTab, setAdminTab }: { onToast: (m: st
               </div>
             </div>
           </div>
+        </div>
+      )}
+
+      {adminTab === "emails" && (
+        <div className="bg-gray-900 rounded-lg">
+          <AdminEmailManager />
         </div>
       )}
 
