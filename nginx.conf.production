@@ -251,11 +251,6 @@ server {
         proxy_buffering off;
         proxy_read_timeout 300s;
     }
-
-    # CORS preflight
-    if ($request_method = "OPTIONS") {
-        return 204;
-    }
 }
 
 # ========================================================
