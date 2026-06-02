@@ -109,7 +109,7 @@ async function bootstrap() {
 
     await app.register(fastifyCors, {
       origin: (origin, cb) => {
-        if (!origin || allowedOrigins.includes(origin) || allowedOrigins.includes('*')) {
+        if (!origin || allowedOrigins.includes(origin)) {
           cb(null, true);
         } else {
           cb(new Error('Not allowed by CORS'), false);
