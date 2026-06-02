@@ -55,14 +55,7 @@ export async function registerAdminRoutes(fastify: FastifyInstance) {
     });
   });
 
-  fastify.get('/api/admin/users', async (_req, reply) => {
-    const r = await query(
-      `SELECT id, email, username, full_name, role, status,
-              country_code, preferred_currency, preferred_region, last_login_at, created_at
-         FROM users ORDER BY created_at DESC LIMIT 200`
-    );
-    return reply.send(r.rows);
-  });
+  // Users endpoint moved to adminUsers.ts for better pagination & search
 
   fastify.get('/api/admin/deployments', async (_req, reply) => {
     const r = await query(
