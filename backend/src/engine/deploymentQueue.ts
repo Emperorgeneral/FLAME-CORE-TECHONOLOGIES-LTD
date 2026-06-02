@@ -1,3 +1,4 @@
+import { createClient } from 'redis';
 import { Queue, Worker } from 'bullmq';
 import { promises as fs } from 'fs';
 import { config } from '../config/env.js';
@@ -21,8 +22,24 @@ import type { DeploymentJobPayload, RegionCode } from '../types/index.js';
  * Graceful: if Redis is unavailable, the queue will retry with exponential backoff.
  */
 
+// Create redis client for connection monitoring
+const redisClient = createClient({ url: config.redis.url });
+
+redisClient.on('error', (e) => {
+  logger.warn('Redis error in deployment queue', e.message);
+});
+
+redisClient.on('connect', () => {
+  logger.info('✅ Redis connected for deployment queue');
+});
+
+// Connect asynchronously but don't block initialization
+redisClient.connect().catch((err) => {
+  logger.warn('Redis connection warning for deployment queue', err.message);
+});
+
 export const deploymentQueue = new Queue<DeploymentJobPayload>('deployments', {
-  connection: config.redis.url,
+  connection: { url: config.redis.url } as any,
 });
 
 export async function initializeDeploymentWorker() {
@@ -38,7 +55,7 @@ export async function initializeDeploymentWorker() {
       }
       await runPipeline(job.data);
     },
-    { connection: config.redis.url, concurrency: 2 }
+    { connection: { url: config.redis.url } as any, concurrency: 2 }
   );
 
   worker.on('completed', (job) => logger.info('job completed', { id: job.id }));
