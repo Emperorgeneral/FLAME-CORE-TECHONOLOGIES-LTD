@@ -163,7 +163,7 @@ async function bootstrap() {
     await registerDeploymentRoutes(app);
     await registerBillingRoutes(app);
     await registerAdminRoutes(app);
-    await registerAdminEmailRoutes(app);
+    // await registerAdminEmailRoutes(app);  // TODO: has duplicate /api/admin/users route
     await registerAdminUserRoutes(app);
     await registerAdminSuperRoutes(app);
 
