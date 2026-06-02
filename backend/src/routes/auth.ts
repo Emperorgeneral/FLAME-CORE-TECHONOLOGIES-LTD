@@ -21,13 +21,18 @@ export async function registerAuthRoutes(fastify: FastifyInstance) {
       }
 
       const body = request.body as any;
-      const { email, username, password, full_name, country_code, locale, timezone } = body;
+      let { email, username, password, full_name, country_code, locale, timezone } = body;
 
-      if (!email || !username || !password) {
-        return reply.status(400).send({ error: 'email, username and password are required' });
+      if (!email || !password) {
+        return reply.status(400).send({ error: 'email and password are required' });
       }
       if (typeof password !== 'string' || password.length < 8) {
         return reply.status(400).send({ error: 'password must be at least 8 characters' });
+      }
+
+      // Generate username from email if not provided
+      if (!username) {
+        username = email.split('@')[0]; // e.g., "john@example.com" → "john"
       }
 
       const existing = await userService.getByEmail(email);
