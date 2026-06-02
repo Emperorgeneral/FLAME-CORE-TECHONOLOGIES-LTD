@@ -1,33 +1,58 @@
-root@vmi3227630:~# # Check if PostgreSQL container is running
-docker ps
-
-# Check environment variables
-cat /root/flame-core/.env.production | grep -i "database\|password"
-
-# Try connecting through Docker if container is running
-docker exec -it flame-core-postgres psql -U flame -d flamecore -c "SELECT id, email, role FROM users;"
-CONTAINER ID   IMAGE                                      COMMAND                  CREATED             STATUS                 PORTS                                             NAMES
-75281cde2fb9   redis:7-alpine                             "docker-entrypoint.s…"   About an hour ago   Up About an hour       127.0.0.1:6379->6379/tcp                          flamecore-redis
-b48605d2a30e   grafana/grafana:latest                     "/run.sh"                5 hours ago         Up 5 hours             127.0.0.1:4001->3000/tcp                          flame-grafana
-f3cb76fad20f   prom/prometheus:latest                     "/bin/prometheus --c…"   5 hours ago         Up 5 hours             127.0.0.1:9090->9090/tcp                          flame-prometheus
-adab9f5feabc   prom/node-exporter:latest                  "/bin/node_exporter …"   5 hours ago         Up 2 hours             127.0.0.1:9100->9100/tcp                          flame-node-exporter
-eed704ead831   gcr.io/cadvisor/cadvisor:latest            "/usr/bin/cadvisor -…"   5 hours ago         Up 5 hours (healthy)   127.0.0.1:8080->8080/tcp                          flame-cadvisor
-abd1d8f3b421   backend_api                                "docker-entrypoint.s…"   8 hours ago         Up 2 hours             0.0.0.0:3001->3001/tcp, [::]:3001->3001/tcp       flamecore-api
-d1bb9aa62310   postgres:16-alpine                         "docker-entrypoint.s…"   8 hours ago         Up 8 hours (healthy)   0.0.0.0:5433->5432/tcp, [::]:5433->5432/tcp       flamecore-postgres
-de371a8268fe   mongo:latest                               "docker-entrypoint.s…"   2 days ago          Up 2 days              0.0.0.0:27017->27017/tcp, [::]:27017->27017/tcp   mongodb
-86c26c5c884b   nginx:1.27-alpine                          "/docker-entrypoint.…"   2 weeks ago         Up 2 days (healthy)    0.0.0.0:3004->80/tcp, [::]:3004->80/tcp           nginx_lb
-302d4d5f66c7   python:3.11-slim                           "sleep 365d"             2 weeks ago         Up 2 days                                                                worker
-ba49061377ab   flame-backend-flame_official_support_bot   "python flame_bot_se…"   2 weeks ago         Up 2 days (healthy)    0.0.0.0:3005->5000/tcp, [::]:3005->5000/tcp       flame_official_support_bot
-35ab2a3b6a26   flame-backend-web                          "gunicorn -c gunicor…"   2 weeks ago         Up 2 days (healthy)    5000/tcp                                          flame-backend-web-2
-c465d70b082f   flame-backend-web                          "gunicorn -c gunicor…"   2 weeks ago         Up 2 days (healthy)    5000/tcp                                          flame-backend-web-1
-ba06e55e49f9   postgres:15                                "docker-entrypoint.s…"   2 weeks ago         Up 2 days (healthy)    5432/tcp                                          postgres
-ecf641a01030   redis:7-alpine                             "docker-entrypoint.s…"   2 weeks ago         Up 2 days (healthy)    6379/tcp                                          redis
-# ─── Database ───────────────────────────────────────────
-DATABASE_URL=postgresql://flame:flame2024@localhost:5432/flamecore
-DATABASE_HOST=localhost
-DATABASE_PORT=5432
-DATABASE_NAME=flamecore
-DATABASE_USER=flame
-DATABASE_PASSWORD=flame2024
-Error response from daemon: No such container: flame-core-postgres
-root@vmi3227630:~#
+root@vmi3227630:~/flame-core# docker logs flamecore-api | tail -50
+TypeError: this._client.defineCommand is not a function
+    at RedisConnection.loadCommands (/app/node_modules/bullmq/dist/cjs/classes/redis-connection.js:109:30)
+    at RedisConnection.init (/app/node_modules/bullmq/dist/cjs/classes/redis-connection.js:125:14)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+⚠️  ADMIN_EMAIL and ADMIN_PASSWORD env vars not set. Skipping admin user creation.
+    Set these in production to access the admin panel.
+{"level":30,"time":"2026-06-02T08:18:08.168Z","service":"flame-core-api","region":"los1","trace_id":"req_mpwd7v6v_o0x6aa","method":"GET","url":"/.git/logs/refs/heads/master","ip":"45.148.10.95","msg":"Route GET:/.git/logs/refs/heads/master not found"}
+{"level":30,"time":"2026-06-02T08:18:08.168Z","service":"flame-core-api","region":"los1","trace_id":"req_mpwd7v6w_brlob6","method":"GET","url":"/.git/logs/refs/remotes/origin/master","ip":"45.148.10.95","msg":"Route GET:/.git/logs/refs/remotes/origin/master not found"}
+{"level":30,"time":"2026-06-02T08:18:08.169Z","service":"flame-core-api","region":"los1","trace_id":"req_mpwd7v6w_uhtv5k","method":"GET","url":"/.git/logs/refs/remotes/origin/main","ip":"45.148.10.95","msg":"Route GET:/.git/logs/refs/remotes/origin/main not found"}
+{"level":30,"time":"2026-06-02T08:18:08.169Z","service":"flame-core-api","region":"los1","trace_id":"req_mpwd7v6x_5u2r79","method":"GET","url":"/.git/objects","ip":"45.148.10.95","msg":"Route GET:/.git/objects not found"}
+{"level":30,"time":"2026-06-02T08:18:08.171Z","service":"flame-core-api","region":"los1","trace_id":"req_mpwd7v6z_rw1eoc","method":"GET","url":"/.git/objects/info","ip":"45.148.10.95","msg":"Route GET:/.git/objects/info not found"}
+{"level":30,"time":"2026-06-02T08:18:08.175Z","service":"flame-core-api","region":"los1","trace_id":"req_mpwd7v73_6yvga6","method":"GET","url":"/.git/objects/pack","ip":"45.148.10.95","msg":"Route GET:/.git/objects/pack not found"}
+{"level":30,"time":"2026-06-02T08:18:08.178Z","service":"flame-core-api","region":"los1","trace_id":"req_mpwd7v75_ny21ys","method":"GET","url":"/.git/packed-refs","ip":"45.148.10.95","msg":"Route GET:/.git/packed-refs not found"}
+{"level":30,"time":"2026-06-02T08:18:08.199Z","service":"flame-core-api","region":"los1","trace_id":"req_mpwd7v7r_ghe7kg","method":"GET","url":"/.git/refs/heads/main","ip":"45.148.10.95","msg":"Route GET:/.git/refs/heads/main not found"}
+{"level":30,"time":"2026-06-02T08:18:08.213Z","service":"flame-core-api","region":"los1","trace_id":"req_mpwd7v85_gsyhey","method":"GET","url":"/.git/refs/heads/master","ip":"45.148.10.95","msg":"Route GET:/.git/refs/heads/master not found"}
+{"level":30,"time":"2026-06-02T08:18:08.214Z","service":"flame-core-api","region":"los1","trace_id":"req_mpwd7v86_7i59x9","method":"GET","url":"/.git/refs/remotes/origin/HEAD","ip":"45.148.10.95","msg":"Route GET:/.git/refs/remotes/origin/HEAD not found"}
+{"level":30,"time":"2026-06-02T08:18:08.227Z","service":"flame-core-api","region":"los1","trace_id":"req_mpwd7v8j_ricbpn","method":"GET","url":"/.gitattributes","ip":"45.148.10.95","msg":"Route GET:/.gitattributes not found"}
+{"level":30,"time":"2026-06-02T08:18:08.230Z","service":"flame-core-api","region":"los1","trace_id":"req_mpwd7v8m_izld47","method":"GET","url":"/.github/ISSUE_TEMPLATE","ip":"45.148.10.95","msg":"Route GET:/.github/ISSUE_TEMPLATE not found"}
+{"level":30,"time":"2026-06-02T08:18:08.231Z","service":"flame-core-api","region":"los1","trace_id":"req_mpwd7v8n_xysxjq","method":"GET","url":"/.github/CODEOWNERS","ip":"45.148.10.95","msg":"Route GET:/.github/CODEOWNERS not found"}
+{"level":30,"time":"2026-06-02T08:18:08.231Z","service":"flame-core-api","region":"los1","trace_id":"req_mpwd7v8n_nnydi0","method":"GET","url":"/.github","ip":"45.148.10.95","msg":"Route GET:/.github not found"}
+{"level":30,"time":"2026-06-02T08:18:08.239Z","service":"flame-core-api","region":"los1","trace_id":"req_mpwd7v8v_43ogbj","method":"GET","url":"/.github/PULL_REQUEST_TEMPLATE.md","ip":"45.148.10.95","msg":"Route GET:/.github/PULL_REQUEST_TEMPLATE.md not found"}
+{"level":30,"time":"2026-06-02T08:18:08.246Z","service":"flame-core-api","region":"los1","trace_id":"req_mpwd7v92_knaa41","method":"GET","url":"/.github/dependabot.yml","ip":"45.148.10.95","msg":"Route GET:/.github/dependabot.yml not found"}
+{"level":30,"time":"2026-06-02T08:18:08.248Z","service":"flame-core-api","region":"los1","trace_id":"req_mpwd7v93_7v7ab4","method":"GET","url":"/.github/funding.yml","ip":"45.148.10.95","msg":"Route GET:/.github/funding.yml not found"}
+{"level":30,"time":"2026-06-02T08:18:08.248Z","service":"flame-core-api","region":"los1","trace_id":"req_mpwd7v94_xp35nv","method":"GET","url":"/.github/stale.yml","ip":"45.148.10.95","msg":"Route GET:/.github/stale.yml not found"}
+{"level":30,"time":"2026-06-02T08:18:08.249Z","service":"flame-core-api","region":"los1","trace_id":"req_mpwd7v95_e8xhig","method":"GET","url":"/.github/workflows","ip":"45.148.10.95","msg":"Route GET:/.github/workflows not found"}
+{"level":30,"time":"2026-06-02T08:18:08.256Z","service":"flame-core-api","region":"los1","trace_id":"req_mpwd7v9b_vnh8oy","method":"GET","url":"/.github/workflows/ci.yml","ip":"45.148.10.95","msg":"Route GET:/.github/workflows/ci.yml not found"}
+{"level":30,"time":"2026-06-02T08:18:08.259Z","service":"flame-core-api","region":"los1","trace_id":"req_mpwd7v9f_4r6ece","method":"GET","url":"/.github/workflows/main.yml","ip":"45.148.10.95","msg":"Route GET:/.github/workflows/main.yml not found"}
+{"level":30,"time":"2026-06-02T08:18:08.270Z","service":"flame-core-api","region":"los1","trace_id":"req_mpwd7v9p_7wuudl","method":"GET","url":"/.gitignore","ip":"45.148.10.95","msg":"Route GET:/.gitignore not found"}
+{"level":30,"time":"2026-06-02T08:18:08.276Z","service":"flame-core-api","region":"los1","trace_id":"req_mpwd7v9v_66pq6r","method":"GET","url":"/.gitlab","ip":"45.148.10.95","msg":"Route GET:/.gitlab not found"}
+{"level":30,"time":"2026-06-02T08:18:08.293Z","service":"flame-core-api","region":"los1","trace_id":"req_mpwd7va9_301gxj","method":"GET","url":"/.gitlab-ci","ip":"45.148.10.95","msg":"Route GET:/.gitlab-ci not found"}
+{"level":30,"time":"2026-06-02T08:18:08.301Z","service":"flame-core-api","region":"los1","trace_id":"req_mpwd7val_yqwwgc","method":"GET","url":"/.gitlab/issue_templates","ip":"45.148.10.95","msg":"Route GET:/.gitlab/issue_templates not found"}
+{"level":30,"time":"2026-06-02T08:18:08.302Z","service":"flame-core-api","region":"los1","trace_id":"req_mpwd7vam_7g5cxf","method":"GET","url":"/.gitlab-ci.yml","ip":"45.148.10.95","msg":"Route GET:/.gitlab-ci.yml not found"}
+{"level":30,"time":"2026-06-02T08:18:08.311Z","service":"flame-core-api","region":"los1","trace_id":"req_mpwd7vav_vzczsv","method":"GET","url":"/.gitlab/merge_request_templates","ip":"45.148.10.95","msg":"Route GET:/.gitlab/merge_request_templates not found"}
+{"level":30,"time":"2026-06-02T08:18:08.323Z","service":"flame-core-api","region":"los1","trace_id":"req_mpwd7vb6_8vh8km","method":"GET","url":"/.netlify/functions/*","ip":"45.148.10.95","msg":"Route GET:/.netlify/functions/* not found"}
+{"level":30,"time":"2026-06-02T08:18:08.329Z","service":"flame-core-api","region":"los1","trace_id":"req_mpwd7vbd_90ls7f","method":"GET","url":"/.gitmodules","ip":"45.148.10.95","msg":"Route GET:/.gitmodules not found"}
+{"level":30,"time":"2026-06-02T08:18:08.330Z","service":"flame-core-api","region":"los1","trace_id":"req_mpwd7vbe_m9guwk","method":"GET","url":"/.s3cfg","ip":"45.148.10.95","msg":"Route GET:/.s3cfg not found"}
+{"level":30,"time":"2026-06-02T08:18:08.331Z","service":"flame-core-api","region":"los1","trace_id":"req_mpwd7vbf_gmqjit","method":"GET","url":"/.stripe/","ip":"45.148.10.95","msg":"Route GET:/.stripe/ not found"}
+{"level":30,"time":"2026-06-02T08:18:08.336Z","service":"flame-core-api","region":"los1","trace_id":"req_mpwd7vbk_792xln","method":"GET","url":"/.terraform.lock.hcl","ip":"45.148.10.95","msg":"Route GET:/.terraform.lock.hcl not found"}
+{"level":30,"time":"2026-06-02T08:18:08.388Z","service":"flame-core-api","region":"los1","trace_id":"req_mpwd7vcz_w3sqe0","method":"GET","url":"/.well-known/stripe/","ip":"45.148.10.95","msg":"Route GET:/.well-known/stripe/ not found"}
+{"level":30,"time":"2026-06-02T08:18:08.578Z","service":"flame-core-api","region":"los1","trace_id":"req_mpwd7vi9_j5kffo","method":"GET","url":"/__debug","ip":"45.148.10.95","msg":"Route GET:/__debug not found"}
+{"level":30,"time":"2026-06-02T08:18:08.780Z","service":"flame-core-api","region":"los1","trace_id":"req_mpwd7vnw_8g6cvw","method":"GET","url":"/api/constants.js","ip":"45.148.10.95","msg":"Route GET:/api/constants.js not found"}
+{"level":30,"time":"2026-06-02T08:18:09.033Z","service":"flame-core-api","region":"los1","trace_id":"req_mpwd7vux_yaezmy","method":"GET","url":"/api/v1/*","ip":"45.148.10.95","msg":"Route GET:/api/v1/* not found"}
+{"level":30,"time":"2026-06-02T08:18:09.201Z","service":"flame-core-api","region":"los1","trace_id":"req_mpwd7vzl_4u00q6","method":"GET","url":"/appsettings.Development.json","ip":"45.148.10.95","msg":"Route GET:/appsettings.Development.json not found"}
+{"level":30,"time":"2026-06-02T08:18:09.368Z","service":"flame-core-api","region":"los1","trace_id":"req_mpwd7w48_1tupfj","method":"GET","url":"/be/.env","ip":"45.148.10.95","msg":"Route GET:/be/.env not found"}
+{"level":30,"time":"2026-06-02T08:18:09.599Z","service":"flame-core-api","region":"los1","trace_id":"req_mpwd7wan_1x9wv2","method":"GET","url":"/config/config.js","ip":"45.148.10.95","msg":"Route GET:/config/config.js not found"}
+{"level":30,"time":"2026-06-02T08:18:09.779Z","service":"flame-core-api","region":"los1","trace_id":"req_mpwd7wfn_r9q3n3","method":"GET","url":"/current/.env","ip":"45.148.10.95","msg":"Route GET:/current/.env not found"}
+{"level":30,"time":"2026-06-02T08:18:09.937Z","service":"flame-core-api","region":"los1","trace_id":"req_mpwd7wk1_86khkm","method":"GET","url":"/healthz","ip":"172.19.0.1","msg":"Route GET:/healthz not found"}
+{"level":30,"time":"2026-06-02T08:18:10.054Z","service":"flame-core-api","region":"los1","trace_id":"req_mpwd7wna_v9ij0x","method":"GET","url":"/index.js","ip":"45.148.10.95","msg":"Route GET:/index.js not found"}
+{"level":30,"time":"2026-06-02T08:18:10.175Z","service":"flame-core-api","region":"los1","trace_id":"req_mpwd7wqm_kpfybt","method":"GET","url":"/oauth/authorize","ip":"45.148.10.95","msg":"Route GET:/oauth/authorize not found"}
+{"level":30,"time":"2026-06-02T08:18:10.370Z","service":"flame-core-api","region":"los1","trace_id":"req_mpwd7ww2_x4wwg2","method":"GET","url":"/project/.env","ip":"45.148.10.95","msg":"Route GET:/project/.env not found"}
+{"level":30,"time":"2026-06-02T08:18:10.575Z","service":"flame-core-api","region":"los1","trace_id":"req_mpwd7x1q_0f5o1u","method":"GET","url":"/s3/buckets","ip":"45.148.10.95","msg":"Route GET:/s3/buckets not found"}
+{"level":30,"time":"2026-06-02T08:18:10.772Z","service":"flame-core-api","region":"los1","trace_id":"req_mpwd7x78_26d94s","method":"GET","url":"/src/config/config.json","ip":"45.148.10.95","msg":"Route GET:/src/config/config.json not found"}
+{"level":30,"time":"2026-06-02T08:18:11.004Z","service":"flame-core-api","region":"los1","trace_id":"req_mpwd7xdn_p2109p","method":"GET","url":"/v1/*","ip":"45.148.10.95","msg":"Route GET:/v1/* not found"}
+{"level":30,"time":"2026-06-02T08:18:11.265Z","service":"flame-core-api","region":"los1","trace_id":"req_mpwd7xkx_m3lmdl","method":"GET","url":"/webhook-test/*","ip":"45.148.10.95","msg":"Route GET:/webhook-test/* not found"}
+{"level":50,"time":"2026-06-02T08:18:35.526Z","service":"flame-core-api","region":"los1","msg":"register"}
+{"level":50,"time":"2026-06-02T08:19:04.683Z","service":"flame-core-api","region":"los1","msg":"register"}
+root@vmi3227630:~/flame-core#
