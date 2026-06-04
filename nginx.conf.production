@@ -1,52 +1,16 @@
 # ============================================================
-# Flame Core — Production Nginx Configuration
+# Flame Core — Marketing Website Only (Maintenance Mode)
 # ============================================================
-# 
-# This configuration serves:
-# - Main marketing website: flamecoretechltd.com & www.flamecoretechltd.com
-# - Hosting platform: hosting.flamecoretechltd.com or /hosting path
-# - API backend: api.flamecoretechltd.com (or same subdomain)
 #
-# Setup:
-# 1. Place this file at: /etc/nginx/sites-available/flamecore
-# 2. Create symlink: ln -s /etc/nginx/sites-available/flamecore /etc/nginx/sites-enabled/
-# 3. Test config: nginx -t
-# 4. Reload: systemctl reload nginx
+# Serves only the marketing page at:
+# - flamecoretechltd.com & www.flamecoretechltd.com
 #
-# SSL certificates (auto-provisioned by Certbot):
-# - certbot certonly --standalone -d flamecoretechltd.com -d www.flamecoretechltd.com -d hosting.flamecoretechltd.com -d api.flamecoretechltd.com
-
-# ========================================================
-# Upstream definitions
-# ========================================================
-
-# Marketing website frontend (Node/Vite static build)
-upstream flamecore_website {
-    server 127.0.0.1:5173;  # Dev: Vite dev server
-    # server 127.0.0.1:8001;  # Prod: static file server or PM2 app
-}
-
-# Hosting platform frontend (Node/Vite static build)
-upstream flamecore_hosting {
-    server 127.0.0.1:5174;  # Dev: Vite dev server
-    # server 127.0.0.1:8002;  # Prod: static file server or PM2 app
-}
-
-# Hosting platform API backend (Fastify)
-# Port is discovered dynamically from /root/flame-core/backend-port.txt
-# Falls back to 3001 if file doesn't exist
-upstream flamecore_api {
-    server 127.0.0.1:3001;  # Docker maps 3001:3002
-    keepalive 32;
-}
+# Backend and hosting platform are offline for maintenance.
 
 # ========================================================
 # Rate limiting
 # ========================================================
-
 limit_req_zone $binary_remote_addr zone=general:10m rate=100r/s;
-limit_req_zone $binary_remote_addr zone=auth:10m rate=5r/m;
-limit_req_zone $binary_remote_addr zone=api:10m rate=300r/m;
 
 # ========================================================
 # Redirect HTTP to HTTPS
@@ -55,8 +19,7 @@ limit_req_zone $binary_remote_addr zone=api:10m rate=300r/m;
 server {
     listen 80;
     listen [::]:80;
-    server_name flamecoretechltd.com www.flamecoretechltd.com hosting.flamecoretechltd.com api.flamecoretechltd.com;
-    
+    server_name flamecoretechltd.com www.flamecoretechltd.com;
     location /.well-known/acme-challenge {
         root /var/www/certbot;
     }
@@ -128,139 +91,3 @@ server {
         add_header Expires "0";
     }
 }
-
-# ========================================================
-# HTTPS: Hosting Platform (subdomain)
-# ========================================================
-
-server {
-    listen 443 ssl http2;
-    listen [::]:443 ssl http2;
-    server_name hosting.flamecoretechltd.com;
-
-    ssl_certificate /etc/letsencrypt/live/hosting.flamecoretechltd.com/fullchain.pem;
-    ssl_certificate_key /etc/letsencrypt/live/hosting.flamecoretechltd.com/privkey.pem;
-
-    ssl_protocols TLSv1.2 TLSv1.3;
-    ssl_ciphers HIGH:!aNULL:!MD5;
-    ssl_prefer_server_ciphers on;
-    ssl_session_cache shared:SSL:10m;
-
-    add_header Strict-Transport-Security "max-age=31536000; includeSubDomains" always;
-    add_header X-Content-Type-Options "nosniff" always;
-    add_header X-Frame-Options "SAMEORIGIN" always;
-
-    access_log /var/log/nginx/flamecore-hosting-access.log combined;
-    error_log /var/log/nginx/flamecore-hosting-error.log warn;
-
-    gzip on;
-    gzip_types text/plain text/css application/json application/javascript;
-    gzip_min_length 256;
-
-    # ─── API proxy: /api/v1/* → backend ───────────────────
-    location /api/v1 {
-        limit_req zone=api burst=50 nodelay;
-
-        proxy_pass http://flamecore_api;
-        proxy_http_version 1.1;
-        proxy_set_header Upgrade $http_upgrade;
-        proxy_set_header Connection "upgrade";
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
-        proxy_set_header X-Forwarded-Host $server_name;
-
-        proxy_buffering off;
-        proxy_request_buffering off;
-        proxy_cache off;
-
-        # WebSocket support for SSE/logs
-        proxy_read_timeout 300s;
-        proxy_connect_timeout 75s;
-    }
-
-    # ─── Auth endpoints: public but rate-limited ───────────
-    location ~ ^/api/v1/(auth|oauth) {
-        limit_req zone=auth burst=5 nodelay;
-
-        proxy_pass http://flamecore_api;
-        proxy_http_version 1.1;
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
-    }
-
-    # ─── Static files (console dashboard) ──────────────────
-    location ~* \.(js|css|png|jpg|jpeg|gif|svg|woff|woff2)$ {
-        root /var/www/flame-core;
-        expires 30d;
-        add_header Cache-Control "public, immutable";
-    }
-
-    # ─── SPA fallback ──────────────────────────────────────
-    location / {
-        root /var/www/flame-core;
-        try_files $uri /index.html;
-        add_header Cache-Control "no-cache, no-store, must-revalidate";
-        add_header Pragma "no-cache";
-        add_header Expires "0";
-    }
-}
-
-# ========================================================
-# HTTPS: API Backend (optional separate subdomain)
-# ========================================================
-
-server {
-    listen 443 ssl http2;
-    listen [::]:443 ssl http2;
-    server_name api.flamecoretechltd.com;
-
-    ssl_certificate /etc/letsencrypt/live/api.flamecoretechltd.com/fullchain.pem;
-    ssl_certificate_key /etc/letsencrypt/live/api.flamecoretechltd.com/privkey.pem;
-
-    ssl_protocols TLSv1.2 TLSv1.3;
-    ssl_ciphers HIGH:!aNULL:!MD5;
-
-    add_header Strict-Transport-Security "max-age=31536000; includeSubDomains" always;
-
-    access_log /var/log/nginx/flamecore-api-access.log combined;
-    error_log /var/log/nginx/flamecore-api-error.log warn;
-
-    # Health check endpoint (no rate limit)
-    location /health {
-        proxy_pass http://flamecore_api;
-        access_log off;
-    }
-
-    # API endpoints with rate limiting
-    location / {
-        limit_req zone=api burst=100 nodelay;
-
-        proxy_pass http://flamecore_api;
-        proxy_http_version 1.1;
-        proxy_set_header Upgrade $http_upgrade;
-        proxy_set_header Connection "upgrade";
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
-
-        proxy_buffering off;
-        proxy_read_timeout 300s;
-    }
-}
-
-# ========================================================
-# Redirect customer app subdomains to their deployments
-# ========================================================
-# Pattern: *.flame.app → Docker container running on VPS
-#
-# This requires:
-# 1. Wildcard DNS: *.flame.app  A  <VPS-IP>
-# 2. Dynamic Nginx config generation or catch-all server block
-#
-# For now, this is handled by the backend routing to individual containers.
-# See backend/src/engine/nginxEngine.ts for container-specific site config.
