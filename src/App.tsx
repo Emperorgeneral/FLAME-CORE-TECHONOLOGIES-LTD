@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import AdminPortal from './AdminPortal';
 
 const PHONE_DISPLAY = '+234 707 172 6082';
 const PHONE_TEL = 'tel:+2347071726082';
@@ -6,6 +7,8 @@ const WHATSAPP_URL =
   'https://wa.me/2347071726082?text=Hello%20FLAMECORE%20TECHNOLOGIES%20LTD%2C%20I%20would%20like%20to%20make%20an%20inquiry.';
 
 export default function App() {
+  const [pathname, setPathname] = useState(() => (typeof window === 'undefined' ? '/' : window.location.pathname));
+
   const services = [
     {
       title: 'Website Development',
@@ -215,6 +218,12 @@ export default function App() {
   }, []);
 
   useEffect(() => {
+    const onPopState = () => setPathname(window.location.pathname);
+    window.addEventListener('popstate', onPopState);
+    return () => window.removeEventListener('popstate', onPopState);
+  }, []);
+
+  useEffect(() => {
     const onHashChange = () => {
       const hash = window.location.hash.replace('#m-', '');
       if (['home', 'about', 'services', 'why', 'contact'].includes(hash)) {
@@ -235,6 +244,10 @@ export default function App() {
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
   };
+
+  if (pathname === '/admin' || pathname.startsWith('/admin/')) {
+    return <AdminPortal />;
+  }
 
   return (
     <div className="min-h-screen bg-[#05060A] text-white selection:bg-[#FF5A1F]/35 selection:text-white antialiased overflow-x-hidden">
