@@ -1,2169 +1,1193 @@
-import { useState, useEffect, useRef } from "react"
-import { Toast } from "@/components/ui"
-import { Console } from "@/features/console/Console"
-import { ConsoleDashboard, StatusBadge } from "@/features/console/ConsoleDashboard"
-import { HouseDashboard } from "@/features/console/HouseDashboard"
-import { HouseView } from "@/features/console/HouseView"
-import { RoomPanel } from "@/features/console/RoomPanel"
-import { VerifyEmail } from "@/features/auth/VerifyEmail"
-import { AdminEmailManager } from "@/components/admin/AdminEmailManager"
-import { AdminUserManager } from "@/components/admin/AdminUserManager"
-import { AdminBillingManager } from "@/components/admin/AdminBillingManager"
-import { useConsole } from "@/features/console/useConsole"
-import { apiClient } from "@/api/client"
-import type { NewProjectStep } from "@/features/console/useConsole"
+import { useEffect, useState } from 'react';
 
-type Region = {
-  code: string
-  city: string
-  country: string
-  flag: string
-  status: "live" | "soon" | "planned"
-  latency: number
-  pop: string
-}
-
-type Currency = {
-  code: "NGN" | "USD" | "GBP" | "EUR"
-  symbol: string
-  rate: number // relative to USD
-  locale: string
-}
-
-type Plan = {
-  id: string
-  name: string
-  tagline: string
-  priceUSD: number // base price in USD
-  cpu: string
-  ram: string
-  storage: string
-  bandwidth: string
-  builds: string
-  projects: number
-  popular?: boolean
-  features: string[]
-}
-
-type DeployStatus = "queued" | "cloning" | "installing" | "building" | "provisioning" | "starting" | "healthy" | "ready" | "failed" | "sleeping" | "stopped" | "cancelled" | "rollback" | "redeploying"
-
-type Deployment = {
-  id: string
-  project: string
-  repo: string
-  branch: string
-  framework: string
-  region: string
-  status: DeployStatus
-  commit: string
-  commitMsg: string
-  duration: string
-  deployedAt: string
-  url: string
-  health?: "healthy" | "unhealthy" | "degraded" | "unknown"
-  cpuPct?: number
-  ramMB?: number
-  restarts?: number
-}
-
-type LogLine = {
-  t: string
-  level: "info" | "warn" | "error" | "ok"
-  msg: string
-}
+const PHONE_DISPLAY = '+234 707 172 6082';
+const PHONE_TEL = 'tel:+2347071726082';
+const WHATSAPP_URL =
+  'https://wa.me/2347071726082?text=Hello%20FLAMECORE%20TECHNOLOGIES%20LTD%2C%20I%20would%20like%20to%20make%20an%20inquiry.';
 
 export default function App() {
-  const [pathname, setPathname] = useState(window.location.pathname)
-  const [view, setView] = useState<"public" | "console" | "admin" | "verify">("public")
-  const [mobileMenu, setMobileMenu] = useState(false)
-  const [authed, setAuthed] = useState(false)
-  const [isAdmin, setIsAdmin] = useState(false)
-  const [authMode, setAuthMode] = useState<"signin" | "register">("signin")
-  const [loginEmail, setLoginEmail] = useState("")
-  const [loginPassword, setLoginPassword] = useState("")
-  const [registerData, setRegisterData] = useState({
-    firstName: "",
-    lastName: "",
-    email: "",
-    company: "",
-    phone: "",
-    country: "Nigeria",
-    teamName: "",
-    role: "Founder",
-    password: "",
-    confirmPassword: "",
-  })
-  const [currency, setCurrency] = useState<Currency["code"]>("USD")
-  const [billing, setBilling] = useState<"month" | "year">("month")
-  const [teamId, setTeamId] = useState<string | null>(null)
-  const [userId, setUserId] = useState<string | null>(null)
-  
-  // Console state management via dedicated hook
-  const consoleState = useConsole(teamId || undefined, userId || undefined)
-  
-  const [toast, setToast] = useState<string | null>(null)
-  const [mousePos, setMousePos] = useState({ x: 50, y: 50 })
-  const [heroVisible, setHeroVisible] = useState(false)
-  const heroRef = useRef<HTMLDivElement>(null)
-  const [adminTab, setAdminTab] = useState<"overview" | "deployments" | "users" | "domains" | "billing" | "security" | "storage" | "settings">("overview")
-  const [showDeployModal, setShowDeployModal] = useState(false)
-  const [deployRepo, setDeployRepo] = useState("")
-  const [deployRegion, setDeployRegion] = useState("los1")
-  const [newProjectStep, setNewProjectStep] = useState<NewProjectStep>("root")
-  const [newProjectSearch, setNewProjectSearch] = useState("")
-  const [selectedDeployment, setSelectedDeployment] = useState<string | null>(null)
-
-  const currencies: Currency[] = [
-    { code: "USD", symbol: "$", rate: 1, locale: "en-US" },
-    { code: "NGN", symbol: "₦", rate: 1600, locale: "en-NG" },
-    { code: "GBP", symbol: "£", rate: 0.79, locale: "en-GB" },
-    { code: "EUR", symbol: "€", rate: 0.92, locale: "de-DE" },
-  ]
-
-  const regions: Region[] = [
-    { code: "los1", city: "Lagos", country: "Nigeria", flag: "🇳🇬", status: "live", latency: 12, pop: "AFR-W-01" },
-    { code: "lhr1", city: "London", country: "United Kingdom", flag: "🇬🇧", status: "soon", latency: 87, pop: "EUR-W-01" },
-    { code: "fra1", city: "Frankfurt", country: "Germany", flag: "🇩🇪", status: "soon", latency: 94, pop: "EUR-C-01" },
-    { code: "nyc1", city: "New York", country: "United States", flag: "🇺🇸", status: "planned", latency: 142, pop: "AMER-E-01" },
-    { code: "sin1", city: "Singapore", country: "Singapore", flag: "🇸🇬", status: "planned", latency: 198, pop: "APAC-S-01" },
-  ]
-
-  const plans: Plan[] = [
+  const services = [
     {
-      id: "hobby",
-      name: "HOBBY",
-      tagline: "For side projects and learning",
-      priceUSD: 0,
-      cpu: "0.5 vCPU shared",
-      ram: "512 MB",
-      storage: "1 GB SSD",
-      bandwidth: "100 GB",
-      builds: "100 min/mo",
-      projects: 3,
-      features: [
-        "Deploy from GitHub",
-        "Auto-SSL on *.flame.app",
-        "Community support",
-        "Sleeps after 30min idle",
-        "1 region (Lagos)",
-      ],
+      title: 'Website Development',
+      desc: 'Premium websites and digital platforms crafted to elevate brand perception, sharpen conversion, and deliver fast, dependable performance across every device.',
+      tags: ['Premium UX', 'SEO-ready', 'High Performance'],
     },
     {
-      id: "starter",
-      name: "STARTER",
-      tagline: "Indie devs & MVPs",
-      priceUSD: 8,
-      cpu: "1 vCPU",
-      ram: "1 GB",
-      storage: "10 GB SSD",
-      bandwidth: "500 GB",
-      builds: "500 min/mo",
-      projects: 10,
-      features: [
-        "Custom domains + SSL",
-        "Always on (no sleep)",
-        "Environment secrets",
-        "Build cache",
-        "Email support",
-      ],
+      title: 'Mobile App Development',
+      desc: 'Refined mobile experiences for iOS and Android with polished interfaces, resilient architecture, and production-ready performance that supports long-term growth.',
+      tags: ['iOS', 'Android', 'Product-grade'],
     },
     {
-      id: "pro",
-      name: "PRO",
-      tagline: "Production-grade apps",
-      priceUSD: 25,
-      cpu: "2 vCPU dedicated",
-      ram: "4 GB",
-      storage: "50 GB SSD",
-      bandwidth: "2 TB",
-      builds: "Unlimited",
-      projects: 50,
-      popular: true,
-      features: [
-        "Multi-region deploy",
-        "Zero-downtime deploys",
-        "Preview environments",
-        "Webhook autodeploy",
-        "Priority support",
-        "Usage analytics",
-      ],
+      title: 'Custom Software Solutions',
+      desc: 'Bespoke business systems, internal platforms, and operational tools engineered around your workflows, data, and strategic goals.',
+      tags: ['Business Systems', 'Dashboards', 'Integrations'],
     },
     {
-      id: "scale",
-      name: "SCALE",
-      tagline: "Teams & high-traffic",
-      priceUSD: 89,
-      cpu: "4 vCPU dedicated",
-      ram: "16 GB",
-      storage: "200 GB SSD",
-      bandwidth: "10 TB",
-      builds: "Unlimited",
-      projects: 999,
-      features: [
-        "Horizontal autoscaling",
-        "Private networking",
-        "Team RBAC",
-        "Audit logs",
-        "99.95% uptime SLA",
-        "Dedicated engineer",
-        "DDoS protection",
-      ],
+      title: 'AI & Automation',
+      desc: 'Smart systems, assistants, and automations that reduce repetitive work, improve efficiency, and help teams move faster.',
+      tags: ['AI Tools', 'Automation', 'Workflows'],
     },
-  ]
+    {
+      title: 'UI/UX Design',
+      desc: 'Clean, user-focused digital experiences with modern visual systems, intuitive interactions, and consistent design language.',
+      tags: ['User Experience', 'Interfaces', 'Design Systems'],
+    },
+    {
+      title: 'Tech Consulting',
+      desc: 'Technical strategy, architecture guidance, product planning, and execution support for startups, SMEs, and growing businesses.',
+      tags: ['Strategy', 'Architecture', 'Planning'],
+    },
+    {
+      title: 'Cloud & Hosting Solutions',
+      desc: 'Reliable deployment, hosting, maintenance, and infrastructure support to keep your digital products secure and available.',
+      tags: ['Cloud', 'Hosting', 'Support'],
+    },
+    {
+      title: 'Web Hosting',
+      desc: 'Reliable hosting guidance and managed infrastructure support tailored to each projectâ€™s traffic, availability, and security requirements.',
+      tags: ['Managed Setup', 'SSL', 'Support'],
+    },
+  ];
 
-  const [userDeployments, setUserDeployments] = useState<Deployment[]>([])
-  const [deploymentLoading, setDeploymentLoading] = useState(false)
+  const trustPillars = [
+    { label: 'Premium Delivery', detail: 'Structured execution with polished output and dependable follow-through.' },
+    { label: 'Secure Systems', detail: 'Best-practice thinking around stability, access control, and deployment hygiene.' },
+    { label: 'Scalable Builds', detail: 'Solutions designed to grow with your operations, team, and customer demand.' },
+    { label: 'Long-Term Support', detail: 'Ongoing guidance for iteration, maintenance, and technical decision-making.' },
+  ];
 
-  // Use real deployments for authenticated users, empty for new users
-  const deployments = authed ? userDeployments : []
+  const reasons = [
+    {
+      title: 'Fast Delivery',
+      desc: 'We move quickly with clear planning, practical execution, and efficient workflows that reduce time-to-launch.',
+      metric: 'Fast',
+    },
+    {
+      title: 'Modern Technologies',
+      desc: 'We use reliable, up-to-date tools and frameworks that make your solution easier to scale and maintain.',
+      metric: 'Modern',
+    },
+    {
+      title: 'Reliable Support',
+      desc: 'We stay available after launch to help with updates, fixes, improvements, and technical guidance.',
+      metric: 'Support',
+    },
+    {
+      title: 'Scalable Solutions',
+      desc: 'Our systems are designed to grow with your business, whether you are serving tens or thousands of users.',
+      metric: 'Scale',
+    },
+    {
+      title: 'Clean UI/UX',
+      desc: 'We build polished interfaces that are easy to understand, pleasant to use, and optimized for engagement.',
+      metric: 'Clean',
+    },
+    {
+      title: 'Affordable Pricing',
+      desc: 'Premium digital solutions delivered with practical pricing models that create strong value for businesses.',
+      metric: 'Value',
+    },
+  ];
 
-  const [logs, setLogs] = useState<LogLine[]>([])
-  void logs
+  const processSteps = [
+    {
+      step: '01',
+      title: 'Discovery & Strategy',
+      desc: 'We align on business goals, audience, requirements, and the technical direction needed to deliver confidently.',
+    },
+    {
+      step: '02',
+      title: 'Design & Architecture',
+      desc: 'We shape the user journey, visual system, and implementation plan so the product feels refined before build starts.',
+    },
+    {
+      step: '03',
+      title: 'Build & Integration',
+      desc: 'We develop the website, app, or custom system with clean structure, tested workflows, and production-ready integration.',
+    },
+    {
+      step: '04',
+      title: 'Launch & Optimisation',
+      desc: 'We deploy carefully, validate the experience, and fine-tune performance, reliability, and presentation before handoff.',
+    },
+    {
+      step: '05',
+      title: 'Support & Growth',
+      desc: 'After launch, we remain available for improvements, hosting guidance, maintenance, and future expansion work.',
+    },
+  ];
+
+  const featuredWork = [
+    {
+      title: 'Corporate Website Refresh',
+      category: 'Brand Positioning',
+      summary: 'Premium presentation for a company that needed stronger digital credibility, clearer service messaging, and a sharper conversion path.',
+      outcome: 'Refined brand perception, cleaner navigation, and a more executive-ready online presence.',
+    },
+    {
+      title: 'Operations Dashboard',
+      category: 'Custom Software',
+      summary: 'A focused internal platform concept for organising workflows, visibility, and team actions in one structured workspace.',
+      outcome: 'Better process clarity, less manual coordination, and a system built around how the business actually operates.',
+    },
+    {
+      title: 'Mobile-First Service Platform',
+      category: 'Product Delivery',
+      summary: 'A user-friendly digital service experience designed for responsiveness, trust, and repeat engagement across devices.',
+      outcome: 'Stronger usability, more consistent customer experience, and a foundation ready for future scale.',
+    },
+  ];
+
+  const faqs = [
+    {
+      question: 'What types of businesses do you work with?',
+      answer:
+        'We work with startups, SMEs, established brands, and organisations that want professional digital systems, stronger presentation, and dependable technical execution.',
+    },
+    {
+      question: 'Do you handle both design and development?',
+      answer:
+        'Yes. We can support strategy, interface design, development, deployment planning, and post-launch guidance as one coordinated delivery process.',
+    },
+    {
+      question: 'Can you build custom internal tools or business software?',
+      answer:
+        'Absolutely. We build tailored systems such as dashboards, portals, workflow tools, and integrated platforms based on your operational needs.',
+    },
+    {
+      question: 'Do you offer hosting directly on the website?',
+      answer:
+        'Hosting is handled through consultation rather than instant checkout. That allows us to recommend the right environment, security level, and support plan for each project.',
+    },
+    {
+      question: 'What happens after launch?',
+      answer:
+        'We can continue with maintenance, iteration, support, optimisation, and technical guidance so your product keeps improving after go-live.',
+    },
+  ];
+
+  const navLinks = [
+    { label: 'Services', href: '#services' },
+    { label: 'About', href: '#about' },
+    { label: 'Process', href: '#process' },
+    { label: 'Work', href: '#featured-work' },
+    { label: 'Why Us', href: '#why-us' },
+    { label: 'FAQ', href: '#faq' },
+    { label: 'Contact', href: '#contact' },
+    { label: 'Hosting', href: '#hosting' },
+  ];
+
+  const mobilePages = [
+    { id: 'home', label: 'Home' },
+    { id: 'about', label: 'About' },
+    { id: 'services', label: 'Services' },
+    { id: 'why', label: 'Why Us' },
+    { id: 'contact', label: 'Contact' },
+  ] as const;
+
+  const [isDesktop, setIsDesktop] = useState(() => {
+    if (typeof window === 'undefined') return true;
+    return window.innerWidth >= 1024;
+  });
+
+  const [mobilePage, setMobilePage] = useState<'home' | 'about' | 'services' | 'why' | 'contact'>(() => {
+    if (typeof window === 'undefined') return 'home';
+    const hash = window.location.hash.replace('#m-', '');
+    return ['home', 'about', 'services', 'why', 'contact'].includes(hash)
+      ? (hash as 'home' | 'about' | 'services' | 'why' | 'contact')
+      : 'home';
+  });
+
+  const [menuOpen, setMenuOpen] = useState(false);
 
   useEffect(() => {
-    const stored = localStorage.getItem("flamecore_session")
-    if (stored === "active") setAuthed(true)
-    const storedCurrency = localStorage.getItem("flamecore_currency") as Currency["code"] | null
-    if (storedCurrency) setCurrency(storedCurrency)
-    const storedTeamId = localStorage.getItem("flamecore_team")
-    if (storedTeamId) setTeamId(storedTeamId)
+    const media = window.matchMedia('(min-width: 1024px)');
+    const onChange = () => setIsDesktop(media.matches);
+    onChange();
 
-    // Sync pathname with URL
-    setPathname(window.location.pathname)
-
-    // Handle URL parameters: ?verify=token or ?token=... (OAuth)
-    const params = new URLSearchParams(window.location.search)
-    const verifyToken = params.get("verify")
-    const oauthToken = params.get("token")
-    const oauthError = params.get("error")
-    
-    if (verifyToken) {
-      // Email verification flow
-      setView("verify")
-      window.history.replaceState({}, "", window.location.pathname)
-    } else if (oauthToken) {
-      localStorage.setItem("flame_token", oauthToken)
-      localStorage.setItem("flamecore_session", "active")
-      if (params.get("team")) {
-        const team = params.get("team")!
-        localStorage.setItem("flamecore_team", team)
-        setTeamId(team)
-      }
-      setAuthed(true)
-      setView("console")
-      setToast("AUTHENTICATED · signed in via OAuth")
-      // Clean URL
-      window.history.replaceState({}, "", window.location.pathname)
-    } else if (oauthError) {
-      const errors: Record<string, string> = {
-        invalid_state: "OAuth session expired — please try again",
-        token_exchange: "Failed to verify with provider — please retry",
-        no_email: "No email found on your account — please use email signup",
-        server_error: "Something went wrong — please try again",
-      }
-      setToast(`ERROR · ${errors[oauthError] || oauthError}`)
-      setView("console")
-      window.history.replaceState({}, "", window.location.pathname)
+    if (media.addEventListener) {
+      media.addEventListener('change', onChange);
+      return () => media.removeEventListener('change', onChange);
     }
 
-    setTimeout(() => setHeroVisible(true), 50)
-
-    // Listen for URL changes (back/forward)
-    const handlePopState = () => setPathname(window.location.pathname)
-    window.addEventListener("popstate", handlePopState)
-    return () => window.removeEventListener("popstate", handlePopState)
-  }, [])
-
-  // Load user deployments when authenticated
-  useEffect(() => {
-    if (!authed) {
-      setUserDeployments([])
-      return
-    }
-
-    const loadDeployments = async () => {
-      try {
-        setDeploymentLoading(true)
-        // TODO: Replace with actual API call: const deployments = await apiClient.getDeployments()
-        // For now, show empty state for new users
-        setUserDeployments([])
-      } catch (error) {
-        console.error("Failed to load deployments:", error)
-        setUserDeployments([])
-      } finally {
-        setDeploymentLoading(false)
-      }
-    }
-
-    loadDeployments()
-  }, [authed])
+    media.addListener(onChange);
+    return () => media.removeListener(onChange);
+  }, []);
 
   useEffect(() => {
-    const handleMouse = (e: MouseEvent) => {
-      if (heroRef.current) {
-        const rect = heroRef.current.getBoundingClientRect()
-        setMousePos({
-          x: ((e.clientX - rect.left) / rect.width) * 100,
-          y: ((e.clientY - rect.top) / rect.height) * 100,
-        })
+    const onHashChange = () => {
+      const hash = window.location.hash.replace('#m-', '');
+      if (['home', 'about', 'services', 'why', 'contact'].includes(hash)) {
+        setMobilePage(hash as 'home' | 'about' | 'services' | 'why' | 'contact');
       }
+    };
+
+    window.addEventListener('hashchange', onHashChange);
+    onHashChange();
+    return () => window.removeEventListener('hashchange', onHashChange);
+  }, []);
+
+  const goToMobilePage = (page: 'home' | 'about' | 'services' | 'why' | 'contact') => {
+    if (!isDesktop && typeof window !== 'undefined') {
+      setMobilePage(page);
+      setMenuOpen(false);
+      window.location.hash = `m-${page}`;
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     }
-    window.addEventListener("mousemove", handleMouse)
-    return () => window.removeEventListener("mousemove", handleMouse)
-  }, [])
-
-  useEffect(() => {
-    if (toast) {
-      const t = setTimeout(() => setToast(null), 3500)
-      return () => clearTimeout(t)
-    }
-  }, [toast])
-
-  // Simulated live log streaming when a deployment is selected & building
-  // useEffect(() => {
-  //   if (consoleTab !== "logs") return
-  //   const dep = deployments.find((d) => d.id === selectedDeployment)
-  //   if (!dep || dep.status !== "building") return
-  //   const interval = setInterval(() => {
-  //     const samples: LogLine[] = [
-  //       { t: new Date().toLocaleTimeString("en-GB"), level: "info", msg: "  health check: GET / → 200 OK (8ms)" },
-  //       { t: new Date().toLocaleTimeString("en-GB"), level: "info", msg: "  routing traffic to new revision (canary 25%)" },
-  //       { t: new Date().toLocaleTimeString("en-GB"), level: "ok", msg: "  ✓ container healthy in 1.4s" },
-  //     ]
-  //     setLogs((l) => [...l.slice(-30), samples[Math.floor(Math.random() * samples.length)]])
-  //   }, 2400)
-  //   return () => clearInterval(interval)
-  // }, [consoleTab, selectedDeployment])
-
-  const activeCurrency = currencies.find((c) => c.code === currency)!
-
-  const formatPrice = (priceUSD: number) => {
-    if (priceUSD === 0) return "Free"
-    const price = priceUSD * activeCurrency.rate * (billing === "year" ? 10 : 1)
-    return new Intl.NumberFormat(activeCurrency.locale, {
-      style: "currency",
-      currency: activeCurrency.code,
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    }).format(price)
-  }
-
-  const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!loginEmail || loginPassword.length < 8) {
-      setToast("ERROR · invalid email or password")
-      return
-    }
-
-    try {
-      const result = await apiClient.login(loginEmail, loginPassword)
-      setAuthed(true)
-      const isAdminUser = result.user.role === "admin"
-      setIsAdmin(isAdminUser)
-      setUserId(result.user.id)
-      // Store first team if available
-      if (result.teams && result.teams.length > 0) {
-        setTeamId(result.teams[0].id)
-        localStorage.setItem("flamecore_team", result.teams[0].id)
-      }
-      localStorage.setItem("flamecore_session", "active")
-      setToast(`AUTHENTICATED · welcome ${result.user.email}`)
-      setLoginEmail("")
-      setLoginPassword("")
-      // Redirect via URL: /admin for admins, /console for users
-      const redirectPath = isAdminUser ? "/admin" : "/console"
-      window.history.pushState({}, "", redirectPath)
-      setPathname(redirectPath)
-      setView(isAdminUser ? "admin" : "console")
-    } catch (error: any) {
-      if (error.status === 403) {
-        setToast("⚠️ EMAIL NOT VERIFIED · check your inbox for verification link")
-      } else {
-        setToast(`ERROR · ${error.message || "login failed"}`)
-      }
-    }
-  }
-
-  const handleRegister = async (e: React.FormEvent) => {
-    e.preventDefault()
-    const fullName = `${registerData.firstName} ${registerData.lastName}`.trim()
-
-    if (!registerData.firstName || !registerData.lastName || !registerData.email) {
-      setToast("ERROR · complete all required fields")
-      return
-    }
-
-    if (registerData.password.length < 8) {
-      setToast("ERROR · password must be at least 8 characters")
-      return
-    }
-
-    if (registerData.password !== registerData.confirmPassword) {
-      setToast("ERROR · passwords do not match")
-      return
-    }
-
-    try {
-      // Register user - doesn't log in, requires email verification
-      await apiClient.register({
-        email: registerData.email,
-        username: registerData.email.split("@")[0],
-        password: registerData.password,
-        full_name: fullName,
-        country_code: registerData.country,
-      })
-
-      setToast("✅ ACCOUNT CREATED · check your email to verify")
-      setRegisterData({
-        firstName: "",
-        lastName: "",
-        email: "",
-        company: "",
-        phone: "",
-        country: "Nigeria",
-        teamName: "",
-        role: "Founder",
-        password: "",
-        confirmPassword: "",
-      })
-      setAuthMode("signin")
-    } catch (error: any) {
-      setToast(`ERROR · ${error.message || "registration failed"}`)
-    }
-  }
-
-  const handleDeploy = (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!deployRepo) return
-    const id = `dpl_${Math.random().toString(36).slice(2, 8)}`
-    const region = regions.find((r) => r.code === deployRegion)!
-    setToast(`DEPLOYING · ${id} → ${region.city.toLowerCase()}`)
-    setShowDeployModal(false)
-    setDeployRepo("")
-    setSelectedDeployment(id)
-    // setConsoleTab("logs")
-  }
+  };
 
   return (
-    <div className="min-h-screen bg-[#050407] text-[#E8E6E3] selection:bg-[#FF4D1F]/30 selection:text-[#FF4D1F]">
+    <div className="min-h-screen bg-[#05060A] text-white selection:bg-[#FF5A1F]/35 selection:text-white antialiased overflow-x-hidden">
       <style>{`
-        * { font-family: 'Space Grotesk', system-ui, -apple-system, sans-serif; -webkit-font-smoothing: antialiased; }
-        .mono { font-family: 'JetBrains Mono', ui-monospace, monospace !important; font-feature-settings: 'ss01', 'cv01'; }
-        ::-webkit-scrollbar { width: 10px; height: 10px; }
-        ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: #1a1518; border-radius: 6px; }
-        ::-webkit-scrollbar-thumb:hover { background: #FF4D1F; }
-        @keyframes scan { 0% { transform: translateY(-100%); } 100% { transform: translateY(100vh); } }
-        @keyframes pulse-ring { 0% { transform: scale(0.8); opacity: 1; } 100% { transform: scale(2.4); opacity: 0; } }
-        @keyframes typing { from { width: 0 } to { width: 100% } }
-        @keyframes gradient-shift { 0%, 100% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } }
-        .gradient-text { background: linear-gradient(110deg, #FF4D1F 0%, #FF8A4D 35%, #FFD06B 50%, #FF8A4D 65%, #FF4D1F 100%); background-size: 200% 100%; -webkit-background-clip: text; background-clip: text; color: transparent; animation: gradient-shift 6s ease infinite; }
-        .grid-bg { background-image: linear-gradient(rgba(255,77,31,0.07) 1px, transparent 1px), linear-gradient(90deg, rgba(255,77,31,0.07) 1px, transparent 1px); background-size: 56px 56px; }
-        .noise { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence baseFrequency='0.9'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)' opacity='0.4'/%3E%3C/svg%3E"); }
+        @import url('https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap');
+        * { font-family: 'Instrument Sans', system-ui, -apple-system, sans-serif; }
+        h1, h2, h3, .display { font-family: 'Space Grotesk', sans-serif; letter-spacing: -0.02em; }
+        html { scroll-behavior: smooth; }
+        body { background: #05060A; }
+        @keyframes float { 0%,100% { transform: translate3d(0,0,0) rotateX(0deg) rotateY(0deg);} 50% { transform: translate3d(0,-12px,0) rotateX(4deg) rotateY(-4deg);} }
+        @keyframes drift { 0%,100% { transform: translate3d(0,0,0);} 50% { transform: translate3d(18px,-18px,0);} }
+        @keyframes pulseGlow { 0%,100% { opacity: .45; } 50% { opacity: .95; } }
+        @keyframes gridMove { from { background-position: 0 0; } to { background-position: 120px 120px; } }
+        @keyframes marquee { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+        .preserve-3d { transform-style: preserve-3d; }
+        @media (prefers-reduced-motion: reduce) {
+          *, *::before, *::after { animation: none !important; transition: none !important; }
+        }
       `}</style>
 
-      {/* Ambient background */}
-      <div className="fixed inset-0 -z-50 overflow-hidden">
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_900px_500px_at_50%_-100px,rgba(255,77,31,0.22),transparent)]" />
-        <div className="absolute inset-0 grid-bg opacity-[0.5]" />
-        <div className="absolute inset-0 noise opacity-[0.025] pointer-events-none" />
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] rounded-full bg-[radial-gradient(circle,rgba(255,77,31,0.06),transparent_70%)] blur-3xl" />
+      {/* Background */}
+      <div className="fixed inset-0 -z-50 pointer-events-none">
+        <div className="absolute inset-0 bg-[radial-gradient(1200px_900px_at_75%_-10%,#FF5A1F12,transparent_60%),radial-gradient(900px_900px_at_10%_100%,#7C3AED12,transparent_65%),#05060A]" />
+        <div
+          className="absolute inset-0 opacity-[0.085] [background-image:linear-gradient(#ffffff_1px,transparent_1px),linear-gradient(90deg,#ffffff_1px,transparent_1px)] [background-size:64px_64px]"
+          style={{ animation: 'gridMove 30s linear infinite' }}
+        />
       </div>
 
-      {/* Status bar */}
-      <div className="sticky top-0 z-50 border-b border-white/[0.05] bg-[#050407]/85 backdrop-blur-2xl">
-        <div className="mx-auto flex h-7 max-w-[1440px] items-center justify-between px-5 mono text-[10px] tracking-[0.08em] uppercase">
-          <div className="flex items-center gap-5">
-            <div className="flex items-center gap-1.5">
-              <span className="relative flex h-1.5 w-1.5">
-                <span className="absolute inset-0 rounded-full bg-[#27D17F] animate-ping opacity-60" />
-                <span className="relative rounded-full h-1.5 w-1.5 bg-[#27D17F]" />
-              </span>
-              <span className="text-[#27D17F] font-medium">All systems operational</span>
-            </div>
-            <div className="hidden md:flex items-center gap-3 text-[#6B6560]">
-              <span>1 region live · 4 expanding</span>
-              <span className="text-[#FF4D1F]">·</span>
-              <span>v2.4.1</span>
-            </div>
-          </div>
-          <div className="flex items-center gap-3">
-            <div className="hidden sm:flex items-center gap-2 text-[#6B6560]">
-              <span>{new Date().toUTCString().slice(17, 22)} UTC</span>
-            </div>
-            <select
-              value={currency}
-              onChange={(e) => { setCurrency(e.target.value as Currency["code"]); localStorage.setItem("flamecore_currency", e.target.value) }}
-              className="bg-transparent border border-white/[0.08] rounded-md px-1.5 py-0.5 mono text-[10px] text-[#E8E6E3] hover:border-[#FF4D1F]/40 transition-colors cursor-pointer focus:outline-none focus:border-[#FF4D1F]"
-            >
-              {currencies.map((c) => (
-                <option key={c.code} value={c.code} className="bg-[#0a0709]">{c.code}</option>
-              ))}
-            </select>
-            <div className="flex items-center gap-1.5">
-              {isAdmin && (
+      {/* Header */}
+      <header className="sticky top-0 z-50">
+        <div className="mx-auto max-w-[1280px] px-4 sm:px-6 lg:px-8 pt-4">
+          <div className="flex items-center justify-between gap-2 rounded-[22px] border border-white/[0.07] bg-white/[0.03] backdrop-blur-2xl shadow-[inset_0_1px_0_rgba(255,255,255,0.04),0_18px_60px_-20px_rgba(0,0,0,0.8)] px-3 sm:px-4 h-[74px]">
+            <a href="#" className="flex min-w-0 max-w-[210px] items-center gap-3 sm:max-w-[280px] xl:max-w-[340px]">
+              <img
+                src="/images/flamecore-brandmark-512.png"
+                alt="FLAMECORE TECHNOLOGIES LTD"
+                className="h-10 w-10 shrink-0 object-contain"
+              />
+              <div className="min-w-0 leading-[1.05]">
+                <div className="display truncate text-[13px] font-[700] sm:text-[15px] xl:text-[16px]">FLAMECORE TECHNOLOGIES LTD</div>
+                <div className="hidden truncate text-[9px] font-[700] uppercase tracking-[0.16em] text-[#FF8A5B] xl:block">Software • AI • Automation • Digital Solutions</div>
+              </div>
+            </a>
+
+            <nav className="hidden min-w-0 flex-1 items-center justify-center gap-1 rounded-[16px] border border-white/[0.07] bg-white/[0.02] p-1 xl:flex">
+              {navLinks.map((item) => (
                 <a
-                  href={pathname === "/admin" ? "/console" : "/admin"}
-                  onClick={(e) => {
-                    e.preventDefault()
-                    const newPath = pathname === "/admin" ? "/console" : "/admin"
-                    window.history.pushState({}, "", newPath)
-                    setPathname(newPath)
-                    setView(pathname === "/admin" ? "console" : "admin")
-                  }}
-                  className="flex items-center gap-1 rounded-md border border-[#FFBD2E]/30 bg-[#FFBD2E]/[0.08] px-2 py-0.5 text-[10px] font-medium text-[#FFBD2E] hover:bg-[#FFBD2E]/15 transition-colors cursor-pointer"
+                  key={item.label}
+                  href={item.href}
+                  target={item.external ? '_blank' : undefined}
+                  rel={item.external ? 'noreferrer' : undefined}
+                  className="inline-flex h-[40px] items-center whitespace-nowrap rounded-[12px] px-[10px] text-[12px] font-[600] text-white/70 transition-all hover:bg-white/[0.05] hover:text-white xl:px-[14px] xl:text-[13px]"
                 >
-                  {pathname === "/admin" ? "← console" : "ops"}
+                  {item.label}
                 </a>
-              )}
+              ))}
+            </nav>
+
+            <div className="flex shrink-0 items-center gap-2">
               <a
-                href={pathname === "/" ? "/console" : "/"}
-                onClick={(e) => {
-                  e.preventDefault()
-                  const newPath = pathname === "/" ? "/console" : "/"
-                  window.history.pushState({}, "", newPath)
-                  setPathname(newPath)
-                  setView(pathname === "/" ? "console" : "public")
-                }}
-                className="flex items-center gap-1.5 rounded-md border border-[#FF4D1F]/30 bg-[#FF4D1F]/[0.08] px-2 py-0.5 text-[10px] font-medium text-[#FF4D1F] hover:bg-[#FF4D1F]/15 transition-colors cursor-pointer"
+                href="https://wa.me/2347071726082"
+                target="_blank"
+                rel="noreferrer"
+                className="hidden sm:grid h-[42px] w-[42px] place-items-center rounded-[14px] border border-white/[0.09] bg-white/[0.04] hover:bg-white/[0.07] transition-colors"
+                aria-label="WhatsApp"
               >
-                <span className="h-1 w-1 rounded-full bg-[#FF4D1F]" />
-                {pathname === "/" ? "→ console" : "← website"}
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" className="text-white/85">
+                  <path d="M12 2C6.48 2 2 6.48 2 12c0 2.03.55 3.93 1.51 5.58L2 22l4.52-1.48A9.9 9.9 0 0012 22c5.52 0 10-4.48 10-10S17.52 2 12 2z" fill="currentColor" opacity="0.18"/>
+                  <path d="M17.1 14.1c-.2.56-1.15 1.08-1.61 1.16-.44.07-1 .11-1.62-.11-.37-.13-.85-.27-1.47-.53-2.61-1.13-4.31-3.77-4.44-3.95-.13-.18-1.05-1.4-1.05-2.67 0-1.27.67-1.89.91-2.15.24-.26.52-.32.69-.32.17 0 .34 0 .49.01.16 0 .37-.06.58.45.21.51.73 1.78.79 1.91.07.13.1.28.02.45-.08.17-.13.27-.26.42-.13.15-.27.34-.38.45-.13.13-.27.27-.11.54.16.27.72 1.19 1.54 1.93 1.06.95 1.95 1.24 2.22 1.38.27.13.44.11.61-.06.16-.18.71-.83.9-1.12.19-.29.37-.24.63-.14.26.09 1.6.75 1.87.89.27.14.45.21.51.32.06.11.06.64-.12 1.26z" fill="currentColor"/>
+                </svg>
               </a>
+              <a
+                href="#contact"
+                onClick={(e) => {
+                  if (!isDesktop) {
+                    e.preventDefault();
+                    goToMobilePage('contact');
+                  }
+                }}
+                className="hidden h-[42px] items-center rounded-[14px] bg-white px-[14px] text-[13px] font-[700] text-[#090B0F] transition-all hover:bg-white/90 active:scale-[0.98] md:inline-flex xl:px-[18px] xl:text-[14px]"
+              >
+                Get Started
+              </a>
+
+              <button
+                type="button"
+                onClick={() => setMenuOpen((v) => !v)}
+                aria-label={menuOpen ? 'Close menu' : 'Open menu'}
+                aria-expanded={menuOpen}
+                className="xl:hidden h-[42px] w-[42px] grid place-items-center rounded-[14px] border border-white/[0.10] bg-white/[0.05] hover:bg-white/[0.08] transition-colors"
+              >
+                <div className="relative h-[14px] w-[18px]">
+                  <span className={`absolute left-0 right-0 h-[2px] rounded-full bg-white transition-all duration-300 ${menuOpen ? 'top-[6px] rotate-45' : 'top-0'}`} />
+                  <span className={`absolute left-0 right-0 top-[6px] h-[2px] rounded-full bg-white transition-all duration-200 ${menuOpen ? 'opacity-0' : 'opacity-100'}`} />
+                  <span className={`absolute left-0 right-0 h-[2px] rounded-full bg-white transition-all duration-300 ${menuOpen ? 'top-[6px] -rotate-45' : 'top-[12px]'}`} />
+                </div>
+              </button>
             </div>
           </div>
-        </div>
-      </div>
 
-      {/* Nav */}
-      <header className="sticky top-7 z-40 border-b border-white/[0.05] bg-[#050407]/70 backdrop-blur-2xl">
-        <div className="mx-auto flex max-w-[1440px] items-center justify-between px-5 h-[64px]">
-          <div className="flex items-center gap-9">
-            <button onClick={() => setView("public")} className="group flex items-center gap-2.5">
-              <div className="relative">
-                <div className="absolute -inset-1 rounded-lg bg-[#FF4D1F] blur-md opacity-50 group-hover:opacity-80 transition-opacity" />
-                <div className="relative h-9 w-9 rounded-lg bg-[#0a0709] border border-[#FF4D1F]/40 grid place-items-center overflow-hidden">
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-                    <path d="M12 2C12 2 7 7 7 12C7 14.5 8.5 16 10 16C10 14 11 13 12 13C13 13 14 14 14 16C15.5 16 17 14.5 17 12C17 7 12 2 12 2Z" fill="#FF4D1F"/>
-                    <path d="M12 22C15 22 17 20 17 17.5C17 16 16 15 14.5 14.5C14 16 13 17 12 17C11 17 10 16 9.5 14.5C8 15 7 16 7 17.5C7 20 9 22 12 22Z" fill="#FF8A4D"/>
-                  </svg>
-                </div>
-              </div>
-              <div className="leading-none">
-                <div className="flex items-baseline gap-[5px]">
-                  <span className="text-[19px] font-bold tracking-[-0.02em] text-[#E8E6E3]">flame</span>
-                  <span className="text-[19px] font-bold tracking-[-0.02em] text-[#FF4D1F]">core</span>
-                </div>
-                <div className="mono text-[8.5px] tracking-[0.22em] text-[#6B6560] mt-0.5 font-medium">CLOUD INFRASTRUCTURE</div>
-              </div>
-            </button>
-
-            {view === "public" && (
-              <nav className="hidden lg:flex items-center gap-0.5">
-                {[
-                  ["Platform", "#platform"],
-                  ["Pricing", "#pricing"],
-                  ["Regions", "#regions"],
-                  ["Docs", "#"],
-                  ["Changelog", "#"],
-                ].map(([label, href]) => (
-                  <a key={label} href={href} className="px-3 h-8 flex items-center text-[13px] font-medium tracking-tight text-[#A8A29C] hover:text-[#E8E6E3] transition-colors">
-                    {label}
-                  </a>
+          {/* Mobile / tablet dropdown menu */}
+          <div
+            className={`xl:hidden overflow-hidden transition-[max-height,opacity,transform] duration-300 ease-out ${
+              menuOpen ? 'max-h-[520px] opacity-100 translate-y-0 mt-3' : 'max-h-0 opacity-0 -translate-y-2 mt-0'
+            }`}
+          >
+            <div className="rounded-[22px] border border-white/[0.08] bg-[#0B0E14]/92 backdrop-blur-2xl shadow-[inset_0_1px_0_rgba(255,255,255,0.04),0_30px_80px_-20px_rgba(0,0,0,0.85)] p-3">
+              <div className="grid gap-1.5">
+                {mobilePages.map((item) => (
+                  <button
+                    key={item.id}
+                    type="button"
+                    onClick={() => goToMobilePage(item.id)}
+                    className={`w-full flex items-center justify-between gap-3 px-4 h-[52px] rounded-[14px] border text-[14px] font-[700] tracking-[-0.005em] transition-colors ${
+                      mobilePage === item.id
+                        ? 'border-[#FF7A45]/40 bg-[#FF5A1F] text-white'
+                        : 'border-white/[0.08] bg-white/[0.03] text-white/85 hover:bg-white/[0.06]'
+                    }`}
+                  >
+                    <span>{item.label}</span>
+                    <span className={mobilePage === item.id ? 'text-white' : 'text-white/55'}>â†’</span>
+                  </button>
                 ))}
-              </nav>
-            )}
-          </div>
-
-          <div className="flex items-center gap-2.5">
-            {view === "public" ? (
-              <>
-                <button onClick={() => { setView("console"); }} className="hidden md:flex items-center gap-1.5 px-3 h-9 text-[13px] font-medium text-[#A8A29C] hover:text-[#E8E6E3] transition-colors">
-                  Sign in
-                </button>
-                <button
-                  onClick={() => { setView("console") }}
-                  className="group relative overflow-hidden rounded-md bg-[#FF4D1F] px-3.5 h-9 flex items-center gap-1.5 hover:bg-[#FF5C2E] transition-colors"
-                >
-                  <span className="text-[13px] font-semibold tracking-tight text-[#050407]">Start deploying</span>
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none">
-                    <path d="M5 12h14M13 5l7 7-7 7" stroke="#050407" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
-                  </svg>
-                </button>
-              </>
-            ) : authed ? (
-              <div className="flex items-center gap-2">
-                <button className="hidden md:flex h-9 w-9 rounded-md border border-white/[0.08] items-center justify-center hover:border-white/15 text-[#A8A29C] hover:text-[#E8E6E3] transition-colors">
-                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M15 17h5l-1.4-1.4A2 2 0 0118 14.2V11a6 6 0 00-4-5.7V5a2 2 0 10-4 0v.3A6 6 0 006 11v3.2c0 .5-.2 1-.6 1.4L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" stroke="currentColor" strokeWidth="1.5"/></svg>
-                </button>
-                <div className="hidden sm:flex items-center gap-2 px-2.5 h-9 rounded-md border border-white/[0.08]">
-                  <div className="h-6 w-6 rounded-md bg-gradient-to-br from-[#FF4D1F] to-[#FF8A4D] grid place-items-center text-[10px] font-bold text-[#050407]">OP</div>
-                  <span className="mono text-[11px] text-[#A8A29C]">operator</span>
-                </div>
-                <button
-                  onClick={() => { setAuthed(false); localStorage.removeItem("flamecore_session") }}
-                  className="px-3 h-9 rounded-md border border-white/[0.08] text-[12px] font-medium hover:border-[#FF4D1F]/40 hover:text-[#FF4D1F] transition-colors"
-                >
-                  Sign out
-                </button>
               </div>
-            ) : null}
 
-            <button onClick={() => setMobileMenu(!mobileMenu)} className="lg:hidden h-9 w-9 grid place-items-center rounded-md border border-white/[0.08]">
-              <div className="space-y-1">
-                <div className={`h-[1.5px] bg-[#E8E6E3] transition-all ${mobileMenu ? "w-3.5 translate-y-[3px] rotate-45" : "w-3.5"}`} />
-                <div className={`h-[1.5px] bg-[#E8E6E3] transition-all ${mobileMenu ? "w-3.5 -translate-y-[3px] -rotate-45" : "w-2.5"}`} />
+              <button
+                type="button"
+                onClick={() => goToMobilePage('contact')}
+                className="w-full flex items-center justify-between gap-3 px-4 h-[52px] rounded-[14px] border border-[#FF7A45]/40 bg-[#FF5A1F] text-[14px] font-[700] tracking-[-0.005em] text-white"
+              >
+                <span>Get Started</span>
+                <span className="text-white">â†’</span>
+              </button>
+
+              <div className="mt-3 grid grid-cols-2 gap-2">
+                <a
+                  href={PHONE_TEL}
+                  className="h-[48px] inline-flex items-center justify-center gap-2 rounded-[14px] border border-white/[0.10] bg-white/[0.04] text-[13px] font-[700] text-white/85"
+                >
+                  Call us
+                </a>
+                <a
+                  href="https://wa.me/2347071726082"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="h-[48px] inline-flex items-center justify-center gap-2 rounded-[14px] bg-[#22C55E] text-[#04230F] text-[13px] font-[800]"
+                >
+                  WhatsApp
+                </a>
               </div>
-            </button>
+            </div>
           </div>
         </div>
       </header>
 
-      {/* PUBLIC SITE */}
-      {view === "public" && (
-        <main>
-          {/* Hero */}
-          <section ref={heroRef} className="relative overflow-hidden">
-            <div
-              className="absolute inset-0 opacity-60 pointer-events-none transition-opacity duration-1000"
-              style={{
-                background: `radial-gradient(600px circle at ${mousePos.x}% ${mousePos.y}%, rgba(255,77,31,0.12), transparent 50%)`,
-              }}
-            />
-
-            <div className="relative mx-auto max-w-[1440px] px-5 pt-20 pb-28">
-              {/* Eyebrow */}
-              <div className={`mb-9 inline-flex items-center gap-2.5 transition-all duration-700 ${heroVisible ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-2"}`}>
-                <div className="flex items-center gap-2 rounded-full border border-white/[0.08] bg-white/[0.02] backdrop-blur-xl pl-2 pr-3 h-7">
-                  <div className="flex items-center gap-1 mono text-[10px] tracking-[0.14em] text-[#FF4D1F] uppercase font-semibold bg-[#FF4D1F]/10 px-1.5 py-0.5 rounded-full">
-                    <span className="h-1 w-1 rounded-full bg-[#FF4D1F]" />
-                    New
-                  </div>
-                  <span className="text-[12px] text-[#A8A29C] font-medium">Multi-region rollout · London & Frankfurt in private beta</span>
-                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" className="text-[#6B6560]"><path d="M9 6l6 6-6 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>
-                </div>
+      {/* Hero */}
+      <section className={`${isDesktop || mobilePage === 'home' ? 'block' : 'hidden'} relative pt-[76px] md:pt-[96px] pb-[92px] md:pb-[120px] overflow-hidden`}>
+        <div className="mx-auto max-w-[1280px] px-6 sm:px-8">
+          <div className="grid lg:grid-cols-[1.05fr_0.95fr] gap-14 items-center">
+            <div>
+              <div className="inline-flex items-center gap-2.5 rounded-full border border-white/[0.08] bg-white/[0.03] px-3 py-1.5 backdrop-blur-xl">
+                <span className="relative flex h-2 w-2">
+                  <span className="absolute inset-0 rounded-full bg-[#22C55E]" style={{ animation: 'pulseGlow 1.8s ease-in-out infinite' }} />
+                  <span className="relative h-2 w-2 rounded-full bg-[#22C55E]" />
+                </span>
+                <span className="text-[11px] font-[700] tracking-[0.16em] uppercase text-white/80">Premium delivery for ambitious brands</span>
               </div>
 
-              <div className="grid lg:grid-cols-[1.15fr_0.85fr] gap-14 items-start">
-                <div>
-                  <h1 className={`font-[700] leading-[0.94] tracking-[-0.035em] text-[clamp(44px,7.5vw,108px)] transition-all duration-1000 ${heroVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`}>
-                    <span className="block text-[#E8E6E3]">Ship code.</span>
-                    <span className="block gradient-text">Not infrastructure.</span>
-                  </h1>
+              <h1 className="display mt-6 text-[50px] md:text-[72px] lg:text-[84px] leading-[0.96] font-[700] tracking-[-0.04em] text-white">
+                Premium digital products
+                <span className="block bg-[linear-gradient(92deg,#FFFFFF_0%,#E7E7EA_45%,#C9CBD2_100%)] bg-clip-text text-transparent">
+                  engineered for growth
+                </span>
+              </h1>
 
-                  <p className={`mt-7 max-w-[560px] text-[18px] leading-[1.55] tracking-[-0.005em] text-[#A8A29C] font-[450] transition-all duration-1000 delay-150 ${heroVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`}>
-                    The modern cloud platform built on Docker. Connect your GitHub repo, hit deploy, and we'll handle the rest — builds, SSL, scaling, and uptime across regions.
-                  </p>
+              <p className="mt-7 max-w-[620px] text-[18px] leading-[1.75] text-white/72">
+                FLAMECORE TECHNOLOGIES LTD partners with businesses to design, build, and support premium websites, mobile applications, custom software platforms, and automation systems that elevate brand trust and scale with confidence.
+              </p>
 
-                  <div className={`mt-9 flex flex-wrap items-center gap-3 transition-all duration-1000 delay-300 ${heroVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`}>
-                    <a
-                      href="/console"
-                      onClick={(e) => {
-                        e.preventDefault()
-                        window.history.pushState({}, "", "/console")
-                        setPathname("/console")
-                        setView("console")
-                      }}
-                      className="group relative overflow-hidden rounded-lg bg-[#E8E6E3] px-5 h-12 flex items-center gap-2.5 hover:bg-white transition-colors cursor-pointer"
-                    >
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
-                        <path d="M12 2C6.48 2 2 6.48 2 12c0 4.42 2.87 8.17 6.84 9.5.5.08.66-.23.66-.5v-1.69c-2.77.6-3.36-1.34-3.36-1.34-.46-1.16-1.11-1.47-1.11-1.47-.91-.62.07-.6.07-.6 1 .07 1.53 1.03 1.53 1.03.87 1.52 2.34 1.07 2.91.83.09-.65.35-1.09.63-1.34-2.22-.25-4.55-1.11-4.55-4.94 0-1.1.39-1.99 1.03-2.69-.1-.25-.45-1.27.1-2.65 0 0 .84-.27 2.75 1.02.79-.22 1.65-.33 2.5-.33.85 0 1.71.11 2.5.33 1.91-1.29 2.75-1.02 2.75-1.02.55 1.38.2 2.4.1 2.65.64.7 1.03 1.59 1.03 2.69 0 3.84-2.34 4.68-4.57 4.93.36.31.69.92.69 1.85V21c0 .27.16.59.67.5C19.14 20.16 22 16.42 22 12A10 10 0 0012 2z" fill="#050407"/>
-                      </svg>
-                      <span className="text-[14px] font-[650] text-[#050407]">Deploy from GitHub</span>
-                    </a>
+              <div className="mt-9 flex flex-wrap items-center gap-3">
+                <a
+                  href="#contact"
+                  onClick={(e) => {
+                    if (!isDesktop) {
+                      e.preventDefault();
+                      goToMobilePage('contact');
+                    }
+                  }}
+                  className="group h-[52px] px-[24px] inline-flex items-center gap-2 rounded-[16px] bg-[#FF5A1F] text-white font-[700] shadow-[0_16px_50px_-8px_rgba(255,90,31,0.55)] hover:bg-[#FF6F3A] transition-all"
+                >
+                  Start Your Project
+                  <span className="text-white/90 transition-transform group-hover:translate-x-[2px]">-&gt;</span>
+                </a>
+                <a
+                  href="#contact"
+                  onClick={(e) => {
+                    if (!isDesktop) {
+                      e.preventDefault();
+                      goToMobilePage('contact');
+                    }
+                  }}
+                  className="h-[52px] px-[24px] inline-flex items-center rounded-[16px] border border-white/[0.11] bg-white/[0.05] text-[15px] font-[600] text-white/90 hover:bg-white/[0.08] transition-all"
+                >
+                  Book a Consultation
+                </a>
+                <a
+                  href="#services"
+                  onClick={(e) => {
+                    if (!isDesktop) {
+                      e.preventDefault();
+                      goToMobilePage('services');
+                    }
+                  }}
+                  className="h-[52px] px-[24px] inline-flex items-center rounded-[16px] text-[15px] font-[600] text-white/75 hover:text-white transition-colors"
+                >
+                  View Services
+                </a>
+              </div>
+
+              <div className="mt-12 grid grid-cols-3 gap-5 max-w-[520px] border-t border-white/[0.07] pt-7">
+                {[
+                  { value: '80+', label: 'Projects delivered' },
+                  { value: '99.8%', label: 'Uptime focus' },
+                  { value: '24/7', label: 'Support mindset' },
+                ].map((item) => (
+                  <div key={item.label}>
+                    <div className="display text-[28px] font-[700] leading-none">{item.value}</div>
+                    <div className="mt-1 text-[11px] font-[700] tracking-[0.14em] uppercase text-white/55">{item.label}</div>
                   </div>
+                ))}
+              </div>
+            </div>
 
-                  {/* Command line teaser */}
-                  <div className={`mt-9 flex items-center gap-2.5 rounded-md border border-white/[0.06] bg-[#0a0709]/80 backdrop-blur-xl pl-3 pr-1.5 py-1.5 max-w-md transition-all duration-1000 delay-500 ${heroVisible ? "opacity-100" : "opacity-0"}`}>
-                    <span className="mono text-[12px] text-[#FF4D1F]">$</span>
-                    <span className="mono text-[12px] text-[#E8E6E3] truncate flex-1">npx @flamecore/cli deploy</span>
-                    <button onClick={() => { navigator.clipboard?.writeText("npx @flamecore/cli deploy"); setToast("COPIED · npx @flamecore/cli deploy") }} className="text-[10px] mono text-[#6B6560] hover:text-[#FF4D1F] px-2 h-6 rounded border border-white/[0.06] transition-colors">
-                      copy
-                    </button>
-                  </div>
+            {/* 3D visual side */}
+            <div className="relative">
+              <div className="absolute inset-0 -z-10">
+                <div className="absolute top-[10%] right-[5%] h-[180px] w-[180px] rounded-full bg-[#FF5A1F]/20 blur-[70px]" />
+                <div className="absolute bottom-[0%] left-[0%] h-[220px] w-[220px] rounded-full bg-[#7C3AED]/15 blur-[90px]" />
+              </div>
 
-                  {/* Trust strip */}
-                  <div className={`mt-12 grid grid-cols-3 md:grid-cols-4 gap-6 max-w-[600px] transition-all duration-1000 delay-700 ${heroVisible ? "opacity-100" : "opacity-0"}`}>
-                    {[
-                      ["50ms", "p95 cold start"],
-                      ["99.95%", "uptime SLA"],
-                      ["5", "global regions"],
-                      ["12s", "avg build time"],
-                    ].map(([k, v]) => (
-                      <div key={v} className="space-y-1">
-                        <div className="text-[22px] font-[700] tracking-tight text-[#E8E6E3] leading-none">{k}</div>
-                        <div className="text-[11px] tracking-tight text-[#6B6560] font-medium">{v}</div>
+              <div className="relative mx-auto max-w-[540px] preserve-3d" style={{ perspective: '1400px' }}>
+                <div className="absolute inset-x-0 top-[18%] mx-auto h-[440px] w-[440px] rounded-full border border-white/[0.05] bg-white/[0.02] blur-[1px]" />
+
+                <div className="relative rounded-[28px] border border-white/[0.10] bg-[#0C1018]/85 p-[14px] backdrop-blur-2xl shadow-[0_40px_120px_-20px_rgba(0,0,0,0.9),inset_0_1px_0_rgba(255,255,255,0.05)] hover:translate-y-[-2px] transition-transform">
+                  <div className="relative aspect-[16/10] rounded-[20px] overflow-hidden border border-white/[0.08] bg-[#090C12]">
+                    <img
+                      src="/images/flamecore-hero.jpg"
+                      alt="FLAMECORE TECHNOLOGIES LTD team collaborating in a modern tech office"
+                      className="absolute inset-0 h-full w-full object-cover"
+                      loading="eager"
+                    />
+                    <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(5,6,10,0.18),rgba(5,6,10,0.38)_35%,rgba(5,6,10,0.82)_100%)]" />
+                    <div className="absolute inset-0 bg-[radial-gradient(700px_300px_at_10%_10%,rgba(255,90,31,0.22),transparent_60%),radial-gradient(700px_400px_at_90%_90%,rgba(124,58,237,0.18),transparent_65%)]" />
+
+                    <div className="absolute inset-x-0 top-0 h-11 border-b border-white/[0.08] bg-[#0A0D12]/55 backdrop-blur flex items-center px-3 gap-2">
+                      <span className="h-2.5 w-2.5 rounded-full bg-[#FF5F56] border border-black/30" />
+                      <span className="h-2.5 w-2.5 rounded-full bg-[#FFBD2E] border border-black/30" />
+                      <span className="h-2.5 w-2.5 rounded-full bg-[#27C93F] border border-black/30" />
+                      <span className="ml-2 text-[11px] font-[600] tracking-wide text-white/70">inside flamecore</span>
+                    </div>
+
+                    <div className="absolute left-4 top-16 rounded-full border border-white/[0.12] bg-black/30 backdrop-blur-xl px-3 h-8 inline-flex items-center text-[11px] font-[700] tracking-[0.12em] uppercase text-white/85">
+                      Real team atmosphere
+                    </div>
+
+                    <div className="absolute left-5 right-5 bottom-5">
+                      <div className="rounded-[22px] border border-white/[0.10] bg-black/30 backdrop-blur-2xl p-4 sm:p-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]">
+                        <div className="text-[11px] font-[700] tracking-[0.16em] uppercase text-[#FFB295]">Built with strategy, design, and engineering</div>
+                        <h3 className="display mt-2 text-[24px] sm:text-[28px] font-[700] leading-[1.05] tracking-[-0.025em] text-white">
+                          A real company feel
+                          <span className="block text-white/70">for a real technology brand</span>
+                        </h3>
+                        <div className="mt-4 flex flex-wrap gap-2.5">
+                          {['Web', 'Mobile', 'AI', 'Automation'].map((item) => (
+                            <span key={item} className="h-[28px] px-3 inline-flex items-center rounded-full border border-white/[0.10] bg-white/[0.08] text-[11px] font-[700] tracking-[0.08em] uppercase text-white/85">
+                              {item}
+                            </span>
+                          ))}
+                        </div>
                       </div>
-                    ))}
+                    </div>
+                  </div>
+                  <div className="mt-[14px] h-[10px] rounded-[12px] bg-[#0A0D12] border border-white/[0.08]" />
+                </div>
+
+                <div className="absolute left-[-4%] bottom-[-20px] w-[42%] rotate-[-11deg] preserve-3d" style={{ animation: 'drift 10s ease-in-out infinite' }}>
+                  <div className="rounded-[30px] border border-white/[0.10] bg-[#0C1018]/85 p-[10px] backdrop-blur-2xl shadow-[0_28px_80px_-20px_rgba(0,0,0,0.9)]">
+                    <div className="relative aspect-[9/18] rounded-[24px] border border-white/[0.08] bg-[#090C12] overflow-hidden">
+                      <img
+                        src="/images/flamecore-about.jpg"
+                        alt="Modern workspace and software dashboard preview"
+                        className="absolute inset-0 h-full w-full object-cover"
+                        loading="lazy"
+                      />
+                      <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(5,6,10,0.1),rgba(5,6,10,0.55)_70%,rgba(5,6,10,0.8))]" />
+                      <div className="absolute left-3 right-3 top-3 h-3 rounded-full bg-black/30 backdrop-blur" />
+                      <div className="absolute left-3 right-3 bottom-3 rounded-[16px] border border-white/[0.10] bg-black/35 backdrop-blur-xl p-3">
+                        <div className="text-[10px] font-[700] tracking-[0.12em] uppercase text-white/75">Product preview</div>
+                        <div className="mt-1 text-[12px] font-[600] leading-[1.35] text-white/90">Clean UI and premium software presentation</div>
+                      </div>
+                    </div>
                   </div>
                 </div>
 
-                {/* Live deployment card */}
-                <div className={`relative transition-all duration-1000 delay-300 ${heroVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"}`}>
-                  <div className="absolute -inset-px rounded-2xl bg-gradient-to-br from-[#FF4D1F]/40 via-transparent to-transparent" />
-                  <div className="relative rounded-2xl border border-white/[0.06] bg-[#0a0709]/90 backdrop-blur-2xl overflow-hidden">
-                    {/* Card header */}
-                    <div className="flex items-center justify-between border-b border-white/[0.06] px-4 h-11">
-                      <div className="flex items-center gap-2">
-                        <div className="flex gap-1.5">
-                          <div className="h-2.5 w-2.5 rounded-full bg-[#FF5F56]" />
-                          <div className="h-2.5 w-2.5 rounded-full bg-[#FFBD2E]" />
-                          <div className="h-2.5 w-2.5 rounded-full bg-[#27D17F]" />
-                        </div>
-                        <span className="mono text-[10.5px] text-[#6B6560] ml-2">flame · payments-svc · deploy</span>
-                      </div>
-                      <div className="flex items-center gap-1.5 mono text-[10px] text-[#27D17F]">
-                        <div className="h-1.5 w-1.5 rounded-full bg-[#27D17F] animate-pulse" />
-                        live
-                      </div>
-                    </div>
+                <div className="absolute right-[6%] top-[-16px] h-[88px] w-[88px]" style={{ animation: 'float 8s ease-in-out infinite' }}>
+                  <div className="absolute inset-0 rounded-full bg-[radial-gradient(circle_at_30%_30%,#FFA27A,#FF3C0A_60%,#FF3C0A_100%)] shadow-[0_18px_60px_-10px_rgba(255,90,31,0.8)]" />
+                  <div className="absolute inset-[7px] rounded-full bg-[#0A0D12]/70 border border-white/[0.18] backdrop-blur" />
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
 
-                    {/* Build log preview */}
-                    <div className="p-4 mono text-[11.5px] leading-[1.75] space-y-[3px] min-h-[280px]">
-                      <div className="text-[#6B6560]">$ flame deploy --region=los1</div>
-                      <div className="text-[#A8A29C]">→ analyzing repository<span className="inline-block w-2 h-3 bg-[#FF4D1F] ml-1 animate-pulse" /></div>
-                      <div className="text-[#27D17F]">✓ detected: Node.js (Dockerfile)</div>
-                      <div className="text-[#27D17F]">✓ cloned in 1.2s</div>
-                      <div className="text-[#A8A29C]">→ building image · flame-payments-svc</div>
-                      <div className="text-[#6B6560] pl-3">layer 1/6 · base image cached</div>
-                      <div className="text-[#6B6560] pl-3">layer 2/6 · deps cached (npm ci)</div>
-                      <div className="text-[#6B6560] pl-3">layer 3/6 · copying source · 412 KB</div>
-                      <div className="text-[#6B6560] pl-3">layer 4/6 · running build · 8.2s</div>
-                      <div className="text-[#27D17F]">✓ image built · 84.2 MB</div>
-                      <div className="text-[#A8A29C]">→ provisioning container in <span className="text-[#FF4D1F]">lagos-1</span></div>
-                      <div className="text-[#A8A29C]">→ configuring nginx + TLS</div>
-                      <div className="text-[#27D17F]">✓ deployed to https://payments-svc.flame.app</div>
-                      <div className="pt-2 flex items-center gap-2">
-                        <span className="bg-[#27D17F]/10 text-[#27D17F] mono text-[10px] px-1.5 py-0.5 rounded border border-[#27D17F]/30">READY</span>
-                        <span className="text-[#6B6560]">deployed in <span className="text-[#E8E6E3] font-medium">42s</span></span>
-                      </div>
-                    </div>
+      {/* Motion ticker */}
+      <section className={`${isDesktop || mobilePage === 'home' ? 'block' : 'hidden'} py-6`}>
+        <div className="mx-auto max-w-[1280px] px-6 sm:px-8">
+          <div className="overflow-hidden rounded-[18px] border border-white/[0.08] bg-[#0B0E14]/70">
+            <div className="flex min-w-max items-center gap-10 py-[14px] whitespace-nowrap" style={{ animation: 'marquee 22s linear infinite' }}>
+              {[...Array(2)].flatMap((_, outerIndex) =>
+                ['Innovation', 'Software Solutions', 'Web Development', 'Automation', 'AI Tools', 'Digital Solutions', 'Modern Technology Services'].map((item, index) => (
+                  <span key={`${outerIndex}-${index}`} className="text-[13px] font-[700] tracking-[0.16em] uppercase text-white/70">
+                    {item}
+                  </span>
+                )),
+              )}
+            </div>
+          </div>
+        </div>
+      </section>
 
-                    {/* Card footer metrics */}
-                    <div className="grid grid-cols-3 border-t border-white/[0.06] divide-x divide-white/[0.06]">
-                      {[
-                        ["Region", "lagos-1"],
-                        ["RPS", "1.2k"],
-                        ["Errors", "0.00%"],
-                      ].map(([k, v]) => (
-                        <div key={k} className="px-3 py-2.5">
-                          <div className="mono text-[9px] tracking-[0.14em] text-[#6B6560] uppercase">{k}</div>
-                          <div className="text-[13px] font-[600] text-[#E8E6E3] mt-0.5">{v}</div>
-                        </div>
+      {/* Trust pillars */}
+      <section className={`${isDesktop || mobilePage === 'home' ? 'block' : 'hidden'} pb-[54px] md:pb-[72px]`}>
+        <div className="mx-auto max-w-[1280px] px-6 sm:px-8">
+          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+            {trustPillars.map((pillar) => (
+              <div key={pillar.label} className="rounded-[22px] border border-white/[0.08] bg-[#0B0E14]/76 p-6 shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]">
+                <div className="text-[11px] font-[700] tracking-[0.16em] uppercase text-[#FF9B76]">{pillar.label}</div>
+                <p className="mt-3 text-[15px] leading-[1.75] text-white/68">{pillar.detail}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* About */}
+      <section id="about" className={`${isDesktop || mobilePage === 'about' ? 'block' : 'hidden'} py-[90px] md:py-[120px] border-t border-white/[0.06]`}>
+        <div className="mx-auto max-w-[1280px] px-6 sm:px-8 grid lg:grid-cols-[1.02fr_0.98fr] gap-16 items-center">
+          <div className="order-2 lg:order-1">
+            <div className="relative rounded-[28px] border border-white/[0.08] bg-[#0B0E14]/80 p-[18px] shadow-[inset_0_1px_0_rgba(255,255,255,0.04),0_30px_120px_-20px_rgba(0,0,0,0.85)]">
+              <div className="relative aspect-[16/11] rounded-[20px] overflow-hidden border border-white/[0.08] bg-[#090C12]">
+                <img
+                  src="/images/flamecore-about.jpg"
+                  alt="Premium workspace with software dashboard and modern digital tools"
+                  className="absolute inset-0 h-full w-full object-cover"
+                  loading="lazy"
+                />
+                <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(5,6,10,0.18),rgba(5,6,10,0.36)_35%,rgba(5,6,10,0.82)_100%)]" />
+                <div className="absolute inset-0 bg-[radial-gradient(500px_260px_at_18%_10%,#FF5A1F2A,transparent_60%),radial-gradient(700px_360px_at_90%_90%,#7C3AED22,transparent_60%)]" />
+
+                <div className="absolute top-4 left-4 right-4 flex items-center justify-between gap-4 rounded-[16px] border border-white/[0.10] bg-black/28 backdrop-blur-xl px-4 h-12">
+                  <div className="flex shrink-0 items-center gap-2">
+                    <div className="h-2.5 w-2.5 rounded-full bg-[#FF5F56]" />
+                    <div className="h-2.5 w-2.5 rounded-full bg-[#FFBD2E]" />
+                    <div className="h-2.5 w-2.5 rounded-full bg-[#27C93F]" />
+                  </div>
+                  <span className="text-[11px] font-[700] tracking-[0.12em] uppercase text-white/70">Real product workspace</span>
+                </div>
+
+                <div className="absolute left-5 right-5 bottom-5 grid sm:grid-cols-[1fr_auto] gap-4 items-end">
+                  <div className="rounded-[20px] border border-white/[0.10] bg-black/32 backdrop-blur-2xl p-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.05)]">
+                    <div className="text-[11px] font-[700] tracking-[0.16em] uppercase text-[#FFB295]">Inside the build process</div>
+                    <h3 className="display mt-2 text-[24px] font-[700] leading-[1.08] tracking-[-0.025em] text-white">
+                      Strategy, design, and software working together
+                    </h3>
+                    <div className="mt-3 grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:gap-2.5">
+                      {['Innovation', 'Software', 'Automation', 'AI Tools'].map((item) => (
+                        <span key={item} className="h-[28px] px-3 inline-flex items-center rounded-full border border-white/[0.10] bg-white/[0.08] text-[11px] font-[700] tracking-[0.08em] uppercase text-white/84">
+                          {item}
+                        </span>
                       ))}
                     </div>
                   </div>
 
-                  {/* Floating chip */}
-                  <div className="absolute -bottom-3 -left-3 rounded-lg border border-white/[0.08] bg-[#0a0709] px-3 py-2 mono text-[10px] flex items-center gap-2 shadow-xl">
-                    <span className="h-1.5 w-1.5 rounded-full bg-[#FF4D1F] animate-pulse" />
-                    <span className="text-[#A8A29C]">12ms · 🇳🇬 LOS1</span>
+                  <div className="rounded-[18px] border border-white/[0.10] bg-black/34 backdrop-blur-xl p-4 min-w-[150px]">
+                    <div className="text-[11px] font-[700] tracking-[0.12em] uppercase text-white/60">Realistic feel</div>
+                    <div className="display mt-1 text-[28px] font-[700] leading-none text-white">Premium</div>
+                    <div className="mt-1 text-[12px] leading-[1.5] text-white/68">Visuals that help the company feel established and trustworthy.</div>
                   </div>
                 </div>
+
+                <div className="absolute right-[-30px] bottom-[-30px] h-[160px] w-[160px] rounded-full bg-[#FF5A1F]/25 blur-[70px]" />
               </div>
             </div>
-          </section>
+          </div>
 
-          {/* Logo strip */}
-          <section className="border-y border-white/[0.04] bg-[#08070a]/40">
-            <div className="mx-auto max-w-[1440px] px-5 py-8">
-              <div className="flex flex-wrap items-center justify-center md:justify-between gap-6">
-                <span className="mono text-[10.5px] tracking-[0.18em] uppercase text-[#6B6560]">Powering teams from</span>
-                <div className="flex flex-wrap items-center gap-x-9 gap-y-3 opacity-60">
-                  {["Lagos", "Nairobi", "Cape Town", "Accra", "Berlin", "London", "São Paulo"].map((city) => (
-                    <span key={city} className="mono text-[11px] tracking-[0.12em] uppercase text-[#A8A29C] font-medium">{city}</span>
-                  ))}
-                </div>
-              </div>
+          <div className="order-1 lg:order-2">
+            <div className="inline-flex items-center gap-2 rounded-full border border-white/[0.08] bg-white/[0.03] px-3 py-1.5">
+              <span className="h-[6px] w-[6px] rounded-full bg-[#7C3AED]" />
+              <span className="text-[11px] font-[700] tracking-[0.16em] uppercase text-white/80">About Section</span>
             </div>
-          </section>
+            <h2 className="display mt-4 text-[40px] md:text-[52px] leading-[1.02] font-[700] tracking-[-0.03em]">
+              A premium technology partner for
+              <span className="block text-white/65">ambitious brands and growing enterprises</span>
+            </h2>
+            <p className="mt-5 text-[17px] leading-[1.78] text-white/74 max-w-[620px]">
+              FLAMECORE TECHNOLOGIES LTD delivers high-caliber digital products for organizations that value quality, clarity, and long-term reliability. We combine business insight, design precision, and strong engineering execution to build solutions that strengthen brand credibility, streamline operations, and support sustainable growth.
+            </p>
 
-          {/* Platform features */}
-          <section id="platform" className="border-b border-white/[0.04]">
-            <div className="mx-auto max-w-[1440px] px-5 py-28">
-              <div className="max-w-[680px] mb-16">
-                <div className="mono text-[10.5px] tracking-[0.2em] uppercase text-[#FF4D1F] font-semibold mb-4">// Platform</div>
-                <h2 className="text-[42px] md:text-[56px] font-[700] leading-[0.98] tracking-[-0.03em] text-[#E8E6E3]">
-                  Everything between <span className="italic font-[600] gradient-text">git push</span> and a healthy production deployment.
-                </h2>
-              </div>
-
-              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-px bg-white/[0.04] rounded-2xl overflow-hidden border border-white/[0.06]">
-                {[
-                  {
-                    icon: (<svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M12 2v6m0 8v6m10-10h-6M8 12H2M19.07 4.93l-4.24 4.24M9.17 14.83l-4.24 4.24m14.14 0l-4.24-4.24M9.17 9.17L4.93 4.93" stroke="#FF4D1F" strokeWidth="1.5" strokeLinecap="round"/></svg>),
-                    title: "Git-driven deploys",
-                    body: "Connect any GitHub repo. Every push triggers a build. Branch previews, atomic rollbacks, zero-downtime releases."
-                  },
-                  {
-                    icon: (<svg width="20" height="20" viewBox="0 0 24 24" fill="none"><rect x="3" y="3" width="7" height="7" rx="1" stroke="#FF4D1F" strokeWidth="1.5"/><rect x="14" y="3" width="7" height="7" rx="1" stroke="#FF4D1F" strokeWidth="1.5"/><rect x="3" y="14" width="7" height="7" rx="1" stroke="#FF4D1F" strokeWidth="1.5"/><rect x="14" y="14" width="7" height="7" rx="1" stroke="#FF4D1F" strokeWidth="1.5"/></svg>),
-                    title: "Built on Docker",
-                    body: "Bring your own Dockerfile, or let us detect Next.js, Express, FastAPI, Go, Rust, Bun and 30+ frameworks."
-                  },
-                  {
-                    icon: (<svg width="20" height="20" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="#FF4D1F" strokeWidth="1.5"/><path d="M2 12h20M12 2a15 15 0 010 20M12 2a15 15 0 000 20" stroke="#FF4D1F" strokeWidth="1.5"/></svg>),
-                    title: "Multi-region from day one",
-                    body: "Deploy to Lagos today. London, Frankfurt, New York, Singapore rolling out. Pin or replicate per region."
-                  },
-                  {
-                    icon: (<svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" stroke="#FF4D1F" strokeWidth="1.5"/></svg>),
-                    title: "TLS that just works",
-                    body: "Let's Encrypt provisioning in seconds. HTTP/2, HTTP/3, modern ciphers, HSTS — configured correctly by default."
-                  },
-                  {
-                    icon: (<svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M3 3v18h18M7 14l4-4 4 4 6-6" stroke="#FF4D1F" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>),
-                    title: "Observability built in",
-                    body: "Structured logs, request traces, CPU/RAM graphs, deploy diffs. Stream from your terminal with `flame logs -f`."
-                  },
-                  {
-                    icon: (<svg width="20" height="20" viewBox="0 0 24 24" fill="none"><rect x="3" y="11" width="18" height="11" rx="2" stroke="#FF4D1F" strokeWidth="1.5"/><path d="M7 11V7a5 5 0 0110 0v4" stroke="#FF4D1F" strokeWidth="1.5"/></svg>),
-                    title: "Secrets & env vars",
-                    body: "Encrypted at rest. Scoped per environment. Rotate without redeploys. Audit who accessed what, when."
-                  },
-                ].map((f) => (
-                  <div key={f.title} className="group bg-[#050407] p-7 hover:bg-[#0a0709] transition-colors relative">
-                    <div className="h-10 w-10 rounded-lg border border-[#FF4D1F]/25 bg-[#FF4D1F]/[0.06] grid place-items-center mb-5 group-hover:border-[#FF4D1F]/50 group-hover:bg-[#FF4D1F]/[0.1] transition-colors">
-                      {f.icon}
-                    </div>
-                    <h3 className="text-[17px] font-[650] tracking-[-0.01em] text-[#E8E6E3] mb-2">{f.title}</h3>
-                    <p className="text-[13.5px] leading-[1.55] text-[#A8A29C] font-[450]">{f.body}</p>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </section>
-
-          {/* Pricing */}
-          <section id="pricing" className="border-b border-white/[0.04]">
-            <div className="mx-auto max-w-[1440px] px-5 py-28">
-              <div className="flex flex-wrap items-end justify-between gap-6 mb-14">
-                <div className="max-w-[640px]">
-                  <div className="mono text-[10.5px] tracking-[0.2em] uppercase text-[#FF4D1F] font-semibold mb-4">// Pricing</div>
-                  <h2 className="text-[42px] md:text-[56px] font-[700] leading-[0.98] tracking-[-0.03em] text-[#E8E6E3]">
-                    Usage-based, no surprises.
-                  </h2>
-                  <p className="mt-4 text-[16px] leading-[1.55] text-[#A8A29C] font-[450]">
-                    Start free. Scale when you ship. All currencies supported — pay in USD, NGN, GBP or EUR with one click.
-                  </p>
-                </div>
-
-                <div className="flex items-center gap-3">
-                  <div className="flex items-center rounded-lg border border-white/[0.08] bg-[#0a0709]/80 p-1">
-                    <button
-                      onClick={() => setBilling("month")}
-                      className={`px-3.5 h-8 rounded-md text-[12.5px] font-[550] transition-all ${billing === "month" ? "bg-[#E8E6E3] text-[#050407]" : "text-[#A8A29C] hover:text-[#E8E6E3]"}`}
-                    >
-                      Monthly
-                    </button>
-                    <button
-                      onClick={() => setBilling("year")}
-                      className={`px-3.5 h-8 rounded-md text-[12.5px] font-[550] transition-all flex items-center gap-1.5 ${billing === "year" ? "bg-[#E8E6E3] text-[#050407]" : "text-[#A8A29C] hover:text-[#E8E6E3]"}`}
-                    >
-                      Yearly
-                      <span className={`text-[9.5px] mono px-1 rounded ${billing === "year" ? "bg-[#FF4D1F]/15 text-[#FF4D1F]" : "bg-[#27D17F]/10 text-[#27D17F]"}`}>-17%</span>
-                    </button>
-                  </div>
-                </div>
-              </div>
-
-              <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-                {plans.map((plan) => (
-                  <div key={plan.id} className="relative">
-                    {plan.popular && (
-                      <div className="absolute -top-2.5 left-1/2 -translate-x-1/2 z-10">
-                        <div className="mono text-[9.5px] font-[700] tracking-[0.16em] uppercase bg-gradient-to-r from-[#FF4D1F] to-[#FF8A4D] text-[#050407] px-2.5 h-5 flex items-center rounded-full shadow-[0_0_20px_rgba(255,77,31,0.4)]">
-                          most popular
-                        </div>
-                      </div>
-                    )}
-
-                    <div className={`h-full rounded-2xl border bg-[#0a0709]/70 backdrop-blur-xl transition-all duration-300 ${plan.popular ? "border-[#FF4D1F]/40 shadow-[0_0_50px_-12px_rgba(255,77,31,0.3)]" : "border-white/[0.06] hover:border-white/[0.14]"}`}>
-                      <div className="p-6">
-                        <div className="mb-5">
-                          <div className="mono text-[10.5px] font-[700] tracking-[0.2em] text-[#FF4D1F] mb-1.5">{plan.name}</div>
-                          <div className="text-[12.5px] text-[#A8A29C] font-[450] h-8">{plan.tagline}</div>
-                        </div>
-
-                        <div className="mb-6 flex items-baseline gap-1.5">
-                          <span className="text-[36px] font-[700] tracking-[-0.03em] text-[#E8E6E3] leading-none">{formatPrice(plan.priceUSD)}</span>
-                          {plan.priceUSD > 0 && (
-                            <span className="mono text-[11px] text-[#6B6560]">/{billing === "year" ? "yr" : "mo"}</span>
-                          )}
-                        </div>
-
-                        <button
-                          onClick={() => { setView("console"); setShowDeployModal(true) }}
-                          className={`w-full h-10 rounded-md font-[600] text-[13px] tracking-tight transition-all ${plan.popular ? "bg-[#FF4D1F] text-[#050407] hover:bg-[#FF5C2E]" : "border border-white/[0.1] text-[#E8E6E3] hover:border-[#FF4D1F]/40 hover:bg-[#FF4D1F]/[0.06]"}`}
-                        >
-                          {plan.priceUSD === 0 ? "Start free" : "Start trial"}
-                        </button>
-
-                        <div className="mt-6 space-y-3.5 border-t border-white/[0.06] pt-5">
-                          {[
-                            ["Compute", plan.cpu],
-                            ["Memory", plan.ram],
-                            ["Storage", plan.storage],
-                            ["Bandwidth", plan.bandwidth],
-                            ["Build minutes", plan.builds],
-                          ].map(([k, v]) => (
-                            <div key={k} className="flex items-center justify-between text-[12.5px]">
-                              <span className="text-[#6B6560] font-[450]">{k}</span>
-                              <span className="text-[#E8E6E3] font-[550]">{v}</span>
-                            </div>
-                          ))}
-                        </div>
-
-                        <div className="mt-5 pt-5 border-t border-white/[0.06] space-y-2.5">
-                          {plan.features.map((feat) => (
-                            <div key={feat} className="flex items-start gap-2">
-                              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" className="mt-0.5 flex-shrink-0"><path d="M20 6L9 17l-5-5" stroke="#FF4D1F" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                              <span className="text-[12.5px] leading-[1.45] text-[#A8A29C] font-[450]">{feat}</span>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              {/* Payment row */}
-              <div className="mt-10 flex flex-wrap items-center justify-between gap-6 rounded-xl border border-white/[0.06] bg-white/[0.015] px-6 py-5">
-                <div className="flex items-center gap-3">
-                  <div className="h-10 w-10 rounded-lg border border-white/[0.08] grid place-items-center">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><rect x="2" y="5" width="20" height="14" rx="2" stroke="#A8A29C" strokeWidth="1.5"/><path d="M2 10h20" stroke="#A8A29C" strokeWidth="1.5"/></svg>
-                  </div>
+            <div className="mt-8 space-y-5">
+              {[
+                {
+                  title: 'Executive-level thinking',
+                  desc: 'We approach every engagement with commercial awareness, translating business objectives into digital systems that create measurable value.',
+                },
+                {
+                  title: 'Solutions built for production',
+                  desc: 'From customer-facing platforms to internal systems, we deliver dependable software that is secure, maintainable, and ready for real-world use.',
+                },
+                {
+                  title: 'Design polish with technical depth',
+                  desc: 'Our work blends premium visual execution with disciplined engineering so every product feels refined and performs with confidence.',
+                },
+              ].map((item) => (
+                <div key={item.title} className="flex gap-4">
+                  <div className="mt-1.5 h-2.5 w-2.5 rounded-full bg-[#FF5A1F] ring-4 ring-[#FF5A1F]/20" />
                   <div>
-                    <div className="text-[14px] font-[600] text-[#E8E6E3]">Pay in any currency, anywhere</div>
-                    <div className="text-[12px] text-[#6B6560] mt-0.5">Cards · Stripe · Paystack · Flutterwave · PayPal · Bank transfer (NGN, USD, GBP, EUR)</div>
+                    <h3 className="text-[16px] font-[700] tracking-[-0.01em] text-white">{item.title}</h3>
+                    <p className="mt-1 text-[14.8px] leading-[1.7] text-white/66">{item.desc}</p>
                   </div>
                 </div>
-                <div className="flex flex-wrap items-center gap-2">
-                  {["Stripe", "Paystack", "Flutterwave", "PayPal"].map((p) => (
-                    <span key={p} className="mono text-[10px] tracking-[0.1em] uppercase text-[#A8A29C] border border-white/[0.08] rounded-md px-2 py-1 font-medium">
-                      {p}
+              ))}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Services */}
+      <section id="services" className={`${isDesktop || mobilePage === 'services' ? 'block' : 'hidden'} py-[90px] md:py-[120px] border-t border-white/[0.06] bg-[#07090F]/60`}>
+        <div className="mx-auto max-w-[1280px] px-6 sm:px-8">
+          <div className="max-w-[760px]">
+            <div className="inline-flex items-center gap-2 rounded-full border border-[#FF7A45]/25 bg-[#FF7A45]/10 px-3 py-1.5">
+              <span className="h-[6px] w-[6px] rounded-full bg-[#FF7A45]" />
+              <span className="text-[11px] font-[700] tracking-[0.16em] uppercase text-[#FF9B76]">Services Section</span>
+            </div>
+            <h2 className="display mt-4 text-[40px] md:text-[52px] font-[700] leading-[1.02] tracking-[-0.03em]">
+              Premium digital services for
+              <span className="block text-white/65">modern, growth-focused businesses</span>
+            </h2>
+            <p className="mt-5 text-[17px] leading-[1.75] text-white/72 max-w-[620px]">
+              We deliver strategy-led digital services that help businesses launch with confidence, operate efficiently, and present themselves at a world-class standard.
+            </p>
+          </div>
+
+          <div className="mt-12 grid gap-[18px] md:grid-cols-2 xl:grid-cols-3">
+            {services.map((service, index) => (
+              <div
+                key={service.title}
+                className="group relative rounded-[24px] border border-white/[0.08] bg-[#0B0E14]/72 p-6 hover:bg-[#0D1119] hover:border-white/[0.14] transition-all shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]"
+                style={{ transform: `translateZ(${index % 3 === 0 ? 10 : index % 3 === 1 ? 20 : 0}px)` }}
+              >
+                <div className="absolute inset-0 rounded-[24px] opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none bg-[radial-gradient(320px_120px_at_80%_-10%,rgba(255,90,31,0.12),transparent_70%)]" />
+                <div className="flex items-start justify-between gap-4">
+                  <h3 className="display text-[20px] font-[700] leading-[1.2] tracking-[-0.015em]">{service.title}</h3>
+                  <div className="h-10 w-10 shrink-0 grid place-items-center rounded-[14px] border border-white/[0.10] bg-white/[0.05] text-white/75 group-hover:text-white group-hover:bg-white/[0.08] transition-all">
+                    â†—
+                  </div>
+                </div>
+                <p className="mt-3 text-[15px] leading-[1.7] text-white/68">{service.desc}</p>
+                <div className="mt-4 flex flex-wrap gap-2">
+                  {service.tags.map((tag) => (
+                    <span
+                      key={tag}
+                      className="px-[11px] h-[27px] inline-flex items-center rounded-full border border-white/[0.08] bg-white/[0.05] text-[11px] font-[700] tracking-[0.02em] text-white/75"
+                    >
+                      {tag}
                     </span>
                   ))}
                 </div>
               </div>
-            </div>
-          </section>
-
-          {/* Regions */}
-          <section id="regions" className="border-b border-white/[0.04]">
-            <div className="mx-auto max-w-[1440px] px-5 py-28">
-              <div className="grid lg:grid-cols-[1fr_1.2fr] gap-14 items-start">
-                <div>
-                  <div className="mono text-[10.5px] tracking-[0.2em] uppercase text-[#FF4D1F] font-semibold mb-4">// Global network</div>
-                  <h2 className="text-[42px] md:text-[52px] font-[700] leading-[0.98] tracking-[-0.03em] text-[#E8E6E3] mb-5">
-                    Africa-rooted.<br/>Globally available.
-                  </h2>
-                  <p className="text-[16px] leading-[1.6] text-[#A8A29C] font-[450] max-w-[480px]">
-                    Our first region is in Lagos — because African builders deserve infrastructure that doesn't add 200ms of latency just to reach a server. The next four are coming.
-                  </p>
-
-                  <div className="mt-8 grid grid-cols-2 gap-4 max-w-[420px]">
-                    {[
-                      ["1", "Live region"],
-                      ["4", "Coming 2025"],
-                      ["18 Tbps", "Backbone capacity"],
-                      ["12ms", "p50 from Lagos"],
-                    ].map(([k, v]) => (
-                      <div key={v} className="rounded-lg border border-white/[0.06] bg-[#0a0709]/50 p-4">
-                        <div className="text-[20px] font-[700] text-[#E8E6E3] tracking-tight leading-none">{k}</div>
-                        <div className="text-[11px] text-[#6B6560] mt-1.5 font-medium">{v}</div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="rounded-2xl border border-white/[0.06] bg-[#0a0709]/60 backdrop-blur-xl overflow-hidden">
-                  <div className="flex items-center justify-between px-5 h-12 border-b border-white/[0.06]">
-                    <div className="flex items-center gap-2">
-                      <div className="h-1.5 w-1.5 rounded-full bg-[#27D17F] animate-pulse" />
-                      <span className="mono text-[11px] text-[#A8A29C]">edge_status · realtime</span>
-                    </div>
-                    <span className="mono text-[10px] text-[#6B6560]">refresh 5s</span>
-                  </div>
-
-                  <div className="divide-y divide-white/[0.04]">
-                    {regions.map((r) => (
-                      <div key={r.code} className="grid grid-cols-[auto_1fr_auto_auto] gap-4 items-center px-5 py-4 hover:bg-white/[0.015] transition-colors">
-                        <div className="text-[24px]">{r.flag}</div>
-                        <div>
-                          <div className="flex items-center gap-2">
-                            <span className="text-[14.5px] font-[600] text-[#E8E6E3] tracking-tight">{r.city}</span>
-                            <span className="mono text-[10px] text-[#6B6560]">{r.pop}</span>
-                          </div>
-                          <div className="text-[11.5px] text-[#6B6560] mt-0.5">{r.country}</div>
-                        </div>
-                        <div className="mono text-[11px] text-[#A8A29C] hidden sm:block">
-                          {r.status === "live" ? `${r.latency}ms` : "—"}
-                        </div>
-                        <div>
-                          {r.status === "live" && (
-                            <span className="mono text-[9.5px] font-[700] tracking-[0.14em] uppercase bg-[#27D17F]/10 text-[#27D17F] border border-[#27D17F]/30 px-2 py-1 rounded-full">live</span>
-                          )}
-                          {r.status === "soon" && (
-                            <span className="mono text-[9.5px] font-[700] tracking-[0.14em] uppercase bg-[#FFBD2E]/10 text-[#FFBD2E] border border-[#FFBD2E]/30 px-2 py-1 rounded-full">Q2 '25</span>
-                          )}
-                          {r.status === "planned" && (
-                            <span className="mono text-[9.5px] font-[700] tracking-[0.14em] uppercase bg-white/[0.04] text-[#6B6560] border border-white/[0.08] px-2 py-1 rounded-full">planned</span>
-                          )}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-
-                  <div className="border-t border-white/[0.06] px-5 py-3 flex items-center justify-between text-[11px] text-[#6B6560] mono">
-                    <span>5 regions total</span>
-                    <button className="text-[#FF4D1F] hover:underline">request a region →</button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </section>
-
-          {/* CTA */}
-          <section className="relative overflow-hidden">
-            <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(255,77,31,0.15),transparent_60%)]" />
-            <div className="relative mx-auto max-w-[1100px] px-5 py-28 text-center">
-              <h2 className="text-[48px] md:text-[72px] font-[700] leading-[0.95] tracking-[-0.035em] mb-6">
-                <span className="text-[#E8E6E3]">Your next deploy</span><br/>
-                <span className="gradient-text">takes 42 seconds.</span>
-              </h2>
-              <p className="text-[17px] leading-[1.55] text-[#A8A29C] max-w-[520px] mx-auto mb-9 font-[450]">
-                Free to start. No credit card. Connect GitHub and ship.
-              </p>
-              <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
-                <button onClick={() => setView("console")} className="rounded-lg bg-[#FF4D1F] text-[#050407] px-6 h-12 font-[650] text-[14px] hover:bg-[#FF5C2E] transition-colors flex items-center gap-2">
-                  Start deploying free
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M5 12h14M13 5l7 7-7 7" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                </button>
-                <button className="rounded-lg border border-white/[0.12] px-6 h-12 font-[550] text-[14px] hover:border-white/[0.2] hover:bg-white/[0.03] transition-all">
-                  Talk to sales
-                </button>
-              </div>
-            </div>
-          </section>
-
-          {/* Footer */}
-          <footer className="border-t border-white/[0.05] bg-[#08070a]/40">
-            <div className="mx-auto max-w-[1440px] px-5">
-              <div className="grid gap-10 py-14 md:grid-cols-[1.4fr_1fr_1fr_1fr_1fr]">
-                <div>
-                  <div className="flex items-center gap-2 mb-4">
-                    <div className="h-8 w-8 rounded-md bg-[#FF4D1F] grid place-items-center">
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M12 2C12 2 7 7 7 12C7 14.5 8.5 16 10 16C10 14 11 13 12 13C13 13 14 14 14 16C15.5 16 17 14.5 17 12C17 7 12 2 12 2Z" fill="#050407"/></svg>
-                    </div>
-                    <div className="font-[700] tracking-tight text-[#E8E6E3]">flame<span className="text-[#FF4D1F]">core</span></div>
-                  </div>
-                  <p className="text-[13px] leading-[1.6] text-[#6B6560] max-w-[280px] font-[450]">
-                    A modern cloud platform built in Lagos for developers everywhere. From GitHub to global in seconds.
-                  </p>
-                  <div className="mt-5 mono text-[10px] tracking-[0.14em] uppercase text-[#6B6560]">
-                    Flame Core Technology LTD · RC 1982743
-                  </div>
-                </div>
-
-                {[
-                  { title: "Platform", links: ["Deployments", "Docker", "Domains & SSL", "Regions", "CLI"] },
-                  { title: "Resources", links: ["Documentation", "Guides", "API reference", "Status", "Changelog"] },
-                  { title: "Company", links: ["About", "Pricing", "Customers", "Careers", "Press"] },
-                  { title: "Legal", links: ["Privacy", "Terms", "DPA", "Security", "AUP"] },
-                ].map((col) => (
-                  <div key={col.title}>
-                    <h4 className="mono text-[10.5px] font-[700] tracking-[0.18em] uppercase text-[#FF4D1F] mb-4">{col.title}</h4>
-                    <div className="space-y-2.5">
-                      {col.links.map((l) => (
-                        <a key={l} href="#" className="block text-[13px] text-[#A8A29C] hover:text-[#E8E6E3] transition-colors font-[450]">{l}</a>
-                      ))}
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              <div className="border-t border-white/[0.05] py-5 flex flex-col md:flex-row items-center justify-between gap-3 mono text-[10.5px] text-[#6B6560] tracking-wide">
-                <div>© 2025 Flame Core Technology · Built in Lagos · Deployed worldwide</div>
-                <div className="flex items-center gap-2">
-                  <span className="h-1.5 w-1.5 rounded-full bg-[#27D17F] animate-pulse" />
-                  <span>all systems operational</span>
-                </div>
-              </div>
-            </div>
-          </footer>
-        </main>
-      )}
-
-      {/* CONSOLE (Auth + Dashboard) */}
-      {view === "console" && (
-        <main>
-          {!authed ? (
-            <div className="min-h-[calc(100vh-92px)] grid place-items-center px-5 py-16">
-              <div className="w-full max-w-[420px]">
-                <div className="text-center mb-9">
-                  <div className="mx-auto h-14 w-14 rounded-xl border border-[#FF4D1F]/40 bg-[#0a0709] grid place-items-center mb-5 relative">
-                    <div className="absolute inset-0 rounded-xl bg-[#FF4D1F]/20 blur-lg" />
-                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" className="relative">
-                      <path d="M12 2C12 2 7 7 7 12C7 14.5 8.5 16 10 16C10 14 11 13 12 13C13 13 14 14 14 16C15.5 16 17 14.5 17 12C17 7 12 2 12 2Z" fill="#FF4D1F"/>
-                    </svg>
-                  </div>
-                  <h1 className="text-[26px] font-[700] tracking-[-0.02em] text-[#E8E6E3] leading-none mb-2">{authMode === "signin" ? "Welcome back" : "Create your account"}</h1>
-                  <p className="text-[13px] text-[#6B6560]">{authMode === "signin" ? "Sign in to your Flame Core console" : "Set up your team and launch your first deployment"}</p>
-                </div>
-
-                <div className="mb-4 flex items-center gap-1 rounded-lg border border-white/[0.06] bg-[#050407] p-1">
-                  <button type="button" onClick={() => setAuthMode("signin")} className={`flex-1 h-9 rounded-md text-[12px] font-[650] transition-colors ${authMode === "signin" ? "bg-[#FF4D1F]/10 text-[#FF4D1F] border border-[#FF4D1F]/30" : "text-[#6B6560] hover:text-[#A8A29C]"}`}>
-                    Sign in
-                  </button>
-                  <button type="button" onClick={() => setAuthMode("register")} className={`flex-1 h-9 rounded-md text-[12px] font-[650] transition-colors ${authMode === "register" ? "bg-[#FF4D1F]/10 text-[#FF4D1F] border border-[#FF4D1F]/30" : "text-[#6B6560] hover:text-[#A8A29C]"}`}>
-                    Create account
-                  </button>
-                </div>
-
-                {authMode === "signin" ? (
-                  <form onSubmit={handleLogin} className="rounded-2xl border border-white/[0.06] bg-[#0a0709]/80 backdrop-blur-xl p-6 space-y-4">
-                    <a href={`${import.meta.env.VITE_API_URL || 'http://localhost:3001'}/api/v1/oauth/github`} className="w-full h-11 rounded-lg border border-white/[0.1] bg-white/[0.02] hover:bg-white/[0.04] transition-colors flex items-center justify-center gap-2.5 text-[13.5px] font-[550] text-[#E8E6E3] no-underline">
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M12 2C6.48 2 2 6.48 2 12c0 4.42 2.87 8.17 6.84 9.5.5.08.66-.23.66-.5v-1.69c-2.77.6-3.36-1.34-3.36-1.34-.46-1.16-1.11-1.47-1.11-1.47-.91-.62.07-.6.07-.6 1 .07 1.53 1.03 1.53 1.03.87 1.52 2.34 1.07 2.91.83.09-.65.35-1.09.63-1.34-2.22-.25-4.55-1.11-4.55-4.94 0-1.1.39-1.99 1.03-2.69-.1-.25-.45-1.27.1-2.65 0 0 .84-.27 2.75 1.02.79-.22 1.65-.33 2.5-.33.85 0 1.71.11 2.5.33 1.91-1.29 2.75-1.02 2.75-1.02.55 1.38.2 2.4.1 2.65.64.7 1.03 1.59 1.03 2.69 0 3.84-2.34 4.68-4.57 4.93.36.31.69.92.69 1.85V21c0 .27.16.59.67.5C19.14 20.16 22 12A10 10 0 0012 2z" fill="#E8E6E3"/></svg>
-                      Continue with GitHub
-                    </a>
-
-                    <a href={`${import.meta.env.VITE_API_URL || 'http://localhost:3001'}/api/v1/oauth/google`} className="w-full h-11 rounded-lg border border-white/[0.1] bg-white/[0.02] hover:bg-white/[0.04] transition-colors flex items-center justify-center gap-2.5 text-[13.5px] font-[550] text-[#E8E6E3] no-underline">
-                      <svg width="16" height="16" viewBox="0 0 24 24">
-                        <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 01-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" fill="#4285F4"/>
-                        <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
-                        <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18A10.96 10.96 0 001 12c0 1.77.42 3.45 1.18 4.93l3.66-2.84z" fill="#FBBC05"/>
-                        <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
-                      </svg>
-                      Continue with Google
-                    </a>
-
-                    <div className="flex items-center gap-3">
-                      <div className="flex-1 h-px bg-white/[0.06]" />
-                      <span className="mono text-[10px] uppercase tracking-[0.16em] text-[#6B6560]">or email</span>
-                      <div className="flex-1 h-px bg-white/[0.06]" />
-                    </div>
-
-                    <div>
-                      <label className="mono text-[10px] font-[600] tracking-[0.14em] uppercase text-[#6B6560] block mb-2">Email</label>
-                      <input type="email" value={loginEmail} onChange={(e) => setLoginEmail(e.target.value)} placeholder="you@company.com" className="w-full h-11 rounded-lg border border-white/[0.08] bg-[#050407] px-3.5 text-[14px] text-[#E8E6E3] placeholder-[#4a4540] focus:outline-none focus:border-[#FF4D1F]/50 focus:ring-2 focus:ring-[#FF4D1F]/15 transition-all" />
-                    </div>
-
-                    <div>
-                      <label className="mono text-[10px] font-[600] tracking-[0.14em] uppercase text-[#6B6560] block mb-2">Password</label>
-                      <input type="password" value={loginPassword} onChange={(e) => setLoginPassword(e.target.value)} placeholder="••••••••" className="w-full h-11 rounded-lg border border-white/[0.08] bg-[#050407] px-3.5 text-[14px] text-[#E8E6E3] placeholder-[#4a4540] focus:outline-none focus:border-[#FF4D1F]/50 focus:ring-2 focus:ring-[#FF4D1F]/15 transition-all" />
-                    </div>
-
-                    <button type="submit" className="w-full h-11 rounded-lg bg-[#FF4D1F] text-[#050407] font-[650] text-[13.5px] hover:bg-[#FF5C2E] transition-colors">
-                      Sign in →
-                    </button>
-                  </form>
-                ) : (
-                  <form onSubmit={handleRegister} className="rounded-2xl border border-white/[0.06] bg-[#0a0709]/80 backdrop-blur-xl p-6 space-y-4">
-                    <div className="grid grid-cols-2 gap-3">
-                      <div>
-                        <label className="mono text-[10px] font-[600] tracking-[0.14em] uppercase text-[#6B6560] block mb-2">First name</label>
-                        <input type="text" value={registerData.firstName} onChange={(e) => setRegisterData({ ...registerData, firstName: e.target.value })} placeholder="Ada" className="w-full h-11 rounded-lg border border-white/[0.08] bg-[#050407] px-3 text-[14px] text-[#E8E6E3] placeholder-[#4a4540] focus:outline-none focus:border-[#FF4D1F]/50" />
-                      </div>
-                      <div>
-                        <label className="mono text-[10px] font-[600] tracking-[0.14em] uppercase text-[#6B6560] block mb-2">Last name</label>
-                        <input type="text" value={registerData.lastName} onChange={(e) => setRegisterData({ ...registerData, lastName: e.target.value })} placeholder="Okafor" className="w-full h-11 rounded-lg border border-white/[0.08] bg-[#050407] px-3 text-[14px] text-[#E8E6E3] placeholder-[#4a4540] focus:outline-none focus:border-[#FF4D1F]/50" />
-                      </div>
-                    </div>
-
-                    <div>
-                      <label className="mono text-[10px] font-[600] tracking-[0.14em] uppercase text-[#6B6560] block mb-2">Work email</label>
-                      <input type="email" value={registerData.email} onChange={(e) => setRegisterData({ ...registerData, email: e.target.value })} placeholder="you@company.com" className="w-full h-11 rounded-lg border border-white/[0.08] bg-[#050407] px-3 text-[14px] text-[#E8E6E3] placeholder-[#4a4540] focus:outline-none focus:border-[#FF4D1F]/50" />
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-3">
-                      <div>
-                        <label className="mono text-[10px] font-[600] tracking-[0.14em] uppercase text-[#6B6560] block mb-2">Company</label>
-                        <input type="text" value={registerData.company} onChange={(e) => setRegisterData({ ...registerData, company: e.target.value })} placeholder="Flame Labs" className="w-full h-11 rounded-lg border border-white/[0.08] bg-[#050407] px-3 text-[14px] text-[#E8E6E3] placeholder-[#4a4540] focus:outline-none focus:border-[#FF4D1F]/50" />
-                      </div>
-                      <div>
-                        <label className="mono text-[10px] font-[600] tracking-[0.14em] uppercase text-[#6B6560] block mb-2">Phone</label>
-                        <input type="tel" value={registerData.phone} onChange={(e) => setRegisterData({ ...registerData, phone: e.target.value })} placeholder="+234 801 234 5678" className="w-full h-11 rounded-lg border border-white/[0.08] bg-[#050407] px-3 text-[14px] text-[#E8E6E3] placeholder-[#4a4540] focus:outline-none focus:border-[#FF4D1F]/50" />
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-3">
-                      <div>
-                        <label className="mono text-[10px] font-[600] tracking-[0.14em] uppercase text-[#6B6560] block mb-2">Country</label>
-                        <select value={registerData.country} onChange={(e) => setRegisterData({ ...registerData, country: e.target.value })} className="w-full h-11 rounded-lg border border-white/[0.08] bg-[#050407] px-3 text-[14px] text-[#E8E6E3] focus:outline-none focus:border-[#FF4D1F]/50">
-                          {["Nigeria", "Ghana", "Kenya", "South Africa", "United Kingdom", "United States", "Germany", "Singapore"].map((country) => (
-                            <option key={country} value={country} className="bg-[#0a0709]">{country}</option>
-                          ))}
-                        </select>
-                      </div>
-                      <div>
-                        <label className="mono text-[10px] font-[600] tracking-[0.14em] uppercase text-[#6B6560] block mb-2">Role</label>
-                        <select value={registerData.role} onChange={(e) => setRegisterData({ ...registerData, role: e.target.value })} className="w-full h-11 rounded-lg border border-white/[0.08] bg-[#050407] px-3 text-[14px] text-[#E8E6E3] focus:outline-none focus:border-[#FF4D1F]/50">
-                          {["Founder", "Engineer", "Product Manager", "CTO", "Designer", "DevOps", "Student"].map((role) => (
-                            <option key={role} value={role} className="bg-[#0a0709]">{role}</option>
-                          ))}
-                        </select>
-                      </div>
-                    </div>
-
-                    <div>
-                      <label className="mono text-[10px] font-[600] tracking-[0.14em] uppercase text-[#6B6560] block mb-2">Workspace / team name</label>
-                      <input type="text" value={registerData.teamName} onChange={(e) => setRegisterData({ ...registerData, teamName: e.target.value })} placeholder="Acme Engineering" className="w-full h-11 rounded-lg border border-white/[0.08] bg-[#050407] px-3 text-[14px] text-[#E8E6E3] placeholder-[#4a4540] focus:outline-none focus:border-[#FF4D1F]/50" />
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-3">
-                      <div>
-                        <label className="mono text-[10px] font-[600] tracking-[0.14em] uppercase text-[#6B6560] block mb-2">Password</label>
-                        <input type="password" value={registerData.password} onChange={(e) => setRegisterData({ ...registerData, password: e.target.value })} placeholder="At least 8 characters" className="w-full h-11 rounded-lg border border-white/[0.08] bg-[#050407] px-3 text-[14px] text-[#E8E6E3] placeholder-[#4a4540] focus:outline-none focus:border-[#FF4D1F]/50" />
-                      </div>
-                      <div>
-                        <label className="mono text-[10px] font-[600] tracking-[0.14em] uppercase text-[#6B6560] block mb-2">Confirm password</label>
-                        <input type="password" value={registerData.confirmPassword} onChange={(e) => setRegisterData({ ...registerData, confirmPassword: e.target.value })} placeholder="Repeat password" className="w-full h-11 rounded-lg border border-white/[0.08] bg-[#050407] px-3 text-[14px] text-[#E8E6E3] placeholder-[#4a4540] focus:outline-none focus:border-[#FF4D1F]/50" />
-                      </div>
-                    </div>
-
-                    <button type="submit" className="w-full h-11 rounded-lg bg-[#FF4D1F] text-[#050407] font-[650] text-[13.5px] hover:bg-[#FF5C2E] transition-colors">
-                      Create account →
-                    </button>
-                  </form>
-                )}
-
-                <div className="mt-5 text-center text-[12px] text-[#6B6560]">
-                  {authMode === "signin" ? (
-                    <>No account? <button type="button" onClick={() => setAuthMode("register")} className="text-[#FF4D1F] hover:underline">Create one free</button></>
-                  ) : (
-                    <>Already have an account? <button type="button" onClick={() => setAuthMode("signin")} className="text-[#FF4D1F] hover:underline">Sign in</button></>
-                  )}
-                </div>
-
-                <div className="mt-3 text-center mono text-[10px] uppercase tracking-[0.14em] text-[#4a4540]">
-                  {authMode === "signin" ? "enter your registered email and password" : "register with a valid email and strong password"}
-                </div>
-              </div>
-            </div>
-          ) : (
-            <Console
-              authed={authed}
-              consoleView={consoleState.consoleView}
-              selectedProject={consoleState.selectedProject}
-              selectedService={consoleState.selectedService}
-              projects={consoleState.projects}
-              isLoadingProjects={consoleState.isLoadingProjects}
-              projectsError={consoleState.projectsError}
-              onSelectProject={consoleState.selectProject}
-              onBuildNew={consoleState.openDeployModal}
-              onBackToDashboard={consoleState.backToDashboard}
-              onSelectService={consoleState.selectService}
-              onAddService={consoleState.openDeployModal}
-              onCloseRoom={consoleState.closeRoom}
-              onToast={(msg) => setToast(msg)}
-              onLogout={() => { setAuthed(false); setView("public") }}
-            />
-          )}
-    </main>
-  )}
-
-  {/* ADMIN SUPER CONSOLE - URL-based routing with auth gates */}
-  {pathname === "/admin" && (
-    <main className="min-h-[calc(100vh-92px)]">
-      {!authed ? (
-        <div className="fixed inset-0 z-40 flex items-center justify-center bg-[#050407]/80 backdrop-blur">
-          <div className="text-center">
-            <h2 className="text-2xl font-bold text-white mb-2">Admin Access Required</h2>
-            <p className="text-[#A8A29C] mb-4">Please sign in to access the admin panel</p>
-            <a href="/" onClick={(e) => { e.preventDefault(); window.history.pushState({}, "", "/"); setPathname("/"); setView("public") }} className="inline-block px-4 py-2 bg-[#FF4D1F] text-white rounded-lg hover:bg-[#FF5C2E]">
-              Go to Sign In
-            </a>
+            ))}
           </div>
         </div>
-      ) : !isAdmin ? (
-        <div className="fixed inset-0 z-40 flex items-center justify-center bg-[#050407]/80 backdrop-blur">
-          <div className="text-center">
-            <h2 className="text-2xl font-bold text-white mb-2">🔒 Admin Only</h2>
-            <p className="text-[#A8A29C] mb-4">You don't have permission to access the admin panel</p>
-            <a href="/console" onClick={(e) => { e.preventDefault(); window.history.pushState({}, "", "/console"); setPathname("/console"); setView("console") }} className="inline-block px-4 py-2 bg-[#FF4D1F] text-white rounded-lg hover:bg-[#FF5C2E]">
-              Go to Console
-            </a>
+      </section>
+
+      {/* Hosting */}
+      <section id="hosting" className="py-[90px] md:py-[120px] border-t border-white/[0.06] bg-[#07090F]/60">
+        <div className="mx-auto max-w-[1280px] px-6 sm:px-8">
+          <div className="max-w-[760px]">
+            <div className="inline-flex items-center gap-2 rounded-full border border-[#FF7A45]/25 bg-[#FF7A45]/10 px-3 py-1.5">
+              <span className="h-[6px] w-[6px] rounded-full bg-[#FF7A45]" />
+              <span className="text-[11px] font-[700] tracking-[0.16em] uppercase text-[#FF9B76]">Hosting Services</span>
+            </div>
+            <h2 className="display mt-4 text-[40px] md:text-[52px] font-[700] leading-[1.02] tracking-[-0.03em]">
+              Secure, reliable infrastructure
+              <span className="block text-white/65">planned around your project requirements</span>
+            </h2>
+            <p className="mt-5 text-[17px] leading-[1.75] text-white/72 max-w-[620px]">
+              We provide tailored hosting support covering infrastructure planning, SSL, domain setup, delivery performance, backups, and ongoing technical guidance. Hosting is handled by consultation so we can recommend the right environment for each client.
+            </p>
           </div>
-        </div>
-      ) : (
-        <AdminSuperConsole onToast={setToast} adminTab={adminTab} setAdminTab={setAdminTab} />
-      )}
-    </main>
-  )}
 
-  {/* EMAIL VERIFICATION */}
-  {view === "verify" && (
-    <VerifyEmail onSuccess={() => { setView("console"); setAuthMode("signin") }} />
-  )}
-
-  {/* ─── Admin Super Console ───────────────────────────────────────────── */}
-  {showDeployModal && (
-        <NewProjectPalette
-          onClose={() => { setShowDeployModal(false); setNewProjectStep("root"); setNewProjectSearch("") }}
-          onDeploy={handleDeploy}
-          step={newProjectStep}
-          setStep={setNewProjectStep}
-          search={newProjectSearch}
-          setSearch={setNewProjectSearch}
-          deployRepo={deployRepo}
-          setDeployRepo={setDeployRepo}
-          deployRegion={deployRegion}
-          setDeployRegion={setDeployRegion}
-          deployFramework={deployFramework}
-          setDeployFramework={setDeployFramework}
-          regions={regions}
-          selectedDb={selectedDb}
-          setSelectedDb={setSelectedDb}
-          selectedTemplate={selectedTemplate}
-          setSelectedTemplate={setSelectedTemplate}
-          dockerImage={selectedDockerImage}
-          setDockerImage={setSelectedDockerImage}
-          onToast={setToast}
-        />
-      )}
-
-      {/* Toast */}
-      <Toast message={toast} onClose={() => setToast(null)} />
-    </div>
-  )
-}
-
-/* ─────────────────────────── CONSOLE DASHBOARD ─────────────────────────── */
-
-
-
-/* ─── Admin Super Console ───────────────────────────────────────────── */
-function AdminSuperConsole({ onToast, adminTab, setAdminTab }: { onToast: (m: string) => void; adminTab: string; setAdminTab: (t: any) => void }) {
-  return (
-    <div className="mx-auto max-w-[1440px] px-5 py-7">
-      <div className="flex flex-wrap items-center justify-between gap-4 mb-7">
-        <div>
-          <div className="flex items-center gap-2.5">
-            <div className="h-8 w-8 rounded-md bg-[#FFBD2E] grid place-items-center text-[14px]">🛡️</div>
-            <h1 className="text-[24px] font-[700] tracking-tight text-[#E8E6E3]">Operations Center</h1>
-            <span className="mono text-[9.5px] tracking-[0.14em] uppercase bg-[#FFBD2E]/10 text-[#FFBD2E] border border-[#FFBD2E]/30 px-2 py-0.5 rounded-full font-semibold">internal</span>
-          </div>
-          <div className="mono text-[10.5px] text-[#6B6560] mt-1">Platform operator dashboard · All teams & deployments</div>
-        </div>
-      </div>
-
-      {/* System metrics */}
-      <div className="grid gap-3 md:grid-cols-5 mb-7">
-        {[
-          { k: "VPS CPU", v: "23%", d: "4 cores · 3.4 GHz", c: "#27D17F" },
-          { k: "Memory", v: "4.2 / 8 GB", d: "52% used", c: "#27D17F" },
-          { k: "Disk", v: "41 / 100 GB", d: "41% used", c: "#27D17F" },
-          { k: "Containers", v: "7", d: "5 healthy · 1 building · 1 sleeping", c: "#FFBD2E" },
-          { k: "Queue", v: "1", d: "0 failed (24h)", c: "#27D17F" },
-        ].map((m) => (
-          <div key={m.k} className="rounded-xl border border-white/[0.06] bg-[#0a0709]/70 p-4">
-            <div className="mono text-[10px] tracking-[0.14em] uppercase text-[#6B6560] font-semibold mb-2">{m.k}</div>
-            <div className="text-[20px] font-[700] tracking-tight leading-none mb-1" style={{ color: m.c }}>{m.v}</div>
-            <div className="text-[11px] text-[#6B6560]">{m.d}</div>
-          </div>
-        ))}
-      </div>
-
-      {/* Tabs */}
-      <div className="flex items-center gap-1 border-b border-white/[0.06] mb-6 overflow-x-auto">
-        {[
-          ["overview", "Overview"], ["deployments", "All Deploys"], ["users", "Users"], ["domains", "Domains"],
-          ["emails", "📧 Emails"], ["billing", "Billing"], ["security", "Security"], ["storage", "Storage"], ["settings", "Settings"],
-        ].map(([id, label]) => (
-          <button key={id} onClick={() => setAdminTab(id)}
-            className={`relative px-3.5 h-10 text-[13px] font-[550] tracking-tight whitespace-nowrap transition-colors ${adminTab === id ? "text-[#FFBD2E]" : "text-[#6B6560] hover:text-[#A8A29C]"}`}>
-            {label}
-            {adminTab === id && <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-[#FFBD2E]" />}
-          </button>
-        ))}
-      </div>
-
-      {/* Overview */}
-      {adminTab === "overview" && (
-        <div className="grid lg:grid-cols-2 gap-4">
-          <div className="rounded-xl border border-white/[0.06] bg-[#0a0709]/40 p-5">
-            <div className="text-[14px] font-[650] text-[#E8E6E3] mb-4">Recent Deployments</div>
-            <div className="space-y-2">
-              {[
-                { id: "dpl_8f2a91", project: "api-gateway", status: "healthy", team: "flamecore", time: "2m ago" },
-                { id: "dpl_7d1b40", project: "payments-svc", status: "building", team: "flamecore", time: "now" },
-                { id: "dpl_6c0a12", project: "dashboard-web", status: "ready", team: "acme-corp", time: "1h ago" },
-                { id: "dpl_5b9f81", project: "telegram-bot", status: "sleeping", team: "flamecore", time: "4h ago" },
-                { id: "dpl_4a8e72", project: "marketing-site", status: "failed", team: "flamecore", time: "6h ago" },
-              ].map((dep) => (
-                <div key={dep.id} className="flex items-center justify-between rounded-lg border border-white/[0.04] bg-[#050407] px-3 py-2.5 hover:border-white/[0.08] transition-colors">
-                  <div className="flex items-center gap-3">
-                    <StatusBadge status={dep.status} />
-                    <div>
-                      <div className="text-[13px] font-[600] text-[#E8E6E3]">{dep.project}</div>
-                      <div className="mono text-[10px] text-[#6B6560]">{dep.team} · {dep.id}</div>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-[11px] text-[#6B6560]">{dep.time}</span>
-                    <button onClick={() => onToast(`RESTART · ${dep.id}`)} className="h-7 w-7 rounded-md border border-white/[0.06] grid place-items-center text-[#6B6560] hover:text-[#FF4D1F] hover:border-[#FF4D1F]/30 transition-colors text-[11px]">↻</button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-          <div className="space-y-4">
-            <div className="rounded-xl border border-white/[0.06] bg-[#0a0709]/40 p-5">
-              <div className="text-[14px] font-[650] text-[#E8E6E3] mb-3">Active Regions</div>
-              <div className="space-y-2.5">
-                {[
-                  { flag: "🇳🇬", city: "Lagos", code: "los1", status: "live", deploys: 7, load: "41%" },
-                  { flag: "🇬🇧", city: "London", code: "lhr1", status: "soon", deploys: 0, load: "—" },
-                  { flag: "🇩🇪", city: "Frankfurt", code: "fra1", status: "soon", deploys: 0, load: "—" },
-                ].map((r) => (
-                  <div key={r.code} className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <span className="text-[16px]">{r.flag}</span>
-                      <div>
-                        <span className="text-[13px] font-[600] text-[#E8E6E3]">{r.city}</span>
-                        <span className="mono text-[10px] text-[#6B6560] ml-2">{r.code}</span>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-3 text-[11px]">
-                      <span className="text-[#A8A29C]">{r.deploys} deploys</span>
-                      <span className="text-[#A8A29C]">{r.load}</span>
-                      <StatusBadge status={r.status === "live" ? "healthy" : "queued"} />
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-            <div className="rounded-xl border border-[#FF5F56]/25 bg-[#FF5F56]/[0.04] p-5">
-              <div className="text-[14px] font-[650] text-[#FF5F56] mb-2">Security Events (24h)</div>
-              <div className="space-y-2">
-                {[
-                  { event: "auth.login_failed", ip: "41.222.x.x", time: "2h ago", count: "3 attempts" },
-                  { event: "rate_limit.hit", ip: "102.88.x.x", time: "5h ago", count: "deploy endpoint" },
-                ].map((e, i) => (
-                  <div key={i} className="flex items-center justify-between text-[12px]">
-                    <div className="flex items-center gap-2">
-                      <span className="text-[#FF5F56]">⚠</span>
-                      <span className="mono text-[#A8A29C]">{e.event}</span>
-                    </div>
-                    <span className="text-[#6B6560]">{e.ip} · {e.time}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Settings — SMTP */}
-      {adminTab === "storage" && (
-        <div className="grid lg:grid-cols-[0.95fr_1.05fr] gap-4">
-          <div className="space-y-4">
-            <div className="rounded-xl border border-white/[0.06] bg-[#0a0709]/40 p-6">
-              <div className="flex items-center gap-2 mb-4">
-                <span className="text-[16px]">🗄️</span>
-                <div className="text-[14px] font-[650] text-[#E8E6E3]">Storage Provider Health</div>
-              </div>
-              <div className="space-y-3 text-[12px]">
-                <div className="flex items-center justify-between"><span className="text-[#6B6560]">Provider</span><span className="mono text-[#E8E6E3]">Cloudflare R2</span></div>
-                <div className="flex items-center justify-between"><span className="text-[#6B6560]">Bucket</span><span className="mono text-[#E8E6E3]">flame-storage</span></div>
-                <div className="flex items-center justify-between"><span className="text-[#6B6560]">Health</span><StatusBadge status="healthy" /></div>
-                <div className="flex items-center justify-between"><span className="text-[#6B6560]">CDN</span><span className="mono text-[#27D17F]">enabled</span></div>
-              </div>
-            </div>
-            <div className="rounded-xl border border-white/[0.06] bg-[#0a0709]/40 p-6">
-              <div className="text-[14px] font-[650] text-[#E8E6E3] mb-3">Usage by Team</div>
-              <div className="space-y-2.5">
-                {[
-                  ["flamecore", "12.8 GB", "84k objects"],
-                  ["acme-corp", "4.2 GB", "12k objects"],
-                ].map(([team, size, objects]) => (
-                  <div key={team} className="flex items-center justify-between text-[12px]">
-                    <div>
-                      <div className="text-[#E8E6E3] font-[600]">{team}</div>
-                      <div className="mono text-[10px] text-[#6B6560]">{objects}</div>
-                    </div>
-                    <div className="mono text-[#A8A29C]">{size}</div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-          <div className="space-y-4">
-            <div className="rounded-xl border border-white/[0.06] bg-[#0a0709]/40 p-6">
-              <div className="text-[14px] font-[650] text-[#E8E6E3] mb-3">Largest Projects</div>
-              <div className="space-y-2.5">
-                {[
-                  ["cms-assets", "flamecore", "8.4 GB"],
-                  ["media-library", "acme-corp", "3.1 GB"],
-                  ["exports-service", "flamecore", "1.2 GB"],
-                ].map(([project, team, size]) => (
-                  <div key={project} className="flex items-center justify-between rounded-lg border border-white/[0.04] bg-[#050407] px-3 py-2.5">
-                    <div>
-                      <div className="text-[13px] font-[600] text-[#E8E6E3]">{project}</div>
-                      <div className="mono text-[10px] text-[#6B6560]">{team}</div>
-                    </div>
-                    <div className="mono text-[#A8A29C] text-[12px]">{size}</div>
-                  </div>
-                ))}
-              </div>
-            </div>
-            <div className="rounded-xl border border-[#FF5F56]/25 bg-[#FF5F56]/[0.04] p-6">
-              <div className="text-[14px] font-[650] text-[#FF5F56] mb-3">Failed Uploads</div>
-              <div className="space-y-2 text-[12px]">
-                {[
-                  ["evil.exe", "unsupported MIME", "2m ago"],
-                  ["video.mov", "quota exceeded", "14m ago"],
-                ].map(([file, reason, time]) => (
-                  <div key={file} className="flex items-center justify-between">
-                    <div>
-                      <div className="text-[#E8E6E3]">{file}</div>
-                      <div className="mono text-[10px] text-[#FF5F56]">{reason}</div>
-                    </div>
-                    <div className="text-[#6B6560]">{time}</div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {adminTab === "emails" && (
-        <div className="bg-gray-900 rounded-lg">
-          <AdminEmailManager />
-        </div>
-      )}
-
-      {adminTab === "users" && (
-        <div className="bg-gray-900 rounded-lg p-6">
-          <AdminUserManager />
-        </div>
-      )}
-
-      {adminTab === "billing" && (
-        <div className="bg-gray-900 rounded-lg p-6">
-          <AdminBillingManager />
-        </div>
-      )}
-
-      {adminTab === "settings" && (
-        <div className="grid lg:grid-cols-2 gap-4">
-          <div className="rounded-xl border border-white/[0.06] bg-[#0a0709]/40 p-6">
-            <div className="flex items-center gap-2 mb-4">
-              <span className="text-[16px]">📧</span>
-              <div className="text-[14px] font-[650] text-[#E8E6E3]">SMTP Configuration</div>
-            </div>
-            <div className="space-y-3">
-              {[
-                { label: "Host", placeholder: "smtp.gmail.com", key: "host" },
-                { label: "Port", placeholder: "587", key: "port" },
-                { label: "Username", placeholder: "you@gmail.com", key: "user" },
-                { label: "Password", placeholder: "••••••••", key: "pass" },
-                { label: "From Email", placeholder: "noreply@flame.app", key: "from_email" },
-                { label: "From Name", placeholder: "Flame Core", key: "from_name" },
-              ].map((f) => (
-                <div key={f.key}>
-                  <label className="mono text-[10px] font-[600] tracking-[0.12em] uppercase text-[#6B6560] block mb-1.5">{f.label}</label>
-                  <input type={f.key === "pass" ? "password" : "text"} placeholder={f.placeholder}
-                    className="w-full h-9 rounded-md border border-white/[0.08] bg-[#050407] px-3 text-[13px] text-[#E8E6E3] placeholder-[#4a4540] focus:outline-none focus:border-[#FF4D1F]/50 mono" />
-                </div>
-              ))}
-              <div className="flex gap-2 pt-2">
-                <button onClick={() => onToast("SMTP · settings saved")} className="flex-1 h-9 rounded-md bg-[#FF4D1F] text-[#050407] text-[12px] font-[650]">Save</button>
-                <button onClick={() => onToast("SMTP · test email sent")} className="h-9 px-4 rounded-md border border-white/[0.08] text-[12px] text-[#A8A29C] hover:text-[#E8E6E3] transition-colors">Test</button>
-              </div>
-            </div>
-          </div>
-          <div className="rounded-xl border border-white/[0.06] bg-[#0a0709]/40 p-6">
-            <div className="flex items-center gap-2 mb-4">
-              <span className="text-[16px]">☁️</span>
-              <div className="text-[14px] font-[650] text-[#E8E6E3]">Object Storage</div>
-            </div>
-            <div className="space-y-3">
+          <div className="mt-10 rounded-[28px] border border-white/[0.08] bg-[#0B0E14]/72 p-8 md:p-10 shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]">
+            <div className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr] lg:items-center">
               <div>
-                <label className="mono text-[10px] font-[600] tracking-[0.12em] uppercase text-[#6B6560] block mb-1.5">Provider</label>
-                <select className="w-full h-9 rounded-md border border-white/[0.08] bg-[#050407] px-3 text-[13px] text-[#E8E6E3] focus:outline-none focus:border-[#FF4D1F]/50">
-                  <option value="local" className="bg-[#0a0709]">Local Filesystem</option>
-                  <option value="s3" className="bg-[#0a0709]">AWS S3</option>
-                  <option value="r2" className="bg-[#0a0709]">Cloudflare R2</option>
-                  <option value="b2" className="bg-[#0a0709]">Backblaze B2</option>
-                </select>
+                <h3 className="display text-[28px] md:text-[34px] font-[700] leading-[1.1] tracking-[-0.02em]">
+                  Hosting is available by direct consultation
+                </h3>
+                <p className="mt-4 text-[16px] leading-[1.8] text-white/70 max-w-[640px]">
+                  Rather than offering instant booking, we review each project's traffic expectations, security needs, maintenance requirements, and growth plans before recommending a hosting setup.
+                </p>
               </div>
-              {[
-                { label: "Endpoint / Region", placeholder: "us-east-1 or https://..." },
-                { label: "Bucket", placeholder: "flame-storage" },
-                { label: "Access Key", placeholder: "AKIA..." },
-                { label: "Secret Key", placeholder: "••••••••" },
-              ].map((f) => (
-                <div key={f.label}>
-                  <label className="mono text-[10px] font-[600] tracking-[0.12em] uppercase text-[#6B6560] block mb-1.5">{f.label}</label>
-                  <input type={f.label.includes("Secret") ? "password" : "text"} placeholder={f.placeholder}
-                    className="w-full h-9 rounded-md border border-white/[0.08] bg-[#050407] px-3 text-[13px] text-[#E8E6E3] placeholder-[#4a4540] focus:outline-none focus:border-[#FF4D1F]/50 mono" />
+              <div className="rounded-[22px] border border-[#FF7A45]/20 bg-[#FF5A1F]/8 p-6">
+                <div className="text-[11px] font-[700] tracking-[0.16em] uppercase text-[#FF9B76]">Hosting Note</div>
+                <p className="mt-3 text-[15px] leading-[1.8] text-white/74">
+                  For hosting services, please contact our team directly. We will guide you on the best package, infrastructure, and support plan for your project.
+                </p>
+                <div className="mt-5 flex flex-wrap gap-3">
+                  <a
+                    href="#contact"
+                    onClick={(e) => {
+                      if (!isDesktop) {
+                        e.preventDefault();
+                        goToMobilePage('contact');
+                      }
+                    }}
+                    className="h-[44px] px-[18px] inline-flex items-center rounded-[14px] bg-[#FF5A1F] text-white font-[700] hover:bg-[#FF6E3A] transition-all"
+                  >
+                    Contact the Team
+                  </a>
+                  <a href={WHATSAPP_URL} target="_blank" rel="noreferrer" className="h-[44px] px-[18px] inline-flex items-center rounded-[14px] border border-white/[0.10] bg-white/[0.05] text-[14px] font-[700] hover:bg-white/[0.08] transition-colors">
+                    WhatsApp Us
+                  </a>
                 </div>
-              ))}
-              <button onClick={() => onToast("STORAGE · settings saved")} className="w-full h-9 rounded-md bg-[#FF4D1F] text-[#050407] text-[12px] font-[650]">Save Storage Config</button>
+              </div>
             </div>
           </div>
-        </div>
-      )}
 
-      {/* Other tabs placeholder */}
-      {["deployments","users","domains","billing","security"].includes(adminTab) && adminTab !== "overview" && adminTab !== "settings" && (
-        <div className="rounded-xl border border-white/[0.06] bg-[#0a0709]/40 p-8 text-center">
-          <div className="text-[16px] mb-2">🔧</div>
-          <div className="text-[14px] font-[600] text-[#E8E6E3] mb-1">{adminTab.charAt(0).toUpperCase() + adminTab.slice(1)} Management</div>
-          <div className="text-[12px] text-[#6B6560]">Connected to /api/v1/super/{adminTab} · Data loads from backend</div>
-        </div>
-      )}
-
-      <div className="mt-8 pt-5 border-t border-white/[0.05] mono text-[10.5px] text-[#4a4540] flex items-center justify-between">
-        <span>flame core operations · internal only · all actions audited</span>
-        <span className="text-[#FFBD2E]">admin mode active</span>
-      </div>
-    </div>
-  )
-}
-
-/* ─── New Project Command Palette ────────────────────────────────────────── */
-type PaletteStep = "root" | "github" | "gitlab" | "bitbucket" | "docker" | "database" | "template" | "cli" | "url" | "empty"
-
-type PaletteProps = {
-  onClose: () => void
-  onDeploy: (e: React.FormEvent) => void
-  step: PaletteStep
-  setStep: (s: PaletteStep) => void
-  search: string
-  setSearch: (s: string) => void
-  deployRepo: string
-  setDeployRepo: (v: string) => void
-  deployRegion: string
-  setDeployRegion: (v: string) => void
-  deployFramework?: string
-  setDeployFramework?: (v: string) => void
-  regions: Region[]
-  selectedDb: string | null
-  setSelectedDb: (v: string | null) => void
-  selectedTemplate: string | null
-  setSelectedTemplate: (v: string | null) => void
-  dockerImage: string
-  setDockerImage: (v: string) => void
-  onToast: (v: string) => void
-}
-
-const GITHUB_REPOS = [
-  { name: "flamecore/api-gateway", lang: "TypeScript", stars: 24, updated: "2m ago", private: false },
-  { name: "flamecore/dashboard-web", lang: "TypeScript", stars: 8, updated: "1h ago", private: false },
-  { name: "flamecore/payments-svc", lang: "Node.js", stars: 3, updated: "3h ago", private: true },
-  { name: "flamecore/marketing", lang: "Astro", stars: 1, updated: "1d ago", private: false },
-  { name: "flamecore/notify-bot", lang: "Python", stars: 5, updated: "2d ago", private: false },
-  { name: "flamecore/auth-service", lang: "Go", stars: 7, updated: "3d ago", private: true },
-]
-
-const DATABASES = [
-  { id: "postgres", name: "PostgreSQL", version: "17", icon: "🐘", desc: "Advanced open-source relational database" },
-  { id: "mysql", name: "MySQL", version: "8.4", icon: "🐬", desc: "World's most popular open-source database" },
-  { id: "redis", name: "Redis", version: "7.4", icon: "🟥", desc: "In-memory data store, cache & message broker" },
-  { id: "mongodb", name: "MongoDB", version: "7.0", icon: "🍃", desc: "Developer-friendly NoSQL document database" },
-  { id: "sqlite", name: "SQLite", version: "3.x", icon: "🪶", desc: "Serverless, zero-config SQL database" },
-  { id: "kafka", name: "Kafka", version: "3.8", icon: "⚡", desc: "High-throughput distributed event streaming" },
-]
-
-const TEMPLATES = [
-  { id: "nextjs-starter", name: "Next.js Starter", category: "Full-Stack", icon: "▲", repo: "https://github.com/vercel/next.js" },
-  { id: "express-api", name: "Express API", category: "Backend", icon: "⚡", repo: "https://github.com/expressjs/express" },
-  { id: "fastapi", name: "FastAPI", category: "Python API", icon: "🐍", repo: "https://github.com/tiangolo/fastapi" },
-  { id: "django", name: "Django", category: "Python Full-Stack", icon: "🎸", repo: "https://github.com/django/django" },
-  { id: "nestjs", name: "NestJS", category: "TypeScript API", icon: "🦅", repo: "https://github.com/nestjs/nest" },
-  { id: "strapi", name: "Strapi CMS", category: "Headless CMS", icon: "📝", repo: "https://github.com/strapi/strapi" },
-  { id: "ghost", name: "Ghost Blog", category: "CMS / Blog", icon: "👻", repo: "https://github.com/TryGhost/Ghost" },
-  { id: "n8n", name: "n8n Automation", category: "Automation", icon: "🔄", repo: "https://github.com/n8n-io/n8n" },
-  { id: "supabase", name: "Supabase Stack", category: "Backend as a Service", icon: "⚡", repo: "https://github.com/supabase/supabase" },
-  { id: "grafana", name: "Grafana", category: "Monitoring", icon: "📊", repo: "https://github.com/grafana/grafana" },
-  { id: "wordpress", name: "WordPress", category: "CMS", icon: "🌐", repo: "https://github.com/WordPress/WordPress" },
-  { id: "static", name: "Static Site", category: "Frontend", icon: "📄", repo: "" },
-]
-
-function NewProjectPalette({
-  onClose, onDeploy, step, setStep,
-  search, setSearch,
-  deployRepo, setDeployRepo, deployRegion, setDeployRegion,
-  regions, selectedDb, setSelectedDb, selectedTemplate, setSelectedTemplate,
-  dockerImage, setDockerImage, onToast,
-}: PaletteProps) {
-  const searchRef = useRef<HTMLInputElement>(null)
-
-  useEffect(() => {
-    setTimeout(() => searchRef.current?.focus(), 50)
-  }, [step])
-
-  const ROOT_ITEMS = [
-    {
-      id: "github",
-      label: "GitHub Repository",
-      icon: (
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-          <path d="M12 2C6.48 2 2 6.48 2 12c0 4.42 2.87 8.17 6.84 9.5.5.08.66-.23.66-.5v-1.69c-2.77.6-3.36-1.34-3.36-1.34-.46-1.16-1.11-1.47-1.11-1.47-.91-.62.07-.6.07-.6 1 .07 1.53 1.03 1.53 1.03.87 1.52 2.34 1.07 2.91.83.09-.65.35-1.09.63-1.34-2.22-.25-4.55-1.11-4.55-4.94 0-1.1.39-1.99 1.03-2.69-.1-.25-.45-1.27.1-2.65 0 0 .84-.27 2.75 1.02.79-.22 1.65-.33 2.5-.33.85 0 1.71.11 2.5.33 1.91-1.29 2.75-1.02 2.75-1.02.55 1.38.2 2.4.1 2.65.64.7 1.03 1.59 1.03 2.69 0 3.84-2.34 4.68-4.57 4.93.36.31.69.92.69 1.85V21c0 .27.16.59.67.5C19.14 20.16 22 16.42 22 12A10 10 0 0012 2z" fill="#A8A29C"/>
-        </svg>
-      ),
-      desc: "Deploy from a GitHub repository",
-      badge: null,
-    },
-    {
-      id: "gitlab",
-      label: "GitLab Repository",
-      icon: <span className="text-[18px]">🦊</span>,
-      desc: "Deploy from GitLab",
-      badge: null,
-    },
-    {
-      id: "bitbucket",
-      label: "Bitbucket Repository",
-      icon: <span className="text-[18px]">🪣</span>,
-      desc: "Deploy from Bitbucket",
-      badge: null,
-    },
-    {
-      id: "url",
-      label: "Public Git URL",
-      icon: (
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-          <path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71" stroke="#A8A29C" strokeWidth="2" strokeLinecap="round"/>
-          <path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71" stroke="#A8A29C" strokeWidth="2" strokeLinecap="round"/>
-        </svg>
-      ),
-      desc: "Any public Git repository URL",
-      badge: null,
-    },
-    {
-      id: "docker",
-      label: "Docker Image",
-      icon: <span className="text-[18px]">🐳</span>,
-      desc: "Deploy a pre-built Docker image from any registry",
-      badge: null,
-    },
-    {
-      id: "database",
-      label: "Database",
-      icon: (
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-          <ellipse cx="12" cy="5" rx="9" ry="3" stroke="#A8A29C" strokeWidth="1.75"/>
-          <path d="M3 5v14c0 1.66 4.03 3 9 3s9-1.34 9-3V5" stroke="#A8A29C" strokeWidth="1.75"/>
-          <path d="M3 12c0 1.66 4.03 3 9 3s9-1.34 9-3" stroke="#A8A29C" strokeWidth="1.75"/>
-        </svg>
-      ),
-      desc: "PostgreSQL, MySQL, Redis, MongoDB & more",
-      badge: null,
-    },
-    {
-      id: "template",
-      label: "Template",
-      icon: (
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-          <rect x="3" y="3" width="7" height="7" rx="1.5" stroke="#A8A29C" strokeWidth="1.75"/>
-          <rect x="14" y="3" width="7" height="7" rx="1.5" stroke="#A8A29C" strokeWidth="1.75"/>
-          <rect x="3" y="14" width="7" height="7" rx="1.5" stroke="#A8A29C" strokeWidth="1.75"/>
-          <path d="M14 17.5h7M17.5 14v7" stroke="#A8A29C" strokeWidth="1.75" strokeLinecap="round"/>
-        </svg>
-      ),
-      desc: "One-click deploys for popular stacks",
-      badge: "12 available",
-    },
-    {
-      id: "cli",
-      label: "Flame CLI",
-      icon: (
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-          <rect x="3" y="3" width="18" height="18" rx="2" stroke="#A8A29C" strokeWidth="1.75"/>
-          <path d="M7 9l4 4-4 4M13 17h4" stroke="#A8A29C" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"/>
-        </svg>
-      ),
-      desc: "Deploy from your terminal with npx flame",
-      badge: null,
-    },
-    {
-      id: "empty",
-      label: "Empty Project",
-      icon: (
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-          <rect x="3" y="3" width="18" height="18" rx="2" stroke="#A8A29C" strokeWidth="1.75" strokeDasharray="4 2"/>
-        </svg>
-      ),
-      desc: "Start with a blank canvas",
-      badge: null,
-    },
-  ]
-
-  const filteredRoot = ROOT_ITEMS.filter(
-    (i) =>
-      !search ||
-      i.label.toLowerCase().includes(search.toLowerCase()) ||
-      i.desc.toLowerCase().includes(search.toLowerCase())
-  )
-
-  const filteredRepos = GITHUB_REPOS.filter(
-    (r) => !search || r.name.toLowerCase().includes(search.toLowerCase()) || r.lang.toLowerCase().includes(search.toLowerCase())
-  )
-
-  const filteredDbs = DATABASES.filter(
-    (d) => !search || d.name.toLowerCase().includes(search.toLowerCase()) || d.desc.toLowerCase().includes(search.toLowerCase())
-  )
-
-  const filteredTemplates = TEMPLATES.filter(
-    (t) => !search || t.name.toLowerCase().includes(search.toLowerCase()) || t.category.toLowerCase().includes(search.toLowerCase())
-  )
-
-  const SUGGESTIONS = [
-    "Deploy a Next.js + PostgreSQL app",
-    "Set up a Redis cache",
-    "Deploy a FastAPI backend",
-    "Launch a Ghost blog",
-  ]
-
-  const stepTitle: Record<PaletteStep, string> = {
-    root: "New project",
-    github: "GitHub Repository",
-    gitlab: "GitLab Repository",
-    bitbucket: "Bitbucket Repository",
-    docker: "Docker Image",
-    database: "Database",
-    template: "Template",
-    cli: "Flame CLI",
-    url: "Public Git URL",
-    empty: "Empty Project",
-  }
-
-  const handleRootSelect = (id: string) => {
-    if (id === "empty") {
-      onToast("EMPTY PROJECT · created — add services from the canvas")
-      onClose()
-    } else {
-      setStep(id as PaletteStep)
-      setSearch("")
-    }
-  }
-
-  const handleDbSelect = (db: typeof DATABASES[0]) => {
-    setSelectedDb(db.id)
-    onToast(`DATABASE · provisioning ${db.name} ${db.version}…`)
-    onClose()
-  }
-
-  const handleTemplateSelect = (tpl: typeof TEMPLATES[0]) => {
-    setSelectedTemplate(tpl.id)
-    setDeployRepo(tpl.repo || `templates/${tpl.id}`)
-    onToast(`TEMPLATE · ${tpl.name} — configuring…`)
-    onClose()
-  }
-
-  return (
-    <div className="fixed inset-0 z-[60] grid place-items-center bg-[#050407]/90 backdrop-blur-sm p-4" onClick={(e) => e.target === e.currentTarget && onClose()}>
-      <div className="w-full max-w-[600px] rounded-2xl border border-white/[0.1] bg-[#0D0B0E] shadow-[0_32px_80px_rgba(0,0,0,0.7)] overflow-hidden">
-
-        {/* Search input */}
-        <div className="flex items-center gap-3 px-4 py-3.5 border-b border-white/[0.06]">
-          {step !== "root" && (
-            <button onClick={() => { setStep("root"); setSearch("") }} className="flex-shrink-0 h-7 w-7 grid place-items-center rounded-md hover:bg-white/[0.06] text-[#6B6560] hover:text-[#E8E6E3] transition-colors">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M19 12H5M12 19l-7-7 7-7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
-            </button>
-          )}
-          {step === "root" ? (
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" className="flex-shrink-0 text-[#6B6560]"><circle cx="11" cy="11" r="8" stroke="currentColor" strokeWidth="2"/><path d="m21 21-4.35-4.35" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>
-          ) : (
-            <div className="flex-shrink-0 mono text-[10.5px] tracking-[0.12em] uppercase text-[#FF4D1F] font-[650] bg-[#FF4D1F]/10 border border-[#FF4D1F]/25 px-2 h-5 flex items-center rounded">
-              {stepTitle[step]}
+          <div className="mt-16 rounded-[28px] border border-white/[0.08] bg-gradient-to-br from-[#FF5A1F]/10 to-[#7C3AED]/5 p-8 md:p-12 text-center">
+            <div className="inline-flex items-center gap-2 rounded-full border border-[#FF7A45]/25 bg-[#FF7A45]/10 px-3 py-1.5 mb-4">
+              <span className="h-[6px] w-[6px] rounded-full bg-[#FF7A45]" />
+              <span className="text-[11px] font-[700] tracking-[0.16em] uppercase text-[#FF9B76]">Managed Hosting Guidance</span>
             </div>
-          )}
-          <input
-            ref={searchRef}
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder={step === "root" ? "What would you like to create?" : step === "github" ? "Search repositories…" : step === "database" ? "Search databases…" : step === "template" ? "Search templates…" : step === "docker" ? "nginx:alpine, node:20, ghcr.io/..." : "Search…"}
-            className="flex-1 bg-transparent text-[14.5px] text-[#E8E6E3] placeholder-[#4a4540] focus:outline-none"
-          />
-          <button onClick={onClose} className="flex-shrink-0 h-7 w-7 grid place-items-center rounded-md hover:bg-white/[0.06] text-[#6B6560] hover:text-[#E8E6E3] transition-colors">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M18 6L6 18M6 6l12 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>
-          </button>
+            <h3 className="display text-[36px] md:text-[44px] font-[700] leading-[1.1] tracking-[-0.03em] mt-3">
+              Talk to us before you choose your hosting setup
+            </h3>
+            <p className="mt-4 text-[16px] leading-[1.7] text-white/72 max-w-[640px] mx-auto">
+              Our team can help you choose the right hosting path for your website, business platform, or custom application based on scale, availability, and support expectations.
+            </p>
+            <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-4">
+              <a
+                href="#contact"
+                onClick={(e) => {
+                  if (!isDesktop) {
+                    e.preventDefault();
+                    goToMobilePage('contact');
+                  }
+                }}
+                className="group h-[52px] px-[28px] inline-flex items-center gap-2 rounded-[16px] bg-[#FF5A1F] text-white font-[700] shadow-[0_16px_50px_-8px_rgba(255,90,31,0.55)] hover:bg-[#FF6F3A] transition-all"
+              >
+                Speak With the Team
+                <span className="text-white/90 transition-transform group-hover:translate-x-[2px]">-&gt;</span>
+              </a>
+              <a href={WHATSAPP_URL} target="_blank" rel="noreferrer" className="h-[52px] px-[28px] inline-flex items-center rounded-[16px] border border-white/[0.11] bg-white/[0.05] text-[15px] font-[600] text-white/90 hover:bg-white/[0.08] transition-all">
+                WhatsApp the Team
+              </a>
+            </div>
+            <p className="mt-6 text-[13px] leading-[1.6] text-white/60">
+              Tailored recommendations &nbsp; | &nbsp; SSL and domain guidance &nbsp; | &nbsp; Performance planning &nbsp; | &nbsp; Ongoing support
+            </p>
+          </div>
         </div>
+      </section>
 
-        {/* Root menu */}
-        {step === "root" && (
+      {/* Process */}
+      <section id="process" className={`${isDesktop || mobilePage === 'home' ? 'block' : 'hidden'} py-[90px] md:py-[120px] border-t border-white/[0.06]`}>
+        <div className="mx-auto max-w-[1280px] px-6 sm:px-8">
+          <div className="max-w-[760px]">
+            <div className="inline-flex items-center gap-2 rounded-full border border-white/[0.08] bg-white/[0.03] px-3 py-1.5">
+              <span className="h-[6px] w-[6px] rounded-full bg-[#22C55E]" />
+              <span className="text-[11px] font-[700] tracking-[0.16em] uppercase text-white/80">Our Process</span>
+            </div>
+            <h2 className="display mt-4 text-[40px] md:text-[52px] font-[700] leading-[1.02] tracking-[-0.03em]">
+              A structured delivery process
+              <span className="block text-white/65">that keeps quality and clarity high</span>
+            </h2>
+            <p className="mt-5 text-[17px] leading-[1.75] text-white/72 max-w-[640px]">
+              We do our best work when strategy, design, engineering, and launch planning move together. Our process is built to reduce guesswork and increase confidence at every stage.
+            </p>
+          </div>
+
+          <div className="mt-12 grid gap-5 lg:grid-cols-5">
+            {processSteps.map((item) => (
+              <div key={item.step} className="rounded-[24px] border border-white/[0.08] bg-[#0B0E14]/72 p-6">
+                <div className="text-[12px] font-[800] tracking-[0.18em] uppercase text-[#FF9B76]">{item.step}</div>
+                <h3 className="display mt-4 text-[22px] font-[700] leading-[1.18] tracking-[-0.02em]">{item.title}</h3>
+                <p className="mt-3 text-[15px] leading-[1.75] text-white/66">{item.desc}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Featured work */}
+      <section id="featured-work" className={`${isDesktop || mobilePage === 'home' ? 'block' : 'hidden'} py-[90px] md:py-[120px] border-t border-white/[0.06] bg-[#07090F]/60`}>
+        <div className="mx-auto max-w-[1280px] px-6 sm:px-8">
+          <div className="max-w-[760px]">
+            <div className="inline-flex items-center gap-2 rounded-full border border-[#FF7A45]/25 bg-[#FF7A45]/10 px-3 py-1.5">
+              <span className="h-[6px] w-[6px] rounded-full bg-[#FF7A45]" />
+              <span className="text-[11px] font-[700] tracking-[0.16em] uppercase text-[#FF9B76]">Featured Work</span>
+            </div>
+            <h2 className="display mt-4 text-[40px] md:text-[52px] font-[700] leading-[1.02] tracking-[-0.03em]">
+              Built to feel credible, modern,
+              <span className="block text-white/65">and ready for real business use</span>
+            </h2>
+            <p className="mt-5 text-[17px] leading-[1.75] text-white/72 max-w-[640px]">
+              We focus on digital products that help businesses present themselves better, operate more efficiently, and scale with stronger technical foundations.
+            </p>
+          </div>
+
+          <div className="mt-12 grid gap-6 xl:grid-cols-3">
+            {featuredWork.map((item) => (
+              <div key={item.title} className="rounded-[26px] border border-white/[0.08] bg-[#0B0E14]/74 p-7 shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]">
+                <div className="text-[11px] font-[700] tracking-[0.16em] uppercase text-[#FF9B76]">{item.category}</div>
+                <h3 className="display mt-4 text-[28px] font-[700] leading-[1.1] tracking-[-0.025em]">{item.title}</h3>
+                <p className="mt-4 text-[15px] leading-[1.75] text-white/68">{item.summary}</p>
+                <div className="mt-6 rounded-[18px] border border-white/[0.08] bg-white/[0.03] p-4">
+                  <div className="text-[11px] font-[700] tracking-[0.14em] uppercase text-white/55">Outcome Focus</div>
+                  <p className="mt-2 text-[14px] leading-[1.7] text-white/72">{item.outcome}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Why choose us */}
+      <section id="why-us" className={`${isDesktop || mobilePage === 'why' ? 'block' : 'hidden'} py-[90px] md:py-[120px] border-t border-white/[0.06] relative overflow-hidden`}>
+        <div className="absolute inset-0 -z-10 bg-[radial-gradient(900px_500px_at_85%_-10%,#7C3AED14,transparent_60%)]" />
+        <div className="mx-auto max-w-[1280px] px-6 sm:px-8">
+          <div className="max-w-[760px]">
+            <div className="inline-flex items-center gap-2 rounded-full border border-white/[0.08] bg-white/[0.03] px-3 py-1.5">
+              <span className="h-[6px] w-[6px] rounded-full bg-[#22C55E]" />
+              <span className="text-[11px] font-[700] tracking-[0.16em] uppercase text-white/80">Why Choose Us</span>
+            </div>
+            <h2 className="display mt-4 text-[40px] md:text-[52px] font-[700] leading-[1.02] tracking-[-0.03em]">
+              Trusted by businesses that want
+              <span className="block text-white/65">quality, speed, and clarity</span>
+            </h2>
+            <p className="mt-5 text-[17px] leading-[1.75] text-white/72 max-w-[620px]">
+              We focus on delivering business value with clean execution, reliable support, and technology decisions that make sense for growth.
+            </p>
+          </div>
+
+          <div className="mt-12 grid gap-[16px] md:grid-cols-2 xl:grid-cols-3">
+            {reasons.map((reason, index) => (
+              <div
+                key={reason.title}
+                className="relative rounded-[22px] border border-white/[0.08] bg-[#0B0E14]/72 p-6 hover:bg-[#0D1119] hover:border-white/[0.14] transition-all"
+                style={{ transform: `translateY(${index % 2 === 0 ? '0px' : '10px'})` }}
+              >
+                <div className="flex items-start justify-between gap-4">
+                  <h3 className="display text-[19px] font-[700] tracking-[-0.015em] leading-[1.25]">{reason.title}</h3>
+                  <div className="rounded-[12px] border border-white/[0.08] bg-white/[0.05] px-3 py-1.5 text-[11px] font-[700] tracking-[0.12em] uppercase text-white/70">
+                    {reason.metric}
+                  </div>
+                </div>
+                <p className="mt-3 text-[14.8px] leading-[1.7] text-white/66">{reason.desc}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* FAQ */}
+      <section id="faq" className={`${isDesktop || mobilePage === 'home' ? 'block' : 'hidden'} py-[90px] md:py-[120px] border-t border-white/[0.06] bg-[#07090F]/60`}>
+        <div className="mx-auto max-w-[1280px] px-6 sm:px-8 grid gap-12 lg:grid-cols-[0.85fr_1.15fr]">
           <div>
-            {/* Suggestions */}
-            {!search && (
-              <div className="px-3 pt-3 pb-1 flex flex-wrap gap-1.5">
-                {SUGGESTIONS.map((s) => (
-                  <button key={s} onClick={() => setSearch(s)} className="mono text-[10px] tracking-[0.08em] px-2.5 h-6 rounded-full border border-white/[0.06] text-[#6B6560] hover:text-[#A8A29C] hover:border-white/[0.12] transition-colors flex items-center gap-1.5">
-                    <svg width="9" height="9" viewBox="0 0 24 24" fill="none"><path d="M12 2L14.5 8.5H21L15.5 13L17 20L12 15.5L7 20L8.5 13L3 8.5H9.5L12 2Z" fill="currentColor"/></svg>
-                    {s}
-                  </button>
-                ))}
-              </div>
-            )}
+            <div className="inline-flex items-center gap-2 rounded-full border border-white/[0.08] bg-white/[0.03] px-3 py-1.5">
+              <span className="h-[6px] w-[6px] rounded-full bg-[#22C55E]" />
+              <span className="text-[11px] font-[700] tracking-[0.16em] uppercase text-white/80">FAQ</span>
+            </div>
+            <h2 className="display mt-4 text-[40px] md:text-[52px] font-[700] leading-[1.02] tracking-[-0.03em]">
+              Helpful answers before
+              <span className="block text-white/65">we start working together</span>
+            </h2>
+            <p className="mt-5 max-w-[520px] text-[17px] leading-[1.75] text-white/72">
+              Here are some of the questions businesses commonly ask before starting a website, app, software, or hosting-related engagement with our team.
+            </p>
+          </div>
 
-            <div className="py-2">
-              {filteredRoot.map((item) => (
-                <button
-                  key={item.id}
-                  onClick={() => handleRootSelect(item.id)}
-                  className="w-full flex items-center justify-between gap-3 px-4 py-3 hover:bg-white/[0.04] transition-colors group"
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="h-9 w-9 rounded-lg border border-white/[0.08] bg-white/[0.02] grid place-items-center flex-shrink-0 group-hover:border-white/[0.16] transition-colors">
-                      {item.icon}
-                    </div>
-                    <div className="text-left">
-                      <div className="flex items-center gap-2">
-                        <span className="text-[14px] font-[550] text-[#E8E6E3] tracking-tight">{item.label}</span>
-                        {item.badge && (
-                          <span className="mono text-[9.5px] tracking-[0.1em] uppercase text-[#FF4D1F] bg-[#FF4D1F]/10 border border-[#FF4D1F]/20 px-1.5 h-4 flex items-center rounded">{item.badge}</span>
-                        )}
-                      </div>
-                      <div className="text-[12px] text-[#6B6560] font-[450] mt-0.5">{item.desc}</div>
-                    </div>
+          <div className="space-y-4">
+            {faqs.map((item, index) => (
+              <div key={item.question} className="rounded-[22px] border border-white/[0.08] bg-[#0B0E14]/76 p-6">
+                <div className="flex items-start gap-4">
+                  <div className="mt-1 h-8 w-8 shrink-0 rounded-full border border-[#FF7A45]/30 bg-[#FF5A1F]/10 text-[12px] font-[800] text-[#FF9B76] grid place-items-center">
+                    {index + 1}
                   </div>
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" className="text-[#4a4540] flex-shrink-0 group-hover:text-[#A8A29C] group-hover:translate-x-0.5 transition-all"><path d="M9 6l6 6-6 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>
-                </button>
-              ))}
-              {filteredRoot.length === 0 && (
-                <div className="px-4 py-8 text-center text-[13px] text-[#6B6560]">No results for "{search}"</div>
-              )}
-            </div>
-          </div>
-        )}
-
-        {/* GitHub repos */}
-        {step === "github" && (
-          <form onSubmit={onDeploy} className="flex flex-col">
-            <div className="overflow-y-auto max-h-[340px] divide-y divide-white/[0.04]">
-              {filteredRepos.map((r) => (
-                <button
-                  key={r.name}
-                  type="button"
-                  onClick={() => setDeployRepo(r.name)}
-                  className={`w-full flex items-center justify-between gap-3 px-4 py-3.5 hover:bg-white/[0.04] transition-colors text-left ${deployRepo === r.name ? "bg-[#FF4D1F]/[0.06] border-l-2 border-l-[#FF4D1F]" : "border-l-2 border-l-transparent"}`}
-                >
-                  <div className="flex items-center gap-3">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" className="flex-shrink-0"><path d="M12 2C6.48 2 2 6.48 2 12c0 4.42 2.87 8.17 6.84 9.5.5.08.66-.23.66-.5v-1.69c-2.77.6-3.36-1.34-3.36-1.34-.46-1.16-1.11-1.47-1.11-1.47-.91-.62.07-.6.07-.6 1 .07 1.53 1.03 1.53 1.03.87 1.52 2.34 1.07 2.91.83.09-.65.35-1.09.63-1.34-2.22-.25-4.55-1.11-4.55-4.94 0-1.1.39-1.99 1.03-2.69-.1-.25-.45-1.27.1-2.65 0 0 .84-.27 2.75 1.02.79-.22 1.65-.33 2.5-.33.85 0 1.71.11 2.5.33 1.91-1.29 2.75-1.02 2.75-1.02.55 1.38.2 2.4.1 2.65.64.7 1.03 1.59 1.03 2.69 0 3.84-2.34 4.68-4.57 4.93.36.31.69.92.69 1.85V21c0 .27.16.59.67.5C19.14 20.16 22 12A10 10 0 0012 2z" fill={deployRepo === r.name ? "#FF4D1F" : "#6B6560"}/></svg>
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <span className="mono text-[13px] font-[600] text-[#E8E6E3]">{r.name}</span>
-                        {r.private && <span className="mono text-[9px] tracking-[0.1em] uppercase text-[#FFBD2E] bg-[#FFBD2E]/10 border border-[#FFBD2E]/20 px-1.5 h-4 flex items-center rounded">private</span>}
-                      </div>
-                      <div className="text-[11px] text-[#6B6560] mt-0.5">{r.lang} · ⭐ {r.stars} · {r.updated}</div>
-                    </div>
+                  <div>
+                    <h3 className="text-[18px] font-[700] tracking-[-0.01em] text-white">{item.question}</h3>
+                    <p className="mt-3 text-[15px] leading-[1.8] text-white/68">{item.answer}</p>
                   </div>
-                  {deployRepo === r.name && (
-                    <div className="h-5 w-5 rounded-full bg-[#FF4D1F] grid place-items-center flex-shrink-0">
-                      <svg width="10" height="10" viewBox="0 0 24 24" fill="none"><path d="M20 6L9 17l-5-5" stroke="#050407" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                    </div>
-                  )}
-                </button>
-              ))}
-              {filteredRepos.length === 0 && (
-                <div className="px-4 py-8 text-center text-[13px] text-[#6B6560]">No repos match "{search}"</div>
-              )}
-            </div>
-            <div className="px-4 py-3 border-t border-white/[0.06] flex items-center justify-between gap-3">
-              <button type="button" className="mono text-[11px] tracking-[0.1em] uppercase text-[#FF4D1F] hover:underline">+ connect more repos</button>
-              {deployRepo && (
-                <button type="submit" className="h-9 px-5 rounded-lg bg-[#FF4D1F] text-[#050407] text-[13px] font-[650] hover:bg-[#FF5C2E] transition-colors flex items-center gap-2">
-                  Deploy <span className="mono font-normal opacity-70">{deployRepo.split("/").pop()}</span>
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M5 12h14M13 5l7 7-7 7" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"/></svg>
-                </button>
-              )}
-            </div>
-          </form>
-        )}
-
-        {/* GitLab */}
-        {(step === "gitlab" || step === "bitbucket") && (
-          <div className="px-4 py-6 space-y-4">
-            <div className="rounded-xl border border-white/[0.06] bg-white/[0.015] p-4 text-center">
-              <div className="text-[24px] mb-2">{step === "gitlab" ? "🦊" : "🪣"}</div>
-              <div className="text-[14px] font-[600] text-[#E8E6E3] mb-1">Connect {step === "gitlab" ? "GitLab" : "Bitbucket"}</div>
-              <div className="text-[12px] text-[#6B6560] mb-4">Authorize Flame Core to access your {step === "gitlab" ? "GitLab" : "Bitbucket"} repositories</div>
-              <button onClick={() => { onToast(`${step.toUpperCase()} · OAuth not yet configured — paste a Git URL instead`); setStep("url") }} className="h-10 px-5 rounded-lg bg-[#FF4D1F] text-[#050407] text-[13px] font-[650] hover:bg-[#FF5C2E] transition-colors">
-                Connect {step === "gitlab" ? "GitLab" : "Bitbucket"} →
-              </button>
-            </div>
-            <div className="text-center">
-              <button onClick={() => setStep("url")} className="mono text-[11px] tracking-[0.1em] uppercase text-[#6B6560] hover:text-[#FF4D1F] transition-colors">or paste a Git URL →</button>
-            </div>
-          </div>
-        )}
-
-        {/* Public Git URL */}
-        {step === "url" && (
-          <form onSubmit={onDeploy} className="px-4 py-4 space-y-4">
-            <div>
-              <label className="mono text-[10px] font-[600] tracking-[0.14em] uppercase text-[#6B6560] block mb-2">Git repository URL</label>
-              <input
-                value={deployRepo}
-                onChange={(e) => setDeployRepo(e.target.value)}
-                placeholder="https://github.com/org/repo  or  git@gitlab.com:org/repo.git"
-                className="w-full h-11 rounded-lg border border-white/[0.08] bg-[#050407] px-3.5 mono text-[13px] text-[#E8E6E3] placeholder-[#4a4540] focus:outline-none focus:border-[#FF4D1F]/50"
-                autoFocus
-                required
-              />
-              <div className="mt-1.5 text-[11px] text-[#6B6560]">Supports: GitHub · GitLab · Bitbucket · Gitea · any public HTTPS or SSH URL</div>
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="mono text-[10px] font-[600] tracking-[0.14em] uppercase text-[#6B6560] block mb-2">Branch</label>
-                <input placeholder="main" className="w-full h-10 rounded-lg border border-white/[0.08] bg-[#050407] px-3 text-[13px] text-[#E8E6E3] placeholder-[#4a4540] focus:outline-none focus:border-[#FF4D1F]/50" />
+                </div>
               </div>
-              <div>
-                <label className="mono text-[10px] font-[600] tracking-[0.14em] uppercase text-[#6B6560] block mb-2">Region</label>
-                <select value={deployRegion} onChange={(e) => setDeployRegion(e.target.value)} className="w-full h-10 rounded-lg border border-white/[0.08] bg-[#050407] px-3 text-[13px] text-[#E8E6E3] focus:outline-none focus:border-[#FF4D1F]/50">
-                  {regions.filter(r => r.status === "live").map(r => <option key={r.code} value={r.code} className="bg-[#0a0709]">{r.flag} {r.city.toLowerCase()}-1</option>)}
-                </select>
-              </div>
-            </div>
-            <button type="submit" className="w-full h-10 rounded-lg bg-[#FF4D1F] text-[#050407] text-[13px] font-[650] hover:bg-[#FF5C2E] transition-colors">
-              Deploy →
-            </button>
-          </form>
-        )}
-
-        {/* Docker image */}
-        {step === "docker" && (
-          <form onSubmit={(e) => { e.preventDefault(); onToast(`DOCKER · pulling ${dockerImage || "image"}…`); onClose() }} className="px-4 py-4 space-y-4">
-            <div>
-              <label className="mono text-[10px] font-[600] tracking-[0.14em] uppercase text-[#6B6560] block mb-2">Image name & tag</label>
-              <input
-                value={dockerImage}
-                onChange={(e) => setDockerImage(e.target.value)}
-                placeholder="nginx:alpine"
-                className="w-full h-11 rounded-lg border border-white/[0.08] bg-[#050407] px-3.5 mono text-[13px] text-[#E8E6E3] placeholder-[#4a4540] focus:outline-none focus:border-[#FF4D1F]/50"
-                autoFocus
-                required
-              />
-              <div className="mt-1.5 text-[11px] text-[#6B6560]">Supports Docker Hub · GitHub GHCR · GitLab Registry · Quay.io · any private registry</div>
-            </div>
-            <div className="rounded-lg border border-white/[0.06] bg-white/[0.01] p-3">
-              <div className="mono text-[10px] tracking-[0.12em] uppercase text-[#6B6560] mb-2.5">Popular images</div>
-              <div className="flex flex-wrap gap-1.5">
-                {["node:20-alpine","nginx:alpine","python:3.12-slim","redis:7-alpine","postgres:17-alpine","go:1.22-alpine","rust:1-slim"].map((img) => (
-                  <button key={img} type="button" onClick={() => setDockerImage(img)} className={`mono text-[11px] px-2.5 h-7 rounded-md border transition-colors ${dockerImage === img ? "border-[#FF4D1F]/50 bg-[#FF4D1F]/10 text-[#FF4D1F]" : "border-white/[0.08] text-[#A8A29C] hover:border-white/[0.2]"}`}>
-                    {img}
-                  </button>
-                ))}
-              </div>
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="mono text-[10px] font-[600] tracking-[0.14em] uppercase text-[#6B6560] block mb-2">Port</label>
-                <input placeholder="3000" className="w-full h-10 rounded-lg border border-white/[0.08] bg-[#050407] px-3 mono text-[13px] text-[#E8E6E3] placeholder-[#4a4540] focus:outline-none focus:border-[#FF4D1F]/50" />
-              </div>
-              <div>
-                <label className="mono text-[10px] font-[600] tracking-[0.14em] uppercase text-[#6B6560] block mb-2">Region</label>
-                <select value={deployRegion} onChange={(e) => setDeployRegion(e.target.value)} className="w-full h-10 rounded-lg border border-white/[0.08] bg-[#050407] px-3 text-[13px] text-[#E8E6E3] focus:outline-none focus:border-[#FF4D1F]/50">
-                  {regions.filter(r => r.status === "live").map(r => <option key={r.code} value={r.code} className="bg-[#0a0709]">{r.flag} {r.city.toLowerCase()}-1</option>)}
-                </select>
-              </div>
-            </div>
-            <button type="submit" className="w-full h-10 rounded-lg bg-[#FF4D1F] text-[#050407] text-[13px] font-[650] hover:bg-[#FF5C2E] transition-colors">
-              Deploy image →
-            </button>
-          </form>
-        )}
-
-        {/* Database selection */}
-        {step === "database" && (
-          <div className="overflow-y-auto max-h-[400px]">
-            <div className="p-3 grid grid-cols-2 gap-2">
-              {filteredDbs.map((db) => (
-                <button
-                  key={db.id}
-                  onClick={() => handleDbSelect(db)}
-                  className={`rounded-xl border p-4 text-left hover:border-[#FF4D1F]/40 hover:bg-[#FF4D1F]/[0.03] transition-colors group ${selectedDb === db.id ? "border-[#FF4D1F]/50 bg-[#FF4D1F]/[0.06]" : "border-white/[0.06] bg-white/[0.01]"}`}
-                >
-                  <div className="flex items-start justify-between mb-2">
-                    <div className="text-[22px]">{db.icon}</div>
-                    <span className="mono text-[9.5px] tracking-[0.1em] uppercase text-[#6B6560] bg-white/[0.04] px-2 h-5 flex items-center rounded border border-white/[0.06]">v{db.version}</span>
-                  </div>
-                  <div className="text-[13.5px] font-[650] text-[#E8E6E3] mb-1">{db.name}</div>
-                  <div className="text-[11px] leading-[1.4] text-[#6B6560] font-[450]">{db.desc}</div>
-                </button>
-              ))}
-              {filteredDbs.length === 0 && (
-                <div className="col-span-2 py-8 text-center text-[13px] text-[#6B6560]">No databases match "{search}"</div>
-              )}
-            </div>
-          </div>
-        )}
-
-        {/* Template gallery */}
-        {step === "template" && (
-          <div className="overflow-y-auto max-h-[420px]">
-            <div className="p-3 grid grid-cols-2 gap-2">
-              {filteredTemplates.map((tpl) => (
-                <button
-                  key={tpl.id}
-                  onClick={() => handleTemplateSelect(tpl)}
-                  className={`rounded-xl border p-4 text-left hover:border-[#FF4D1F]/40 hover:bg-[#FF4D1F]/[0.03] transition-colors ${selectedTemplate === tpl.id ? "border-[#FF4D1F]/50 bg-[#FF4D1F]/[0.06]" : "border-white/[0.06] bg-white/[0.01]"}`}
-                >
-                  <div className="text-[22px] mb-2">{tpl.icon}</div>
-                  <div className="text-[13.5px] font-[650] text-[#E8E6E3] mb-0.5">{tpl.name}</div>
-                  <div className="mono text-[10px] tracking-[0.1em] uppercase text-[#6B6560]">{tpl.category}</div>
-                </button>
-              ))}
-              {filteredTemplates.length === 0 && (
-                <div className="col-span-2 py-8 text-center text-[13px] text-[#6B6560]">No templates match "{search}"</div>
-              )}
-            </div>
-          </div>
-        )}
-
-        {/* CLI instructions */}
-        {step === "cli" && (
-          <div className="px-4 py-5 space-y-4">
-            <div className="rounded-xl border border-white/[0.06] bg-[#050407] p-4 mono text-[12.5px] leading-[1.9]">
-              <div className="text-[#6B6560]"># Install Flame CLI</div>
-              <div className="text-[#E8E6E3]">$ <span className="text-[#27D17F]">npm</span> install -g @flamecore/cli</div>
-              <div className="text-[#6B6560] mt-2"># Login</div>
-              <div className="text-[#E8E6E3]">$ <span className="text-[#27D17F]">flame</span> login</div>
-              <div className="text-[#6B6560] mt-2"># Deploy from current directory</div>
-              <div className="text-[#E8E6E3]">$ <span className="text-[#27D17F]">flame</span> deploy</div>
-              <div className="text-[#6B6560] mt-2"># Or deploy a specific service</div>
-              <div className="text-[#E8E6E3]">$ <span className="text-[#27D17F]">flame</span> deploy --service api --region los1</div>
-            </div>
-            <div className="flex gap-2">
-              <button onClick={() => { navigator.clipboard?.writeText("npm install -g @flamecore/cli"); onToast("COPIED · npm install -g @flamecore/cli") }} className="flex-1 h-9 rounded-lg border border-white/[0.08] text-[12px] font-[550] text-[#A8A29C] hover:text-[#E8E6E3] hover:border-white/[0.16] transition-colors">
-                Copy install command
-              </button>
-              <button onClick={() => { onToast("CLI DOCS · opening…") }} className="flex-1 h-9 rounded-lg bg-[#FF4D1F] text-[#050407] text-[12px] font-[650] hover:bg-[#FF5C2E] transition-colors">
-                View CLI docs →
-              </button>
-            </div>
-          </div>
-        )}
-
-        {/* Footer */}
-        <div className="border-t border-white/[0.05] px-4 py-2.5 flex items-center justify-between">
-          <div className="flex items-center gap-3 mono text-[10px] tracking-wide text-[#4a4540]">
-            {step === "root" && (
-              <>
-                <span className="flex items-center gap-1"><kbd className="px-1.5 py-0.5 rounded border border-white/[0.1] text-[10px]">↑↓</kbd> navigate</span>
-                <span className="flex items-center gap-1"><kbd className="px-1.5 py-0.5 rounded border border-white/[0.1] text-[10px]">↵</kbd> select</span>
-                <span className="flex items-center gap-1"><kbd className="px-1.5 py-0.5 rounded border border-white/[0.1] text-[10px]">Esc</kbd> close</span>
-              </>
-            )}
-            {step !== "root" && (
-              <button onClick={() => { setStep("root"); setSearch("") }} className="flex items-center gap-1 hover:text-[#A8A29C] transition-colors">
-                <kbd className="px-1.5 py-0.5 rounded border border-white/[0.1] text-[10px]">Esc</kbd> back to menu
-              </button>
-            )}
-          </div>
-          <div className="flex items-center gap-1.5">
-            <div className="h-4 w-4 rounded-md bg-[#FF4D1F] grid place-items-center">
-              <svg width="8" height="8" viewBox="0 0 24 24" fill="none"><path d="M12 2C12 2 7 7 7 12C7 14.5 8.5 16 10 16C10 14 11 13 12 13C13 13 14 14 14 16C15.5 16 17 14.5 17 12C17 7 12 2 12 2Z" fill="#050407"/></svg>
-            </div>
-            <span className="mono text-[10px] text-[#4a4540]">flamecore.app</span>
+            ))}
           </div>
         </div>
-      </div>
+      </section>
+
+      {/* Premium CTA */}
+      <section className={`${isDesktop || mobilePage === 'home' ? 'block' : 'hidden'} py-[90px] md:py-[120px] border-t border-white/[0.06]`}>
+        <div className="mx-auto max-w-[1280px] px-6 sm:px-8">
+          <div className="rounded-[32px] border border-white/[0.08] bg-[radial-gradient(900px_360px_at_0%_0%,rgba(255,90,31,0.12),transparent_55%),radial-gradient(700px_320px_at_100%_100%,rgba(124,58,237,0.12),transparent_55%),#0B0E14] p-8 md:p-12 lg:p-14 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]">
+            <div className="grid gap-8 lg:grid-cols-[1fr_auto] lg:items-end">
+              <div>
+                <div className="inline-flex items-center gap-2 rounded-full border border-[#FF7A45]/25 bg-[#FF7A45]/10 px-3 py-1.5">
+                  <span className="h-[6px] w-[6px] rounded-full bg-[#FF7A45]" />
+                  <span className="text-[11px] font-[700] tracking-[0.16em] uppercase text-[#FF9B76]">Strategy Call</span>
+                </div>
+                <h2 className="display mt-5 text-[38px] md:text-[52px] font-[700] leading-[1.02] tracking-[-0.03em]">
+                  Ready to build something
+                  <span className="block text-white/65">credible, elegant, and production-ready?</span>
+                </h2>
+                <p className="mt-5 max-w-[680px] text-[17px] leading-[1.8] text-white/72">
+                  If you want a website, mobile app, internal platform, or custom software product handled with premium attention to quality, we are ready to discuss the right next step with you.
+                </p>
+              </div>
+
+              <div className="flex flex-col sm:flex-row gap-4">
+                <a
+                  href="#contact"
+                  onClick={(e) => {
+                    if (!isDesktop) {
+                      e.preventDefault();
+                      goToMobilePage('contact');
+                    }
+                  }}
+                  className="h-[52px] px-[24px] inline-flex items-center justify-center rounded-[16px] bg-[#FF5A1F] text-white font-[700] hover:bg-[#FF6E3A] transition-all shadow-[0_16px_50px_-8px_rgba(255,90,31,0.55)]"
+                >
+                  Book a Strategy Call
+                </a>
+                <a href={WHATSAPP_URL} target="_blank" rel="noreferrer" className="h-[52px] px-[24px] inline-flex items-center justify-center rounded-[16px] border border-white/[0.12] bg-white/[0.05] text-[15px] font-[700] text-white/90 hover:bg-white/[0.08] transition-all">
+                  Message Us on WhatsApp
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Contact */}
+      <section id="contact" className={`${isDesktop || mobilePage === 'contact' ? 'block' : 'hidden'} py-[96px] md:py-[128px] border-t border-white/[0.06] relative overflow-hidden`}>
+        <div className="absolute inset-0 -z-10 bg-[radial-gradient(900px_600px_at_80%_-20%,#FF5A1F20,transparent_60%),radial-gradient(800px_600px_at_-10%_120%,#7C3AED16,transparent_60%)]" />
+        <div className="mx-auto max-w-[1280px] px-6 sm:px-8 grid lg:grid-cols-[1.03fr_0.97fr] gap-16 items-start">
+          <div>
+            <div className="inline-flex items-center gap-2 rounded-full border border-[#FF7A45]/25 bg-[#FF7A45]/10 px-3 py-1.5">
+              <span className="h-[6px] w-[6px] rounded-full bg-[#FF7A45]" />
+              <span className="text-[11px] font-[700] tracking-[0.16em] uppercase text-[#FF9B76]">Contact Section</span>
+            </div>
+            <h2 className="display mt-4 text-[42px] md:text-[56px] font-[700] leading-[1.02] tracking-[-0.03em]">
+              Letâ€™s discuss your next
+              <span className="block text-white/65">digital project</span>
+            </h2>
+            <p className="mt-5 max-w-[560px] text-[17px] leading-[1.75] text-white/74">
+              Whether you need a website, mobile app, custom software platform, AI solution, or automation workflow, weâ€™re ready to help you move from idea to execution.
+            </p>
+
+            <div className="mt-8 overflow-hidden rounded-[24px] border border-white/[0.10] bg-[#0B0E14]/72 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]">
+              <div className="relative aspect-[16/9]">
+                <img
+                  src="/images/flamecore-contact.jpg"
+                  alt="Professional project consultation meeting at FLAMECORE TECHNOLOGIES LTD"
+                  className="absolute inset-0 h-full w-full object-cover"
+                  loading="lazy"
+                />
+                <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(5,6,10,0.08),rgba(5,6,10,0.28)_45%,rgba(5,6,10,0.82)_100%)]" />
+                <div className="absolute left-4 top-4 rounded-full border border-white/[0.10] bg-black/30 backdrop-blur-xl px-3 h-8 inline-flex items-center text-[11px] font-[700] tracking-[0.12em] uppercase text-white/80">
+                  Real consultation feel
+                </div>
+                <div className="absolute left-4 right-4 bottom-4 rounded-[18px] border border-white/[0.10] bg-black/32 backdrop-blur-2xl p-4">
+                  <div className="text-[11px] font-[700] tracking-[0.14em] uppercase text-[#FFB295]">Project discovery</div>
+                  <div className="mt-1 text-[15px] font-[700] tracking-[-0.01em] text-white">Professional conversations that turn ideas into working solutions.</div>
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-8 space-y-3">
+              <a href="mailto:flamecoretechnologies@gmail.com" className="flex items-center gap-4 rounded-[18px] border border-white/[0.10] bg-white/[0.04] px-[18px] h-[62px] hover:bg-white/[0.06] transition-colors">
+                <span className="h-[38px] w-[38px] grid place-items-center rounded-[14px] bg-white/[0.06] border border-white/[0.10] text-[11px] font-[800] tracking-[0.12em] uppercase text-white/70">Email</span>
+                <div>
+                  <div className="text-[12px] font-[700] tracking-[0.12em] uppercase text-white/60">Email</div>
+                  <div className="text-[15px] font-[600] tracking-[-0.01em]">flamecoretechnologies@gmail.com</div>
+                </div>
+              </a>
+              <a href="tel:+2347071726082" className="flex items-center gap-4 rounded-[18px] border border-white/[0.10] bg-white/[0.04] px-[18px] h-[62px] hover:bg-white/[0.06] transition-colors">
+                <span className="h-[38px] w-[38px] grid place-items-center rounded-[14px] bg-white/[0.06] border border-white/[0.10] text-[11px] font-[800] tracking-[0.12em] uppercase text-white/70">Call</span>
+                <div>
+                  <div className="text-[12px] font-[700] tracking-[0.12em] uppercase text-white/60">Phone</div>
+                  <div className="text-[15px] font-[600] tracking-[-0.01em]">{PHONE_DISPLAY}</div>
+                </div>
+              </a>
+              <a href={WHATSAPP_URL} target="_blank" rel="noreferrer" className="flex items-center gap-4 rounded-[18px] border border-[#22C55E]/40 bg-[#22C55E]/10 px-[18px] h-[62px] hover:bg-[#22C55E]/15 transition-colors">
+                <span className="h-[38px] w-[38px] grid place-items-center rounded-[14px] bg-[#22C55E]/20 border border-[#22C55E]/35 text-[11px] font-[800] tracking-[0.12em] uppercase text-[#A7F3D0]">Chat</span>
+                <div>
+                  <div className="text-[12px] font-[700] tracking-[0.12em] uppercase text-[#A7F3D0]/85">WhatsApp</div>
+                  <div className="text-[15px] font-[700] tracking-[-0.01em]">Chat with us on WhatsApp</div>
+                </div>
+              </a>
+            </div>
+          </div>
+
+          <div className="relative">
+            <div className="absolute -inset-[1px] rounded-[28px] bg-[linear-gradient(180deg,rgba(255,255,255,0.08),rgba(255,255,255,0.02))] blur-[1px] opacity-80" />
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                const form = e.currentTarget as HTMLFormElement;
+                const data = new FormData(form);
+                const name = (data.get('name') as string) || '';
+                const email = (data.get('email') as string) || '';
+                const company = (data.get('company') as string) || '';
+                const message = (data.get('message') as string) || '';
+                const subject = encodeURIComponent(`New inquiry from ${name}${company ? ` - ${company}` : ''}`);
+                const body = encodeURIComponent(`Name: ${name}\nEmail: ${email}\nCompany: ${company}\n\nMessage:\n${message}\n\n- Sent from FLAMECORE TECHNOLOGIES LTD website`);
+                window.location.href = `mailto:flamecoretechnologies@gmail.com?subject=${subject}&body=${body}`;
+              }}
+              className="relative rounded-[26px] border border-white/[0.10] bg-[#0B0E14]/90 backdrop-blur-2xl shadow-[inset_0_1px_0_rgba(255,255,255,0.05),0_35px_120px_-20px_rgba(0,0,0,0.85)] p-[26px] sm:p-[30px]"
+            >
+              <div className="flex items-center gap-3 mb-6">
+                <span className="h-2.5 w-2.5 rounded-full bg-[#22C55E] shadow-[0_0_0_5px_rgba(34,197,94,0.18)]" />
+                <span className="text-[12px] font-[700] tracking-[0.16em] uppercase text-white/80">Contact Form</span>
+              </div>
+
+              <div className="grid gap-4">
+                <div className="grid md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-[11px] font-[700] tracking-[0.1em] uppercase text-white/60 mb-2">Your Name</label>
+                    <input name="name" required placeholder="Jane Doe" className="w-full h-[48px] px-[14px] rounded-[14px] bg-[#0A0D12] border border-white/[0.10] text-[15px] outline-none placeholder:text-white/35 focus:border-[#FF7A45]/70 focus:ring-[3px] focus:ring-[#FF7A45]/20 transition" />
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-[700] tracking-[0.1em] uppercase text-white/60 mb-2">Email Address</label>
+                    <input type="email" name="email" required placeholder="jane@company.com" className="w-full h-[48px] px-[14px] rounded-[14px] bg-[#0A0D12] border border-white/[0.10] text-[15px] outline-none placeholder:text-white/35 focus:border-[#FF7A45]/70 focus:ring-[3px] focus:ring-[#FF7A45]/20 transition" />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-[700] tracking-[0.1em] uppercase text-white/60 mb-2">Company / Project</label>
+                  <input name="company" placeholder="Your company or project name" className="w-full h-[48px] px-[14px] rounded-[14px] bg-[#0A0D12] border border-white/[0.10] text-[15px] outline-none placeholder:text-white/35 focus:border-[#FF7A45]/70 focus:ring-[3px] focus:ring-[#FF7A45]/20 transition" />
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-[700] tracking-[0.1em] uppercase text-white/60 mb-2">Message</label>
+                  <textarea name="message" required rows={5} placeholder="Tell us about your project, goals, and timeline..." className="w-full px-[14px] py-[12px] rounded-[14px] bg-[#0A0D12] border border-white/[0.10] text-[15px] outline-none placeholder:text-white/35 focus:border-[#FF7A45]/70 focus:ring-[3px] focus:ring-[#FF7A45]/20 transition resize-none leading-[1.6]" />
+                </div>
+
+                <div className="flex flex-col sm:flex-row gap-3 pt-1">
+                  <button type="submit" className="flex-1 h-[52px] inline-flex items-center justify-center rounded-[16px] bg-[#FF5A1F] text-white font-[700] text-[15px] hover:bg-[#FF6E3A] transition-all shadow-[0_16px_50px_-8px_rgba(255,90,31,0.6)]">
+                    Send Inquiry
+                  </button>
+                  <a href={WHATSAPP_URL} target="_blank" rel="noreferrer" className="h-[52px] px-[18px] inline-flex items-center justify-center rounded-[16px] bg-white/[0.06] border border-white/[0.12] font-[700] hover:bg-white/[0.08] transition-all">
+                    WhatsApp Us
+                  </a>
+                </div>
+
+                <p className="text-[12px] leading-[1.6] text-white/55">
+                  Lightweight email-based contact handling. Your inquiry will be sent directly to flamecoretechnologies@gmail.com.
+                </p>
+                <p className="text-[12px] leading-[1.6] text-white/45">By contacting us, you acknowledge our <a href="/privacy-policy.html" className="text-white/75 hover:text-white transition-colors">Privacy Policy</a> and <a href="/terms-of-service.html" className="text-white/75 hover:text-white transition-colors">Terms of Service</a>.</p>
+              </div>
+            </form>
+          </div>
+        </div>
+      </section>
+
+      {/* Footer */}
+      <footer className="border-t border-white/[0.06] bg-[#080B11]">
+        <div className="mx-auto max-w-[1280px] px-6 sm:px-8 py-[56px]">
+          <div className="grid gap-12 lg:grid-cols-[1.2fr_0.78fr_0.78fr_0.78fr_0.78fr]">
+            <div>
+              <div className="flex items-center gap-3">
+                <div className="relative h-10 w-10 shrink-0">
+                  <div className="absolute inset-0 rounded-[14px] bg-[conic-gradient(from_220deg,#FF5A1F,#FF8A5B,#FF5A1F)] blur-[10px] opacity-75" />
+                  <img
+                    src="/images/flamecore-brandmark-512.png"
+                    alt="FLAMECORE TECHNOLOGIES LTD"
+                    className="relative h-full w-full object-contain"
+                  />
+                </div>
+                <div>
+                  <div className="display text-[17px] font-[700] tracking-[-0.02em]">FLAMECORE TECHNOLOGIES LTD</div>
+                  <div className="text-[10px] font-[700] tracking-[0.18em] uppercase text-white/50">Professional digital solutions</div>
+                </div>
+              </div>
+              <p className="mt-4 max-w-[340px] text-[14px] leading-[1.7] text-white/68">
+                Modern software solutions, web development, mobile apps, automation, AI tools, and digital services for ambitious businesses.
+              </p>
+            </div>
+
+            <div>
+              <h4 className="text-[11px] font-[700] tracking-[0.16em] uppercase text-white/60 mb-3">Company</h4>
+              <ul className="space-y-2 text-[14px] text-white/75">
+                <li><a href="#about" onClick={(e) => { if (!isDesktop) { e.preventDefault(); goToMobilePage('about'); } }} className="hover:text-white transition-colors">About</a></li>
+                <li><a href="#services" onClick={(e) => { if (!isDesktop) { e.preventDefault(); goToMobilePage('services'); } }} className="hover:text-white transition-colors">Services</a></li>
+                <li><a href="#hosting" className="hover:text-white transition-colors">Hosting</a></li>
+                <li><a href="#why-us" onClick={(e) => { if (!isDesktop) { e.preventDefault(); goToMobilePage('why'); } }} className="hover:text-white transition-colors">Why Choose Us</a></li>
+                <li><a href="#contact" onClick={(e) => { if (!isDesktop) { e.preventDefault(); goToMobilePage('contact'); } }} className="hover:text-white transition-colors">Contact</a></li>
+              </ul>
+            </div>
+
+            <div>
+              <h4 className="text-[11px] font-[700] tracking-[0.16em] uppercase text-white/60 mb-3">Services</h4>
+              <ul className="space-y-2 text-[14px] text-white/75">
+                <li>Website Development</li>
+                <li>Mobile App Development</li>
+                <li>Custom Software Solutions</li>
+                <li>AI & Automation</li>
+                <li>Web Hosting</li>
+                <li>Cloud & Hosting Solutions</li>
+              </ul>
+            </div>
+
+            <div>
+              <h4 className="text-[11px] font-[700] tracking-[0.16em] uppercase text-white/60 mb-3">Socials</h4>
+              <ul className="space-y-2 text-[14px] text-white/75">
+                <li><a href="#" className="hover:text-white transition-colors">LinkedIn</a></li>
+                <li><a href="#" className="hover:text-white transition-colors">X / Twitter</a></li>
+                <li><a href="#" className="hover:text-white transition-colors">Instagram</a></li>
+                <li><a href="#" className="hover:text-white transition-colors">Facebook</a></li>
+              </ul>
+            </div>
+
+            <div>
+              <h4 className="text-[11px] font-[700] tracking-[0.16em] uppercase text-white/60 mb-3">Legal</h4>
+              <ul className="space-y-2 text-[14px] text-white/75">
+                <li><a href="/privacy-policy.html" className="hover:text-white transition-colors">Privacy Policy</a></li>
+                <li><a href="/terms-of-service.html" className="hover:text-white transition-colors">Terms of Service</a></li>
+                <li><a href="#contact" onClick={(e) => { if (!isDesktop) { e.preventDefault(); goToMobilePage('contact'); } }} className="hover:text-white transition-colors">Contact Team</a></li>
+              </ul>
+            </div>
+          </div>
+
+          <div className="mt-12 pt-6 border-t border-white/[0.07] flex flex-col md:flex-row items-center justify-between gap-3 text-[13px] text-white/58">
+            <p>&copy; {new Date().getFullYear()} FLAMECORE TECHNOLOGIES LTD. All rights reserved.</p>
+            <p>Crafted for a modern international tech company feel.</p>
+          </div>
+        </div>
+      </footer>
+
+      {/* Mobile quick bar */}
+
     </div>
-  )
+  );
 }
+
+
