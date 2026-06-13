@@ -71,7 +71,6 @@ export default function App() {
       { label: 'Reviews', href: '#reviews' },
       { label: 'Blog', href: '#blog' },
       { label: 'Contact', href: '#contact' },
-      { label: 'Admin', href: '/admin' },
     ],
     [],
   );
@@ -88,6 +87,18 @@ export default function App() {
         h1, h2, h3, .display { font-family: 'Space Grotesk', sans-serif; letter-spacing: -0.03em; }
         html { scroll-behavior: smooth; }
         body { background: #04050A; }
+        @keyframes floatSlow {
+          0%, 100% { transform: translate3d(0, 0, 0) rotateX(0deg) rotateY(0deg); }
+          50% { transform: translate3d(0, -14px, 0) rotateX(5deg) rotateY(-5deg); }
+        }
+        @keyframes floatFast {
+          0%, 100% { transform: translate3d(0, 0, 0); }
+          50% { transform: translate3d(0, -10px, 0); }
+        }
+        @keyframes pulseGlow {
+          0%, 100% { opacity: .35; transform: scale(1); }
+          50% { opacity: .85; transform: scale(1.08); }
+        }
       `}</style>
 
       <div className="fixed inset-0 -z-20 bg-[radial-gradient(circle_at_top_right,rgba(255,90,31,0.14),transparent_38%),radial-gradient(circle_at_left_bottom,rgba(124,58,237,0.12),transparent_36%),#04050A]" />
@@ -173,7 +184,11 @@ export default function App() {
                   ['Custom platforms', 'Fit to your workflows'],
                   ['Company support', 'Hosting guidance on request'],
                 ].map(([title, note]) => (
-                  <div key={title} className="rounded-[24px] border border-white/10 bg-black/20 p-5 backdrop-blur-xl">
+                  <div
+                    key={title}
+                    className="rounded-[24px] border border-white/10 bg-black/20 p-5 backdrop-blur-xl transition-transform duration-500 hover:-translate-y-1"
+                    style={{ animation: 'floatFast 8s ease-in-out infinite' }}
+                  >
                     <div className="text-sm font-bold text-white">{title}</div>
                     <div className="mt-2 text-sm leading-6 text-white/62">{note}</div>
                   </div>
@@ -181,8 +196,33 @@ export default function App() {
               </div>
             </div>
 
-            <div className="lg:justify-self-end">
-              <div className="rounded-[32px] border border-white/10 bg-[#0A0D14]/76 p-6 shadow-[0_40px_120px_-28px_rgba(0,0,0,0.8)] backdrop-blur-2xl">
+            <div className="relative lg:justify-self-end [perspective:1600px]">
+              <div
+                className="pointer-events-none absolute -left-8 top-8 h-24 w-24 rounded-full bg-[#FF5A1F]/25 blur-3xl"
+                style={{ animation: 'pulseGlow 6s ease-in-out infinite' }}
+              />
+              <div
+                className="pointer-events-none absolute -right-6 bottom-10 h-28 w-28 rounded-full bg-[#7C3AED]/20 blur-3xl"
+                style={{ animation: 'pulseGlow 7.5s ease-in-out infinite' }}
+              />
+              <div
+                className="absolute -left-10 bottom-12 hidden w-48 rounded-[24px] border border-white/10 bg-white/6 p-4 backdrop-blur-2xl lg:block"
+                style={{ animation: 'floatSlow 9s ease-in-out infinite', transformStyle: 'preserve-3d' }}
+              >
+                <div className="text-[11px] font-bold uppercase tracking-[0.22em] text-[#FFB08F]">Launch quality</div>
+                <div className="mt-3 text-lg font-semibold text-white">Premium visuals with production-ready structure.</div>
+              </div>
+              <div
+                className="absolute -right-8 top-10 hidden w-44 rounded-[24px] border border-white/10 bg-black/30 p-4 backdrop-blur-2xl lg:block"
+                style={{ animation: 'floatFast 7s ease-in-out infinite' }}
+              >
+                <div className="text-[11px] font-bold uppercase tracking-[0.22em] text-[#A7F3D0]">Motion feel</div>
+                <div className="mt-3 text-sm leading-6 text-white/75">Cinematic layering, depth, and subtle movement.</div>
+              </div>
+              <div
+                className="rounded-[32px] border border-white/10 bg-[#0A0D14]/76 p-6 shadow-[0_40px_120px_-28px_rgba(0,0,0,0.8)] backdrop-blur-2xl"
+                style={{ animation: 'floatSlow 10s ease-in-out infinite', transformStyle: 'preserve-3d' }}
+              >
                 <div className="flex items-center justify-between">
                   <div>
                     <div className="text-xs font-bold uppercase tracking-[0.2em] text-[#FFB08F]">Why clients choose us</div>
@@ -279,12 +319,9 @@ export default function App() {
                 <div className="text-xs font-bold uppercase tracking-[0.24em] text-[#FFB08F]">Blog</div>
                 <h2 className="display mt-4 text-4xl font-bold sm:text-5xl">A premium editorial space for insights, pictures, and video-led stories</h2>
                 <p className="mt-5 text-lg leading-8 text-white/68">
-                  The blog is now connected to the admin workflow so your team can create, edit, and publish content from one control panel.
+                  Explore premium insights, visual updates, and selected stories from the Flame Core team.
                 </p>
               </div>
-              <a href="/admin" className="inline-flex h-12 items-center justify-center rounded-2xl border border-white/12 bg-white/5 px-5 text-sm font-semibold text-white/80 transition hover:bg-white/10">
-                Open Admin Dashboard
-              </a>
             </div>
 
             <div className="mt-10 grid gap-6 lg:grid-cols-2">
@@ -426,7 +463,6 @@ export default function App() {
           <div className="flex flex-wrap gap-4">
             <a href="/privacy-policy.html" className="transition hover:text-white">Privacy Policy</a>
             <a href="/terms-of-service.html" className="transition hover:text-white">Terms of Service</a>
-            <a href="/admin" className="transition hover:text-white">Admin</a>
           </div>
         </div>
       </footer>
