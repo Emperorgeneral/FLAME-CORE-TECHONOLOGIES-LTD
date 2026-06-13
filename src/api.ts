@@ -130,3 +130,22 @@ export async function sendAdminMail(payload: MailPayload) {
     body: JSON.stringify(payload),
   });
 }
+
+export async function uploadAdminMedia(file: File, kind: 'image' | 'video') {
+  const formData = new FormData();
+  formData.append('file', file);
+  formData.append('kind', kind);
+
+  const response = await fetch('/api/admin/upload', {
+    method: 'POST',
+    credentials: 'include',
+    body: formData,
+  });
+
+  if (!response.ok) {
+    const data = await response.json().catch(() => ({}));
+    throw new Error(data?.message || `Upload failed: ${response.status}`);
+  }
+
+  return response.json() as Promise<{ success: true; url: string; filename: string }>;
+}

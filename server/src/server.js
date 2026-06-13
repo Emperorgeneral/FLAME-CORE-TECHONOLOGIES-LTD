@@ -1,7 +1,10 @@
+import fs from 'fs';
+import path from 'path';
 import cookieParser from 'cookie-parser';
 import dotenv from 'dotenv';
 import express from 'express';
 import jwt from 'jsonwebtoken';
+import multer from 'multer';
 import nodemailer from 'nodemailer';
 import pg from 'pg';
 import bcrypt from 'bcryptjs';
@@ -34,6 +37,27 @@ if (!MAIL_FROM_ADDRESS) throw new Error('MAIL_FROM_ADDRESS is required');
 const { Pool } = pg;
 const pool = new Pool({ connectionString: DATABASE_URL });
 const app = express();
+const uploadsDir = '/var/www/projects/flame-core-marketing/uploads';
+
+fs.mkdirSync(uploadsDir, { recursive: true });
+
+const storage = multer.diskStorage({
+  destination: (_request, _file, callback) => callback(null, uploadsDir),
+  filename: (_request, file, callback) => {
+    const safeBase = path
+      .basename(file.originalname, path.extname(file.originalname))
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '')
+      .slice(0, 60) || 'media';
+    callback(null, `${Date.now()}-${safeBase}${path.extname(file.originalname).toLowerCase()}`);
+  },
+});
+
+const upload = multer({
+  storage,
+  limits: { fileSize: 150 * 1024 * 1024 },
+});
 
 app.use(express.json({ limit: '1mb' }));
 app.use(cookieParser());
@@ -418,6 +442,31 @@ app.get('/api/admin/mail/history', requireAdmin, async (_request, response) => {
       status: row.status,
       createdAt: row.created_at,
     })),
+  });
+});
+
+app.post('/api/admin/upload', requireAdmin, upload.single('file'), async (request, response) => {
+  const kind = String(request.body?.kind || 'image');
+  const file = request.file;
+
+  if (!file) {
+    return response.status(400).json({ message: 'No file uploaded.' });
+  }
+
+  if (kind === 'image' && !String(file.mimetype).startsWith('image/')) {
+    fs.unlinkSync(file.path);
+    return response.status(400).json({ message: 'Uploaded file must be an image.' });
+  }
+
+  if (kind === 'video' && !String(file.mimetype).startsWith('video/')) {
+    fs.unlinkSync(file.path);
+    return response.status(400).json({ message: 'Uploaded file must be a video.' });
+  }
+
+  response.json({
+    success: true,
+    filename: file.filename,
+    url: `/uploads/${file.filename}`,
   });
 });
 

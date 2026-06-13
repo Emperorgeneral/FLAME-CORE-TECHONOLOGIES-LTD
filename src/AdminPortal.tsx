@@ -10,6 +10,7 @@ import {
   logoutAdmin,
   saveAdminPost,
   sendAdminMail,
+  uploadAdminMedia,
 } from './api';
 import type { BlogPost } from './siteContent';
 
@@ -327,18 +328,64 @@ export default function AdminPortal() {
                       className="w-full rounded-[22px] border border-white/10 bg-[#040509] px-4 py-4 text-white outline-none"
                     />
                     <div className="grid gap-4 md:grid-cols-2">
-                      <input
-                        value={editor.coverImageUrl || ''}
-                        onChange={(event) => setEditor((current) => ({ ...current, coverImageUrl: event.target.value }))}
-                        placeholder="Cover image URL"
-                        className="h-13 w-full rounded-2xl border border-white/10 bg-[#040509] px-4 text-white outline-none"
-                      />
-                      <input
-                        value={editor.mediaUrl || ''}
-                        onChange={(event) => setEditor((current) => ({ ...current, mediaUrl: event.target.value }))}
-                        placeholder="Video URL (optional)"
-                        className="h-13 w-full rounded-2xl border border-white/10 bg-[#040509] px-4 text-white outline-none"
-                      />
+                      <div className="space-y-3">
+                        <input
+                          value={editor.coverImageUrl || ''}
+                          onChange={(event) => setEditor((current) => ({ ...current, coverImageUrl: event.target.value }))}
+                          placeholder="Cover image URL"
+                          className="h-13 w-full rounded-2xl border border-white/10 bg-[#040509] px-4 text-white outline-none"
+                        />
+                        <label className="flex cursor-pointer items-center justify-between rounded-2xl border border-dashed border-white/15 bg-white/4 px-4 py-3 text-sm text-white/75 hover:bg-white/8">
+                          <span>Upload cover image to site folder</span>
+                          <input
+                            type="file"
+                            accept="image/*"
+                            className="hidden"
+                            onChange={async (event) => {
+                              const file = event.target.files?.[0];
+                              if (!file) return;
+                              try {
+                                const result = await uploadAdminMedia(file, 'image');
+                                setEditor((current) => ({ ...current, coverImageUrl: result.url }));
+                                setActionNotice(`Uploaded ${result.filename} successfully.`);
+                              } catch (error) {
+                                setActionNotice(error instanceof Error ? error.message : 'Image upload failed.');
+                              } finally {
+                                event.target.value = '';
+                              }
+                            }}
+                          />
+                        </label>
+                      </div>
+                      <div className="space-y-3">
+                        <input
+                          value={editor.mediaUrl || ''}
+                          onChange={(event) => setEditor((current) => ({ ...current, mediaUrl: event.target.value }))}
+                          placeholder="Video URL (optional)"
+                          className="h-13 w-full rounded-2xl border border-white/10 bg-[#040509] px-4 text-white outline-none"
+                        />
+                        <label className="flex cursor-pointer items-center justify-between rounded-2xl border border-dashed border-white/15 bg-white/4 px-4 py-3 text-sm text-white/75 hover:bg-white/8">
+                          <span>Upload video to site folder</span>
+                          <input
+                            type="file"
+                            accept="video/*"
+                            className="hidden"
+                            onChange={async (event) => {
+                              const file = event.target.files?.[0];
+                              if (!file) return;
+                              try {
+                                const result = await uploadAdminMedia(file, 'video');
+                                setEditor((current) => ({ ...current, mediaUrl: result.url, mediaType: 'video' }));
+                                setActionNotice(`Uploaded ${result.filename} successfully.`);
+                              } catch (error) {
+                                setActionNotice(error instanceof Error ? error.message : 'Video upload failed.');
+                              } finally {
+                                event.target.value = '';
+                              }
+                            }}
+                          />
+                        </label>
+                      </div>
                     </div>
                     <div className="grid gap-4 md:grid-cols-3">
                       <select
