@@ -12,12 +12,16 @@ const yearly = { plan_code: 'yearly', billing_period: 'year', price_usd_cents: 1
 test('calculates Standard and Cloud Terminal monthly prices', () => {
   assert.equal(calculateFlameBotCheckoutAmount(monthly, 0), 1000);
   assert.equal(calculateFlameBotCheckoutAmount(monthly, 1), 1500);
+  assert.equal(calculateFlameBotCheckoutAmount(monthly, 2), 2000);
+  assert.equal(calculateFlameBotCheckoutAmount(monthly, 3), 2500);
   assert.equal(calculateFlameBotCheckoutAmount(monthly, 4), 3000);
 });
 
 test('calculates yearly prices with the annual Cloud Terminal add-on', () => {
   assert.equal(calculateFlameBotCheckoutAmount(yearly, 0), 10000);
   assert.equal(calculateFlameBotCheckoutAmount(yearly, 1), 15000);
+  assert.equal(calculateFlameBotCheckoutAmount(yearly, 2), 20000);
+  assert.equal(calculateFlameBotCheckoutAmount(yearly, 3), 25000);
   assert.equal(calculateFlameBotCheckoutAmount(yearly, 4), 30000);
 });
 
