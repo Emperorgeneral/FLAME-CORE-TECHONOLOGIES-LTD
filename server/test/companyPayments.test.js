@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 
 import {
+  calculateCloudTerminalUpgradeAmount,
   calculateFlameBotCheckoutAmount,
   normalizeCloudTerminalSlots,
 } from '../src/companyPayments.js';
@@ -32,5 +33,17 @@ test('rejects invalid Cloud Terminal quantities and retired billing periods', ()
   assert.throws(
     () => calculateFlameBotCheckoutAmount({ billing_period: 'week', price_usd_cents: 500 }, 1),
     /monthly and yearly/i,
+  );
+});
+
+test('charges only the additional Cloud Terminal slots for active upgrades', () => {
+  assert.equal(calculateCloudTerminalUpgradeAmount(monthly, 0, 1), 500);
+  assert.equal(calculateCloudTerminalUpgradeAmount(monthly, 1, 2), 500);
+  assert.equal(calculateCloudTerminalUpgradeAmount(monthly, 1, 4), 1500);
+  assert.equal(calculateCloudTerminalUpgradeAmount(yearly, 0, 1), 5000);
+  assert.equal(calculateCloudTerminalUpgradeAmount(yearly, 2, 4), 10000);
+  assert.throws(
+    () => calculateCloudTerminalUpgradeAmount(monthly, 2, 2),
+    /must increase/i,
   );
 });

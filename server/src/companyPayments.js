@@ -83,6 +83,22 @@ export function calculateFlameBotCheckoutAmount(plan, cloudTerminalSlots = 0) {
   return Number(plan?.price_usd_cents || 0) + slots * addOnCents;
 }
 
+export function calculateCloudTerminalUpgradeAmount(plan, currentSlots, targetSlots) {
+  const current = normalizeCloudTerminalSlots(currentSlots);
+  const target = normalizeCloudTerminalSlots(targetSlots);
+  if (current == null || target == null || target <= current) {
+    throw new Error('Cloud Terminal upgrade must increase the current slot quantity.');
+  }
+  const billingPeriod = String(plan?.billing_period || plan?.plan_code || '').trim().toLowerCase();
+  if (!['month', 'monthly', 'year', 'yearly', 'annual'].includes(billingPeriod)) {
+    throw new Error('FlameBot supports monthly and yearly subscriptions only.');
+  }
+  const addOnCents = ['year', 'yearly', 'annual'].includes(billingPeriod)
+    ? FLAMEBOT_CLOUD_YEARLY_CENTS
+    : FLAMEBOT_CLOUD_MONTHLY_CENTS;
+  return (target - current) * addOnCents;
+}
+
 function cloudTerminalPricingConfig() {
   return {
     label: 'Cloud Terminal',
@@ -797,9 +813,50 @@ async function applySuccessfulPayment(pool, paymentRow, webhookPayload, notifica
     if (!plan) throw new Error(`Plan not found for payment session ${lockedPayment.session_id}`);
 
     const now = new Date();
-    periodEnd = new Date(now.getTime() + Number(plan.duration_days || 0) * 24 * 60 * 60 * 1000);
-    await client.query(
-      `
+    const metadata = lockedPayment.metadata && typeof lockedPayment.metadata === 'object'
+      ? lockedPayment.metadata
+      : {};
+    const isCloudUpgrade = String(metadata.purchase_kind || '').toLowerCase() === 'cloud_terminal_upgrade';
+    if (isCloudUpgrade) {
+      const subscriptionResult = await client.query(
+        `SELECT * FROM company_subscriptions WHERE project_key = $1 AND customer_key = $2 FOR UPDATE`,
+        [lockedPayment.project_key, lockedPayment.customer_key],
+      );
+      const subscription = subscriptionResult.rows[0];
+      const currentSlots = Number(subscription?.cloud_terminal_slots || 0);
+      const targetSlots = Number(lockedPayment.cloud_terminal_slots || 0);
+      const activeUntil = subscription?.current_period_end ? new Date(subscription.current_period_end) : null;
+      if (
+        !subscription
+        || String(subscription.status || '').toLowerCase() !== 'active'
+        || !activeUntil
+        || activeUntil <= now
+        || targetSlots <= currentSlots
+        || String(subscription.plan_code || '') !== String(lockedPayment.plan_code || '')
+      ) {
+        throw new Error('Cloud Terminal upgrade no longer matches an active subscription.');
+      }
+      periodEnd = activeUntil;
+      await client.query(
+        `UPDATE company_subscriptions
+         SET cloud_terminal_slots = $3,
+             provider = $4,
+             latest_payment_session_id = $5,
+             access_source = 'payment',
+             updated_at = NOW()
+         WHERE project_key = $1 AND customer_key = $2`,
+        [
+          lockedPayment.project_key,
+          lockedPayment.customer_key,
+          targetSlots,
+          lockedPayment.provider,
+          lockedPayment.session_id,
+        ],
+      );
+    } else {
+      periodEnd = new Date(now.getTime() + Number(plan.duration_days || 0) * 24 * 60 * 60 * 1000);
+      await client.query(
+        `
         INSERT INTO company_subscriptions
           (project_key, customer_key, external_user_id, customer_email, customer_name, plan_code, cloud_terminal_slots, status, provider, current_period_start, current_period_end, latest_payment_session_id, access_source, updated_at)
         VALUES ($1, $2, $3, $4, $5, $6, $7, 'active', $8, NOW(), $9, $10, 'payment', NOW())
@@ -830,7 +887,8 @@ async function applySuccessfulPayment(pool, paymentRow, webhookPayload, notifica
         periodEnd.toISOString(),
         lockedPayment.session_id,
       ],
-    );
+      );
+    }
 
     await client.query(
       `UPDATE company_payment_sessions
@@ -1226,6 +1284,7 @@ export function registerCompanyPaymentRoutes({ app, pool, requireAdmin, notifica
       const requestedCloudSlots = request.body?.cloud_terminal_slots ?? 0;
       const returnUrl = String(request.body?.return_url || '').trim();
       const metadata = request.body?.metadata && typeof request.body.metadata === 'object' ? request.body.metadata : {};
+      const purchaseKind = String(request.body?.purchase_kind || metadata.purchase_kind || '').trim().toLowerCase();
       const settings = await getProjectSettings(pool, projectKey);
       const requestedProvider = normalizeProvider(request.body?.provider, normalizeProvider(settings?.provider, 'flutterwave'));
 
@@ -1253,13 +1312,48 @@ export function registerCompanyPaymentRoutes({ app, pool, requireAdmin, notifica
       if (projectKey === 'flamebot' && !['monthly', 'yearly'].includes(planCode)) {
         return response.status(400).json({ message: 'FlameBot supports monthly and yearly subscriptions only.' });
       }
-      const checkoutAmountUsdCents = projectKey === 'flamebot'
-        ? calculateFlameBotCheckoutAmount(plan, cloudTerminalSlots)
-        : Number(plan.price_usd_cents || 0);
+      const customerKey = buildCustomerKey(projectKey, externalUserId, customerEmail);
+      let currentCloudTerminalSlots = 0;
+      let checkoutAmountUsdCents;
+      if (projectKey === 'flamebot' && purchaseKind === 'cloud_terminal_upgrade') {
+        const subscriptionResult = await pool.query(
+          `SELECT * FROM company_subscriptions WHERE project_key = $1 AND customer_key = $2 LIMIT 1`,
+          [projectKey, customerKey],
+        );
+        const activeSubscription = subscriptionResult.rows[0];
+        const activeUntil = activeSubscription?.current_period_end
+          ? new Date(activeSubscription.current_period_end)
+          : null;
+        if (
+          !activeSubscription
+          || String(activeSubscription.status || '').toLowerCase() !== 'active'
+          || !activeUntil
+          || activeUntil <= new Date()
+          || String(activeSubscription.plan_code || '') !== planCode
+        ) {
+          return response.status(409).json({ message: 'An active matching subscription is required to add Cloud Terminals.' });
+        }
+        currentCloudTerminalSlots = Number(activeSubscription.cloud_terminal_slots || 0);
+        try {
+          checkoutAmountUsdCents = calculateCloudTerminalUpgradeAmount(
+            plan,
+            currentCloudTerminalSlots,
+            cloudTerminalSlots,
+          );
+        } catch (error) {
+          return response.status(409).json({ message: error instanceof Error ? error.message : 'Invalid Cloud Terminal upgrade.' });
+        }
+      } else {
+        checkoutAmountUsdCents = projectKey === 'flamebot'
+          ? calculateFlameBotCheckoutAmount(plan, cloudTerminalSlots)
+          : Number(plan.price_usd_cents || 0);
+      }
       const checkoutPlan = {
         ...plan,
         price_usd_cents: checkoutAmountUsdCents,
-        display_name: projectKey === 'flamebot' && cloudTerminalSlots > 0
+        display_name: purchaseKind === 'cloud_terminal_upgrade'
+          ? `Add ${cloudTerminalSlots - currentCloudTerminalSlots} Cloud Terminal${cloudTerminalSlots - currentCloudTerminalSlots === 1 ? '' : 's'}`
+          : projectKey === 'flamebot' && cloudTerminalSlots > 0
           ? `${plan.display_name} + ${cloudTerminalSlots} Cloud Terminal${cloudTerminalSlots === 1 ? '' : 's'}`
           : plan.display_name,
       };
@@ -1270,7 +1364,6 @@ export function registerCompanyPaymentRoutes({ app, pool, requireAdmin, notifica
         request.body?.client_context || null,
       );
 
-      const customerKey = buildCustomerKey(projectKey, externalUserId, customerEmail);
       const sessionId = crypto.randomUUID();
       const txRef = `${projectKey}-${planCode}-${Date.now()}-${crypto.randomBytes(4).toString('hex')}`;
       const checkoutCurrency = String(
@@ -1280,6 +1373,8 @@ export function registerCompanyPaymentRoutes({ app, pool, requireAdmin, notifica
       ).trim().toUpperCase() || 'USD';
       const sessionMetadata = {
         ...metadata,
+        purchase_kind: purchaseKind || 'subscription',
+        current_cloud_terminal_slots: currentCloudTerminalSlots,
         cloud_terminal_slots: cloudTerminalSlots,
         billing_context: {
           checkout_amount_major: Number(billingContext?.checkout_amount_major || checkoutAmountUsdCents / 100),
@@ -1362,6 +1457,7 @@ export function registerCompanyPaymentRoutes({ app, pool, requireAdmin, notifica
           session_id: sessionId,
           project_key: projectKey,
           plan_code: planCode,
+          purchase_kind: purchaseKind || 'subscription',
           cloud_terminal_slots: cloudTerminalSlots,
           provider: requestedProvider,
           amount_usd_cents: checkoutAmountUsdCents,
